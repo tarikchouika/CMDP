@@ -1,0 +1,181 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// CMDP — مخطط قاعدة البيانات (SQLite / Prisma)
+// المنصة الرقمية لإدارة التعاونيات بالمملكة المغربية
+// ═══════════════════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── مستخدمو المنصة ───────────────────────────────────────────────────────
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String
+  fullName     String
+  role         String   @default("ADMIN") // ADMIN | SECRETARY | TREASURER | VIEWER
+  createdAt    DateTime @default(now())
+}
+
+// ─── التعاونية ────────────────────────────────────────────────────────────
+model Cooperative {
+  id                 Int               @id @default(autoincrement())
+  name               String
+  registrationNumber String            @unique // رقم التسجيل بالسجل المحلي
+  odcCardNumber      String? // بطاقة الاعتراف — مكتب تنمية التعاون
+  sector             String // الفلاحة، الصناعة التقليدية، الخدمات...
+  region             String // الجهة (12 جهة)
+  province           String // الإقليم أو العمالة
+  commune            String? // الجماعة
+  presidentName      String // رئيس(ة) التعاونية
+  phone              String?
+  email              String?
+  address            String?
+  foundingDate       DateTime // تاريخ الجمع التأسيسي
+  status             String            @default("ACTIVE") // ACTIVE | DORMANT | DISSOLVED
+  notes              String?
+  createdAt          DateTime          @default(now())
+  members            Member[]
+  assemblies         Assembly[]
+  meetings           Meeting[]
+  transactions       Transaction[]
+  documents          Document[]
+  tasks              ComplianceTask[]
+}
+
+// ─── العضو ────────────────────────────────────────────────────────────────
+model Member {
+  id            Int          @id @default(autoincrement())
+  cooperativeId Int
+  cooperative   Cooperative  @relation(fields: [cooperativeId], references: [id], onDelete: Cascade)
+  fullName      String
+  cin           String? // رقم البطاقة الوطنية
+  gender        String? // M | F
+  phone         String?
+  email         String?
+  city          String?
+  joinDate      DateTime     @default(now())
+  shares        Int          @default(1) // عدد الحصص
+  boardRole     String? // PRESIDENT | VICE | SECRETARY | TREASURER | AUDITOR | ADVISOR
+  status        String       @default("ACTIVE") // ACTIVE | SUSPENDED | WITHDRAWN
+  createdAt     DateTime     @default(now())
+}
+
+// ─── الجمع العام (العادي / الاستثنائي / التأسيسي) ─────────────────────────
+model Assembly {
+  id             Int          @id @default(autoincrement())
+  cooperativeId  Int
+  cooperative    Cooperative  @relation(fields: [cooperativeId], references: [id], onDelete: Cascade)
+  type           String // ORDINARY | EXTRAORDINARY | CONSTITUENT
+  date           DateTime
+  location       String?
+  agenda         String // جدول الأعمال
+  decisions      String? // القرارات والتوصيات
+  attendeesCount Int          @default(0)
+  status         String       @default("HELD") // SCHEDULED | HELD | CANCELLED
+  createdAt      DateTime     @default(now())
+}
+
+// ─── اجتماع مجلس الإدارة ─────────────────────────────────────────────────
+model Meeting {
+  id             Int          @id @default(autoincrement())
+  cooperativeId  Int
+  cooperative    Cooperative  @relation(fields: [cooperativeId], references: [id], onDelete: Cascade)
+  date           DateTime
+  agenda         String
+  decisions      String?
+  attendeesCount Int          @default(0)
+  createdAt      DateTime     @default(now())
+}
+
+// ─── الحركات المالية ──────────────────────────────────────────────────────
+model Transaction {
+  id             Int          @id @default(autoincrement())
+  cooperativeId  Int
+  cooperative    Cooperative  @relation(fields: [cooperativeId], references: [id], onDelete: Cascade)
+  type           String // INCOME | EXPENSE
+  category       String // اشتراكات، بيع المنتوجات، منح، تكاليف التسيير...
+  amount         Float
+  date           DateTime
+  description    String?
+  method         String       @default("CASH") // CASH | BANK | CHEQUE | MOBILE
+  reference      String?
+  createdAt      DateTime     @default(now())
+}
+
+// ─── سجل الوثائق ──────────────────────────────────────────────────────────
+model Document {
+  id             Int          @id @default(autoincrement())
+  cooperativeId  Int
+  cooperative    Cooperative  @relation(fields: [cooperativeId], references: [id], onDelete: Cascade)
+  title          String
+  type           String // STATUTE | MINUTE | FINANCIAL | TAX | ODCO | CONTRACT | OTHER
+  reference      String?
+  issueDate      DateTime
+  expiryDate     DateTime?
+  status         String       @default("VALID") // VALID | EXPIRING | EXPIRED | ARCHIVED
+  notes          String?
+  createdAt      DateTime     @default(now())
+}
+
+// ─── الجهات الحكومية والإدارية الوصية ─────────────────────────────────────
+model GovEntity {
+  id           Int                 @id @default(autoincrement())
+  name         String
+  acronym      String?
+  type         String // MINISTRY | OFFICE | AGENCY | INSTITUTE | COURT | LOCAL_AUTHORITY
+  supervisor   String?
+  missions     String
+  website      String?
+  phone        String?
+  email        String?
+  address      String?
+  interactions EntityInteraction[]
+}
+
+// ─── التفاعلات مع الجهات (تصريحات، طلبات، مراسلات...) ─────────────────────
+model EntityInteraction {
+  id             Int         @id @default(autoincrement())
+  entityId       Int
+  entity         GovEntity   @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  cooperativeId  Int?
+  date           DateTime
+  type           String // DECLARATION | REQUEST | CORRESPONDENCE | VISIT | AUDIT | SUPPORT
+  subject        String
+  status         String      @default("DONE") // PENDING | IN_PROGRESS | DONE | REJECTED
+  notes          String?
+  createdAt      DateTime    @default(now())
+}
+
+// ─── مكتبة القوانين واللوائح ──────────────────────────────────────────────
+model Regulation {
+  id        Int      @id @default(autoincrement())
+  code      String // 112.12 ، 2.15.617 ، 24.83 ...
+  title     String
+  year      Int
+  category  String // LAW | DECREE | TAX | GUIDE | PRINCIPLE | INTERNATIONAL
+  authority String // الجهة المصدرة
+  summary   String
+  keyPoints String // مصفوفة JSON لنقاط أساسية
+  status    String   @default("IN_FORCE") // IN_FORCE | REPEALED | REFERENCE
+  url       String?
+  createdAt DateTime @default(now())
+}
+
+// ─── الالتزامات والمواعيد النظامية ────────────────────────────────────────
+model ComplianceTask {
+  id            Int          @id @default(autoincrement())
+  cooperativeId Int
+  cooperative   Cooperative  @relation(fields: [cooperativeId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  type          String // ASSEMBLY | TAX | CNSS | ODCO | RENEWAL | OTHER
+  dueDate       DateTime
+  status        String       @default("PENDING") // PENDING | DONE
+  createdAt     DateTime     @default(now())
+}

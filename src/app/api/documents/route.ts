@@ -1,0 +1,35 @@
+import { db } from "@/lib/db";
+import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
+
+export const dynamic = "force-dynamic";
+
+export function OPTIONS() {
+  return preflight();
+}
+
+export async function GET(req: Request) {
+  const cooperativeId = new URL(req.url).searchParams.get("cooperativeId");
+  const rows = await db.document.findMany({
+    where: cooperativeId ? { cooperativeId: Number(cooperativeId) } : undefined,
+    orderBy: { issueDate: "desc" },
+  });
+  return ok(rows);
+}
+
+export async function POST(req: Request) {
+  const b = await readJson(req);
+  if (!b.cooperativeId || !b.title) return fail("التعاونية والعنوان إلزاميان");
+  const row = await db.document.create({
+    data: {
+      cooperativeId: Number(b.cooperativeId),
+      title: String(b.title),
+      type: String(b.type ?? "OTHER"),
+      reference: b.reference ? String(b.reference) : null,
+      issueDate: toDate(b.issueDate),
+      expiryDate: b.expiryDate ? toDate(b.expiryDate) : null,
+      status: String(b.status ?? "VALID"),
+      notes: b.notes ? String(b.notes) : null,
+    },
+  });
+  return ok(row, 201);
+}
