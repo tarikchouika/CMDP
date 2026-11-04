@@ -64,3 +64,6 @@ local-*
 prompt
 test
 tool-results/
+# شهادة التوقيع وخصائصها — تُدار محلياً وفي GitHub Secrets فقط
+android/cmdp-release.keystore
+android/cmdp-release.keystore.properties

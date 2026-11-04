@@ -38,9 +38,15 @@ android {
         create("release") {
             // من أسرار GitHub Actions إن وُجدت، وإلا فالملف الملتزم
             storeFile = file(System.getenv("CMDP_STORE_FILE") ?: "cmdp-release.keystore")
-            storePassword = System.getenv("CMDP_STORE_PASSWORD") ?: keystoreProperties.getProperty("storePassword", "CMDP2030-Cmdp!")
-            keyAlias = System.getenv("CMDP_KEY_ALIAS") ?: keystoreProperties.getProperty("keyAlias", "cmdp-platform")
-            keyPassword = System.getenv("CMDP_KEY_PASSWORD") ?: keystoreProperties.getProperty("keyPassword", "CMDP2030-Cmdp!")
+            storePassword = System.getenv("CMDP_STORE_PASSWORD")
+                ?: keystoreProperties.getProperty("storePassword")
+                ?: throw GradleException("أضبطوا CMDP_STORE_PASSWORD أو cmdp-release.keystore.properties")
+            keyAlias = System.getenv("CMDP_KEY_ALIAS")
+                ?: keystoreProperties.getProperty("keyAlias")
+                ?: throw GradleException("أضبطوا CMDP_KEY_ALIAS أو cmdp-release.keystore.properties")
+            keyPassword = System.getenv("CMDP_KEY_PASSWORD")
+                ?: keystoreProperties.getProperty("keyPassword")
+                ?: throw GradleException("أضبطوا CMDP_KEY_PASSWORD أو cmdp-release.keystore.properties")
         }
     }
 
