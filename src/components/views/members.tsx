@@ -45,7 +45,7 @@ import {
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { t } from "@/lib/i18n";
+import { t, tError } from "@/lib/i18n";
 
 type MemberForm = Omit<Member, "id" | "createdAt"> & { id?: number | null };
 
@@ -136,7 +136,7 @@ export function MembersView() {
           toast({ title: form.id ? t("تم تحديث العضو") : t("تمت إضافة العضو") });
           setFormOpen(false);
         },
-        onError: (err) => toast({ variant: "destructive", title: t("تعذر الحفظ"), description: err.message }),
+        onError: (err) => toast({ variant: "destructive", title: t("تعذر الحفظ"), description: tError(err) }),
       }
     );
   }
@@ -145,7 +145,7 @@ export function MembersView() {
     <div className="space-y-6">
       <PageHeader
         title={t("الأعضاء")}
-        desc={`سجل منخرطي ${coop?.name ?? t("التعاونية")} — الحصص ومناصب المجلس الإداري`}
+        desc={t("سجل منخرطي {name} — الحصص ومناصب المجلس الإداري", { name: coop?.name ?? t("التعاونية") })}
         actions={
           <Button onClick={openCreate} className="gap-1.5 font-bold">
             <Plus className="size-4" />
@@ -158,7 +158,7 @@ export function MembersView() {
         <StatCard label={t("إجمالي الأعضاء")} value={formatNumber(stats.total)} icon={Users} tone="terra" />
         <StatCard label={t("الأعضاء النشطون")} value={formatNumber(stats.active)} icon={UserRound} tone="zellij" />
         <StatCard label={t("نسبة النساء")} value={`${stats.womenPct}%`} icon={Venus} tone="plum" />
-        <StatCard label={t("إجمالي الحصص")} value={formatNumber(stats.shares)} hint={`المجلس: ${stats.council} مناصب`} icon={Hash} tone="saffron" />
+        <StatCard label={t("إجمالي الحصص")} value={formatNumber(stats.shares)} hint={t("المجلس: {n} مناصب", { n: stats.council })} icon={Hash} tone="saffron" />
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -377,7 +377,7 @@ export function MembersView() {
               toast({ title: t("تم حذف العضو") });
               setToDelete(null);
             },
-            onError: (e) => toast({ variant: "destructive", title: t("تعذر الحذف"), description: e.message }),
+            onError: (e) => toast({ variant: "destructive", title: t("تعذر الحذف"), description: tError(e) }),
           })
         }
       />

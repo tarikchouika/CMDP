@@ -34,6 +34,7 @@ export const LANGS: LangMeta[] = [
 const DICTS: Record<Exclude<Lang, "ar">, Record<string, string>> = { fr: FR, en: EN, it: IT, es: ES };
 
 const STORAGE_KEY = "cmdp-lang";
+const TITLE_KEY = "CMDP — المنصة الرقمية لإدارة التعاونيات";
 
 // ─── الحالة العمومية للوحدة (بدون هوك — للاستعمال من أي ملف) ────────────────
 let currentLang: Lang = "ar";
@@ -57,6 +58,18 @@ export function setLangGlobal(lang: Lang) {
     }
   }
   listeners.forEach((fn) => fn());
+}
+
+/** مزامنة عنوان الصفحة مع اللغة الحالية */
+export function syncDocumentTitle() {
+  if (typeof document === "undefined") return;
+  const apply = () => {
+    document.title = t(TITLE_KEY);
+  };
+  apply();
+  // إعادة التطبيق بعد ترطيب React وميتاداتا Next لتضمن الأولوية
+  setTimeout(apply, 0);
+  setTimeout(apply, 300);
 }
 
 /**
@@ -114,11 +127,13 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     const meta = LANGS.find((l) => l.code === getLang())!;
     document.documentElement.lang = getLang();
     document.documentElement.dir = meta.dir;
+    syncDocumentTitle();
   }, []);
 
   const setLang = React.useCallback((l: Lang) => {
     setLangGlobal(l);
     setLangState(l);
+    syncDocumentTitle();
   }, []);
 
   const value = React.useMemo<I18nCtx>(
@@ -151,6 +166,23 @@ export function useI18n() {
   return React.useContext(Ctx);
 }
 
+/**
+ * ترجمة رسالة خطأ قادمة من الباك إند أو من رمز العميل:
+ * يجرّب المفتاح الحرفي ثم الأنماط الديناميكية الشائعة (رموز HTTP…).
+ */
+export function tError(e: unknown): string {
+  const raw = e instanceof Error ? e.message : String(e ?? "");
+  if (!raw) return "";
+  const direct = t(raw);
+  if (direct !== raw) return direct;
+  const http = raw.match(/^(.*?)\s(\d{3})$/);
+  if (http) {
+    const templ = t(`${http[1]} {code}`, { code: http[2] });
+    if (templ !== `${http[1]} {code}`) return templ;
+  }
+  return raw;
+}
+
 /** تنسيق التاريخ حسب لغة العرض */
 export function formatDateLocalized(date: Date | string, lang: Lang = getLang()): string {
   const meta = LANGS.find((l) => l.code === lang)!;
@@ -167,8 +199,8 @@ export function formatDateLocalized(date: Date | string, lang: Lang = getLang())
 export function formatMADLocalized(amount: number, lang: Lang = getLang()): string {
   const meta = LANGS.find((l) => l.code === lang)!;
   try {
-    return new Intl.NumberFormat(meta.locale, { maximumFractionDigits: 2 }).format(amount) + " " + t("د.م.");
+    return new Intl.NumberFormat(meta.locale, { maximumFractionDigits: 2 }).format(amount) + "\u00A0" + t("د.م.");
   } catch {
-    return `${amount} د.م.`;
+    return t("{n} د.م.", { n: amount });
   }
 }

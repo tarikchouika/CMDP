@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { t } from "@/lib/i18n";
+import { t, tError } from "@/lib/i18n";
 
 type Intent = "ACCOUNT" | "JOIN" | "NEW_COOP";
 
@@ -174,7 +174,7 @@ export function RegisterView() {
           t("تم استلام طلبكم في وضع العرض التجريبي. عند تشغيل الباك إند المحلي ستُحفظ الطلبات فعلياً وتُدرس من طرف الأطراف المختصة.")
         );
       } else {
-        toast({ variant: "destructive", title: t("تعذر إرسال الطلب"), description: (err as Error).message });
+        toast({ variant: "destructive", title: t("تعذر إرسال الطلب"), description: tError(err) });
       }
     } finally {
       setLoading(false);
@@ -429,9 +429,8 @@ export function RegisterView() {
                 <Building2 className="size-4 text-terra" />
                 {t("بيانات التعاونية")}
               </h2>
-              <p className="rounded-xl border border-saffron/30 bg-saffron/10 p-3 text-[11px] leading-6 text-[#8a6414]">
-                بعد المصادقة من طرف إدارة المنصة يُفعَّل حسابكم كرئيس(ة) للتعاونية. يبقى التسجيل الرسمي
-                لدى السلطات المختصة (السجل المحلي + ODCO) وفق القانون رقم 112.12 مسؤولية التعاونية.
+              <p className="rounded-xl border border-saffron/30 bg-saffron/10 p-3 text-[11px] leading-6 text-saffron-ink">
+                {t("بعد المصادقة من طرف إدارة المنصة يُفعَّل حسابكم كرئيس(ة) للتعاونية. يبقى التسجيل الرسمي لدى السلطات المختصة (السجل المحلي + ODCO) وفق القانون رقم 112.12 مسؤولية التعاونية.")}
               </p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label={t("اسم التعاونية *")}>

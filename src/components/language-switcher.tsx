@@ -5,7 +5,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, Languages } from "lucide-react";
+import { Check, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LANGS, useI18n, type Lang } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -28,8 +28,8 @@ export function LanguageSwitcher({ className }: { className?: string }) {
           className={cn("h-9 shrink-0 gap-1.5 px-2.5 font-bold", className)}
           aria-label={meta.english}
         >
-          <Languages className="size-4" />
-          <span className="text-xs uppercase">{lang}</span>
+          <Globe className="size-4" />
+          <span className="text-xs font-extrabold uppercase tracking-wide">{lang}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-44">

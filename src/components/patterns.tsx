@@ -121,7 +121,7 @@ export function SectionHeading({
         className
       )}
     >
-      <span className="inline-flex items-center gap-2 rounded-full border border-saffron/40 bg-saffron/10 px-4 py-1 text-xs font-bold text-[#8a6414]">
+      <span className="inline-flex items-center gap-2 rounded-full border border-saffron/40 bg-saffron/10 px-4 py-1 text-xs font-bold text-saffron-ink">
         <ZelligeStar className="size-3 text-saffron" />
         {kicker}
       </span>

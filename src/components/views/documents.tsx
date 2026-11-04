@@ -44,7 +44,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { t } from "@/lib/i18n";
+import { t, tError } from "@/lib/i18n";
 
 type DocForm = Omit<DocumentItem, "id" | "createdAt"> & { id?: number | null };
 
@@ -114,7 +114,7 @@ export function DocumentsView() {
           toast({ title: form.id ? t("تم تحديث الوثيقة") : t("تمت إضافة الوثيقة") });
           setFormOpen(false);
         },
-        onError: (err) => toast({ variant: "destructive", title: t("تعذر الحفظ"), description: err.message }),
+        onError: (err) => toast({ variant: "destructive", title: t("تعذر الحفظ"), description: tError(err) }),
       }
     );
   }
@@ -123,7 +123,7 @@ export function DocumentsView() {
     <div className="space-y-6">
       <PageHeader
         title={t("سجل الوثائق")}
-        desc={`أرشيف وثائق ${coop?.name ?? t("التعاونية")} — النظام الأساسي، المحاضر، التقارير، والوثائق الإدارية`}
+        desc={t("أرشيف وثائق {name} — النظام الأساسي، المحاضر، التقارير، والوثائق الإدارية", { name: coop?.name ?? t("التعاونية") })}
         actions={
           <Button onClick={openCreate} className="gap-1.5 font-bold">
             <Plus className="size-4" />
@@ -168,7 +168,7 @@ export function DocumentsView() {
           {filtered.map((d) => (
             <Card key={d.id} className={`border-border/80 ${d.computed === "EXPIRING" ? "border-saffron/50" : d.computed === "EXPIRED" ? "border-destructive/40" : ""}`}>
               <CardContent className="flex items-start gap-4 p-5">
-                <span className={`arch-top grid h-16 w-12 shrink-0 place-items-center ${d.computed === "EXPIRED" ? "bg-destructive/15 text-destructive" : d.computed === "EXPIRING" ? "bg-saffron/20 text-[#8a6414]" : "bg-terra/10 text-terra"}`}>
+                <span className={`arch-top grid h-16 w-12 shrink-0 place-items-center ${d.computed === "EXPIRED" ? "bg-destructive/15 text-destructive" : d.computed === "EXPIRING" ? "bg-saffron/20 text-saffron-ink" : "bg-terra/10 text-terra"}`}>
                   <FileText className="size-5" />
                 </span>
                 <div className="min-w-0 flex-1">
@@ -181,9 +181,9 @@ export function DocumentsView() {
                     <span>{t("مرجع:")} {d.reference ?? "—"}</span>
                     <span>{t("الإصدار:")} {formatDate(d.issueDate)}</span>
                     {d.expiryDate && (
-                      <span className={d.daysLeft !== null && d.daysLeft < 0 ? "font-bold text-destructive" : d.daysLeft !== null && d.daysLeft <= 90 ? "font-bold text-[#8a6414]" : ""}>
+                      <span className={d.daysLeft !== null && d.daysLeft < 0 ? "font-bold text-destructive" : d.daysLeft !== null && d.daysLeft <= 90 ? "font-bold text-saffron-ink" : ""}>
                         {t("الانتهاء:")} {formatDate(d.expiryDate)}
-                        {d.daysLeft !== null && d.daysLeft >= 0 ? ` (بعد ${d.daysLeft} يوم)` : d.daysLeft !== null ? t(" (منتهية)") : ""}
+                        {d.daysLeft !== null && d.daysLeft >= 0 ? ` ${t("(بعد {n} يوم)", { n: d.daysLeft })}` : d.daysLeft !== null ? ` ${t("(منتهية)")}` : ""}
                       </span>
                     )}
                   </div>
@@ -278,7 +278,7 @@ export function DocumentsView() {
               toast({ title: t("تم حذف الوثيقة") });
               setToDelete(null);
             },
-            onError: (e) => toast({ variant: "destructive", title: t("تعذر الحذف"), description: e.message }),
+            onError: (e) => toast({ variant: "destructive", title: t("تعذر الحذف"), description: tError(e) }),
           })
         }
       />

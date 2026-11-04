@@ -53,7 +53,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { t } from "@/lib/i18n";
+import { t, tError } from "@/lib/i18n";
 
 // ─── بطاقة طلب انخراط ──────────────────────────────────────────────────────
 function JoinRequestCard({ req, onDecide }: { req: JoinRequest; onDecide: (action: "APPROVED" | "REJECTED") => void }) {
@@ -65,7 +65,7 @@ function JoinRequestCard({ req, onDecide }: { req: JoinRequest; onDecide: (actio
           <p className="mt-0.5 text-xs text-muted-foreground">
             {req.requestType === "MEMBERSHIP" ? t("طلب انخراط كعضو") : t("طلب تعاقد/شراكة")} —{" "}
             {req.cooperative?.name ?? t("تعاونية رقم {id}", { id: req.cooperativeId })}
-            {req.requestType === "MEMBERSHIP" && t(" • {n} حصة", { n: req.shares })}
+            {req.requestType === "MEMBERSHIP" && ` ${t("• {n} حصة", { n: req.shares })}`}
           </p>
           {req.motivation && (
             <p className="mt-2 line-clamp-2 rounded-lg bg-muted/60 p-2.5 text-xs leading-6 text-muted-foreground">
@@ -180,7 +180,7 @@ function UserDialog({
       });
       onOpenChange(false);
     } catch (err) {
-      toast({ variant: "destructive", title: t("تعذر الحفظ"), description: (err as Error).message });
+      toast({ variant: "destructive", title: t("تعذر الحفظ"), description: tError(err) });
     }
   }
 
@@ -360,7 +360,7 @@ export function UsersView() {
             : undefined,
       });
     } catch (err) {
-      toast({ variant: "destructive", title: t("تعذر تنفيذ الإجراء"), description: (err as Error).message });
+      toast({ variant: "destructive", title: t("تعذر تنفيذ الإجراء"), description: tError(err) });
     }
   }
 
@@ -383,7 +383,7 @@ export function UsersView() {
               : "تم رفض الحساب",
       });
     } catch (err) {
-      toast({ variant: "destructive", title: t("تعذر التنفيذ"), description: (err as Error).message });
+      toast({ variant: "destructive", title: t("تعذر التنفيذ"), description: tError(err) });
     }
   }
 
@@ -400,7 +400,7 @@ export function UsersView() {
             : undefined,
       });
     } catch (err) {
-      toast({ variant: "destructive", title: t("تعذر التنفيذ"), description: (err as Error).message });
+      toast({ variant: "destructive", title: t("تعذر التنفيذ"), description: tError(err) });
     }
   }
 

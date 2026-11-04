@@ -41,7 +41,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { t as i18n } from "@/lib/i18n";
-import { t } from "@/lib/i18n";
+import { t, tError } from "@/lib/i18n";
 
 const CHART_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
 
@@ -104,7 +104,7 @@ export function DashboardView() {
     <div className="space-y-6">
       <PageHeader
         title={i18n("لوحة القيادة")}
-        desc={`${coop?.name ?? i18n("التعاونية")} — ${coop?.province ?? ""}، ${coop?.region ?? ""}`}
+        desc={i18n("{name} — {province}، {region}", { name: coop?.name ?? i18n("التعاونية"), province: coop?.province ?? "", region: coop?.region ?? "" })}
         actions={
           <Button variant="outline" className="gap-1.5" onClick={() => setView("cooperatives")}>
             {i18n("بطاقة التعاونية")}
@@ -184,7 +184,7 @@ export function DashboardView() {
           </ChartCard>
         </div>
 
-        <ChartCard title={i18n("توزيع التعاونيات حسب القطاع")} hint={`${formatNumber(data.coopCount)} تعاونية مسجلة بالمنصة`}>
+        <ChartCard title={i18n("توزيع التعاونيات حسب القطاع")} hint={i18n("{n} تعاونية مسجلة بالمنصة", { n: formatNumber(data.coopCount) })}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -249,7 +249,7 @@ export function DashboardView() {
                         {
                           onSuccess: () =>
                             toast({ title: t.status === "DONE" ? i18n("أُعيد فتح الالتزام") : i18n("أُنجز الالتزام — أحسنت") }),
-                          onError: (e) => toast({ variant: "destructive", title: i18n("تعذر الحفظ"), description: e.message }),
+                          onError: (e) => toast({ variant: "destructive", title: i18n("تعذر الحفظ"), description: tError(e) }),
                         }
                       )
                     }
@@ -270,7 +270,7 @@ export function DashboardView() {
                       <span className="text-[10px] text-muted-foreground">{formatShortDate(t.dueDate)}</span>
                       <span
                         className={`text-[10px] font-bold ${
-                          overdue ? "text-destructive" : soon ? "text-[#8a6414]" : "text-zellij"
+                          overdue ? "text-destructive" : soon ? "text-saffron-ink" : "text-zellij"
                         }`}
                       >
                         {overdue ? i18n("متأخر بـ {n} يوم", { n: Math.abs(t.daysLeft) }) : i18n("بعد {n} يوم", { n: t.daysLeft })}
@@ -290,7 +290,7 @@ export function DashboardView() {
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
               <XAxis dataKey="year" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
               <YAxis orientation="right" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} allowDecimals={false} />
-              <ReTooltip contentStyle={tooltipStyle} formatter={(v: number) => [i18n("{n} عضو", { n: formatNumber(v) }), "العدد الإجمالي"]} />
+              <ReTooltip contentStyle={tooltipStyle} formatter={(v: number) => [i18n("{n} عضو", { n: formatNumber(v) }), i18n("العدد الإجمالي")]} />
               <Line type="monotone" dataKey="count" stroke="var(--chart-3)" strokeWidth={3} dot={{ r: 4, fill: "var(--chart-3)", strokeWidth: 0 }} />
             </LineChart>
           </ResponsiveContainer>

@@ -42,7 +42,7 @@ function Step({ n, icon: Icon, title, children }: {
   return (
     <div className="relative flex gap-4 ps-1">
       <div className="flex flex-col items-center">
-        <span className="grid size-10 shrink-0 place-items-center rounded-2xl border border-saffron/40 bg-saffron/15 font-display text-sm font-black text-[#8a6414]">
+        <span className="grid size-10 shrink-0 place-items-center rounded-2xl border border-saffron/40 bg-saffron/15 font-display text-sm font-black text-saffron-ink">
           {n}
         </span>
         <span className="mt-2 w-px flex-1 bg-gradient-to-b from-saffron/40 to-transparent" aria-hidden="true" />
@@ -283,7 +283,7 @@ export function InstallView() {
 
             <Card className="border-saffron/25 bg-saffron/10">
               <CardContent className="p-6">
-                <h2 className="flex items-center gap-2 font-display text-base font-extrabold text-[#8a6414]">
+                <h2 className="flex items-center gap-2 font-display text-base font-extrabold text-saffron-ink">
                   <Download className="size-4" />
                   {t("التحديث إلى إصدار أحدث")}
                 </h2>

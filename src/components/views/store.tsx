@@ -22,7 +22,8 @@ import {
   Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { t } from "@/lib/i18n";
+import { t, getLang, LANGS } from "@/lib/i18n";
+import { localizeDemo } from "@/lib/demo-localized";
 import { ApiUnavailableError, rawFetch } from "@/lib/api";
 import { useUIStore } from "@/store/ui";
 import { CmdpLogo, DividerZellige, ZelligeStar } from "@/components/patterns";
@@ -69,7 +70,8 @@ const DEMO_PRODUCTS: StoreProduct[] = [
 ];
 
 function fmtMAD(v: number): string {
-  return new Intl.NumberFormat("ar-MA").format(v) + " " + t("د.م.");
+  const locale = LANGS.find((l) => l.code === getLang())?.locale ?? "ar-MA";
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(v) + "\u00A0" + t("د.م.");
 }
 
 export function StoreView() {
@@ -88,8 +90,8 @@ export function StoreView() {
     rawFetch<StoreProduct[]>("/api/products")
       .then((rows) => alive && setProducts(rows))
       .catch((err) => {
-        if (err instanceof ApiUnavailableError && alive) setProducts(DEMO_PRODUCTS);
-        else if (alive) setProducts(DEMO_PRODUCTS);
+        if (err instanceof ApiUnavailableError && alive) setProducts(localizeDemo(DEMO_PRODUCTS));
+        else if (alive) setProducts(localizeDemo(DEMO_PRODUCTS));
       });
     return () => {
       alive = false;
@@ -129,7 +131,7 @@ export function StoreView() {
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-10 md:px-6">
         {/* مقدمة المتجر */}
         <div className="mb-8 text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-saffron/40 bg-saffron/10 px-4 py-1 text-xs font-bold text-[#8a6414]">
+          <span className="inline-flex items-center gap-2 rounded-full border border-saffron/40 bg-saffron/10 px-4 py-1 text-xs font-bold text-saffron-ink">
             <ZelligeStar className="size-3 text-saffron" />
             {t("من المنتج إلى السوق — بثقة التعاونيات")}
           </span>
@@ -171,7 +173,7 @@ export function StoreView() {
         </div>
 
         {isDemo && (
-          <p className="mb-6 rounded-2xl border border-saffron/30 bg-saffron/10 p-3 text-center text-xs font-bold text-[#8a6414]">
+          <p className="mb-6 rounded-2xl border border-saffron/30 bg-saffron/10 p-3 text-center text-xs font-bold text-saffron-ink">
             {t("وضع العرض: منتجات توضيحية لعرض المتجر — عند تشغيل الباك إند المحلي تُعرض منتجات التعاونيات الحقيقية.")}
           </p>
         )}
@@ -248,7 +250,7 @@ export function StoreView() {
 
         {/* دعوة للتعاونيات */}
         <div className="mx-auto mt-8 max-w-2xl rounded-3xl border border-saffron/25 bg-saffron/10 p-6 text-center">
-          <h2 className="flex items-center justify-center gap-2 font-display text-base font-extrabold text-[#8a6414]">
+          <h2 className="flex items-center justify-center gap-2 font-display text-base font-extrabold text-saffron-ink">
             <Sparkles className="size-4" />
             {t("تعاونيتكم تنتج؟")}
           </h2>

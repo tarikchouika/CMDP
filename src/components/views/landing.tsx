@@ -81,9 +81,14 @@ function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-cream/10 bg-ink/85 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 md:px-6">
-        <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="CMDP">
-          <CmdpLogo light />
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-3 sm:gap-4 sm:px-4 md:px-6">
+        <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="CMDP" className="shrink-0">
+          <span className="sm:hidden">
+            <CmdpMark className="size-9 text-terra" />
+          </span>
+          <span className="hidden sm:inline">
+            <CmdpLogo light compact />
+          </span>
         </button>
         <nav className="me-auto hidden items-center gap-6 text-sm text-cream/75 md:flex">
           <a href="#features" className="transition-colors hover:text-cream">{t("المزايا")}</a>
@@ -113,10 +118,10 @@ function Header() {
         </Button>
         <Button
           onClick={() => setView(authed ? "dashboard" : "login")}
-          className="gap-1.5 bg-terra-soft font-bold text-ink hover:bg-terra-soft/85"
+          className="min-w-0 gap-1 bg-terra-soft px-3 text-sm font-bold text-ink hover:bg-terra-soft/85 sm:gap-1.5 sm:px-4"
         >
-          {authed ? t("المنصة") : t("الدخول")}
-          <ArrowLeft className="size-4" />
+          <span className="truncate">{authed ? t("المنصة") : t("الدخول")}</span>
+          <ArrowLeft className="size-4 shrink-0" />
         </Button>
       </div>
     </header>

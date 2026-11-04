@@ -41,6 +41,7 @@
   --color-terra: var(--terra);
   --color-terra-soft: var(--terra-soft);
   --color-saffron: var(--saffron);
+  --color-saffron-ink: var(--saffron-ink);
   --color-zellij: var(--zellij);
   --color-cream: var(--cream);
   --color-ink: var(--ink);
@@ -87,6 +88,7 @@
   --terra: #9c4526;
   --terra-soft: #c96b47;
   --saffron: #d9a03f;
+  --saffron-ink: #8a6414;
   --zellij: #2a7f7a;
   --cream: #faf6ee;
   --ink: #241c14;
@@ -127,6 +129,7 @@
   --terra: #c96b47;
   --terra-soft: #d98b68;
   --saffron: #e0b056;
+  --saffron-ink: #e6c88a;
   --zellij: #4da39d;
   --cream: #17120e;
   --ink: #ede5d8;

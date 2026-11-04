@@ -69,7 +69,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { t as i18n } from "@/lib/i18n";
-import { t } from "@/lib/i18n";
+import { t, tError } from "@/lib/i18n";
 import { FileUploadField, type StoredFile } from "@/components/file-upload";
 
 type TxForm = Omit<Transaction, "id" | "createdAt"> & { id?: number | null };
@@ -165,7 +165,7 @@ export function FinanceView() {
           toast({ title: form.id ? i18n("تم تحديث الحركة") : i18n("تمت تسجيل الحركة") });
           setFormOpen(false);
         },
-        onError: (err) => toast({ variant: "destructive", title: i18n("تعذر الحفظ"), description: err.message }),
+        onError: (err) => toast({ variant: "destructive", title: i18n("تعذر الحفظ"), description: tError(err) }),
       }
     );
   }
@@ -174,7 +174,7 @@ export function FinanceView() {
     <div className="space-y-6">
       <PageHeader
         title={i18n("المالية والصندوق")}
-        desc={`تدبير مالية ${coop?.name ?? i18n("التعاونية")} — المداخيل والمصاريف والتقارير`}
+        desc={i18n("تدبير مالية {name} — المداخيل والمصاريف والتقارير", { name: coop?.name ?? i18n("التعاونية") })}
         actions={
           <Button onClick={openCreate} className="gap-1.5 font-bold">
             <Plus className="size-4" />
@@ -366,7 +366,7 @@ export function FinanceView() {
             <div className="mb-4 flex items-center justify-between border-b-2 border-[#9c4526] pb-3">
               <div>
                 <h2 className="font-display text-lg font-black text-[#9c4526]">
-                  {report === "financial" ? `التقرير المالي السنوي ${year}` : i18n("كشف الحساب المفصل")}
+                  {report === "financial" ? i18n("التقرير المالي السنوي {year}", { year }) : i18n("كشف الحساب المفصل")}
                 </h2>
                 <p className="mt-0.5 text-xs text-gray-600">{coop?.name} — {coop?.province}{i18n("، ")}{coop?.region}</p>
               </div>
@@ -557,7 +557,7 @@ export function FinanceView() {
               toast({ title: i18n("تم حذف الحركة") });
               setToDelete(null);
             },
-            onError: (e) => toast({ variant: "destructive", title: i18n("تعذر الحذف"), description: e.message }),
+            onError: (e) => toast({ variant: "destructive", title: i18n("تعذر الحذف"), description: tError(e) }),
           })
         }
       />

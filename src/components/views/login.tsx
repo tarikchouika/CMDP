@@ -15,16 +15,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { t } from "@/lib/i18n";
+import { t, tError } from "@/lib/i18n";
 
 /** حسابات العرض التجريبي — كلمة المرور الموحدة cmdp2026 */
 const DEMO_ACCOUNTS: { username: string; label: string }[] = [
-  { username: "superadmin", label: t("مالك المنصة") },
-  { username: "admin", label: t("أدمن المنصة") },
-  { username: "president", label: t("رئيسة تعاونية") },
-  { username: "manager", label: t("عضو مسير") },
-  { username: "member", label: t("عضو غير مسير") },
-  { username: "contractor", label: t("متعاقد") },
+  { username: "superadmin", label: "مالك المنصة" },
+  { username: "admin", label: "أدمن المنصة" },
+  { username: "president", label: "رئيسة تعاونية" },
+  { username: "manager", label: "عضو مسير" },
+  { username: "member", label: "عضو غير مسير" },
+  { username: "contractor", label: "متعاقد" },
 ];
 
 export function LoginView() {
@@ -110,7 +110,7 @@ export function LoginView() {
           });
         }
       } else {
-        toast({ variant: "destructive", title: t("فشل تسجيل الدخول"), description: (err as Error).message });
+        toast({ variant: "destructive", title: t("فشل تسجيل الدخول"), description: tError(err) });
       }
     } finally {
       setLoading(false);
@@ -193,7 +193,7 @@ export function LoginView() {
 
             {/* حسابات العرض حسب الأدوار */}
             <div className="rounded-xl border border-saffron/30 bg-saffron/10 p-3">
-              <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold text-[#8a6414]">
+              <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold text-saffron-ink">
                 <Users2 className="size-3.5" />
                 {t("حسابات العرض حسب الأدوار (كلمة المرور: cmdp2026)")}
               </p>
@@ -209,15 +209,15 @@ export function LoginView() {
                     className={cn(
                       "rounded-lg border px-2 py-1.5 text-[10px] font-bold transition-colors",
                       username === a.username
-                        ? "border-saffron/60 bg-saffron/25 text-[#6b4e0e]"
-                        : "border-saffron/25 bg-card text-[#8a6414] hover:bg-saffron/20"
+                        ? "border-saffron/60 bg-saffron/25 text-saffron-ink"
+                        : "border-saffron/25 bg-card text-saffron-ink hover:bg-saffron/20"
                     )}
                   >
                     {t(a.label)}
                   </button>
                 ))}
               </div>
-              <p className="mt-2 text-[10px] leading-4 text-[#8a6414]/80">
+              <p className="mt-2 text-[10px] leading-4 text-saffron-ink/80">
                 {t("تعمل المنصة محلياً بقاعدة SQLite، أو في وضع عرض ساكن دون باك إند.")}
               </p>
             </div>

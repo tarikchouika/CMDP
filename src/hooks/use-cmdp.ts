@@ -7,6 +7,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiUnavailableError, rawFetch } from "@/lib/api";
 import { dataset } from "@/lib/dataset";
+import { localizeDemo } from "@/lib/demo-localized";
+import { getLang } from "@/lib/i18n";
 import { buildDashboardData } from "@/lib/analytics";
 import { useUIStore } from "@/store/ui";
 import type {
@@ -31,7 +33,8 @@ import type {
 export function useCmdpQuery<T>(key: unknown[], path: string, demo: () => T) {
   const setDemoMode = useUIStore((s) => s.setDemoMode);
   return useQuery({
-    queryKey: [...key],
+    // اللغة ضمن مفتاح الاستعلام: تغيير اللغة يعيد توليد بيانات العرض مترجَمة
+    queryKey: [...key, getLang()],
     queryFn: async () => {
       try {
         return await rawFetch<T>(path);
@@ -103,65 +106,67 @@ export function useCmdpDelete(pathFn: (id: number) => string, invalidate: unknow
 
 // ─── الاستعلامات ───────────────────────────────────────────────────────────
 export const useCooperatives = () =>
-  useCmdpQuery<Cooperative[]>(["cooperatives"], "/api/cooperatives", () => dataset.cooperatives);
+  useCmdpQuery<Cooperative[]>(["cooperatives"], "/api/cooperatives", () => localizeDemo(dataset.cooperatives));
 
 export const useMembers = (coopId: number) =>
   useCmdpQuery<Member[]>(
     ["members", String(coopId)],
     `/api/members?cooperativeId=${coopId}`,
-    () => dataset.members.filter((m) => m.cooperativeId === coopId)
+    () => localizeDemo(dataset.members.filter((m) => m.cooperativeId === coopId))
   );
 
 export const useAssemblies = (coopId: number) =>
   useCmdpQuery<Assembly[]>(
     ["assemblies", String(coopId)],
     `/api/assemblies?cooperativeId=${coopId}`,
-    () => dataset.assemblies.filter((a) => a.cooperativeId === coopId)
+    () => localizeDemo(dataset.assemblies.filter((a) => a.cooperativeId === coopId))
   );
 
 export const useMeetings = (coopId: number) =>
   useCmdpQuery<Meeting[]>(
     ["meetings", String(coopId)],
     `/api/meetings?cooperativeId=${coopId}`,
-    () => dataset.meetings.filter((m) => m.cooperativeId === coopId)
+    () => localizeDemo(dataset.meetings.filter((m) => m.cooperativeId === coopId))
   );
 
 export const useTransactions = (coopId: number) =>
   useCmdpQuery<Transaction[]>(
     ["transactions", String(coopId)],
     `/api/transactions?cooperativeId=${coopId}`,
-    () => dataset.transactions.filter((t) => t.cooperativeId === coopId)
+    () => localizeDemo(dataset.transactions.filter((t) => t.cooperativeId === coopId))
   );
 
 export const useDocuments = (coopId: number) =>
   useCmdpQuery<DocumentItem[]>(
     ["documents", String(coopId)],
     `/api/documents?cooperativeId=${coopId}`,
-    () => dataset.documents.filter((d) => d.cooperativeId === coopId)
+    () => localizeDemo(dataset.documents.filter((d) => d.cooperativeId === coopId))
   );
 
 export const useEntities = () =>
-  useCmdpQuery<GovEntity[]>(["entities"], "/api/entities", () => dataset.entities);
+  useCmdpQuery<GovEntity[]>(["entities"], "/api/entities", () => localizeDemo(dataset.entities));
 
 export const useInteractions = () =>
   useCmdpQuery<EntityInteraction[]>(
     ["interactions"],
     "/api/interactions",
     () =>
-      dataset.interactions.map((i) => ({
-        ...i,
-        entity: dataset.entities.find((e) => e.id === i.entityId) ?? null,
-      }))
+      localizeDemo(
+        dataset.interactions.map((i) => ({
+          ...i,
+          entity: dataset.entities.find((e) => e.id === i.entityId) ?? null,
+        }))
+      )
   );
 
 export const useRegulations = () =>
-  useCmdpQuery<Regulation[]>(["regulations"], "/api/regulations", () => dataset.regulations);
+  useCmdpQuery<Regulation[]>(["regulations"], "/api/regulations", () => localizeDemo(dataset.regulations));
 
 export const useTasks = (coopId: number) =>
   useCmdpQuery<ComplianceTask[]>(
     ["tasks", String(coopId)],
     `/api/tasks?cooperativeId=${coopId}`,
-    () => dataset.tasks.filter((t) => t.cooperativeId === coopId)
+    () => localizeDemo(dataset.tasks.filter((t) => t.cooperativeId === coopId))
   );
 
 export const useDashboard = (coopId: number) =>
@@ -169,15 +174,17 @@ export const useDashboard = (coopId: number) =>
     ["stats", String(coopId)],
     `/api/stats?cooperativeId=${coopId}`,
     () =>
-      buildDashboardData({
-        coops: dataset.cooperatives,
-        members: dataset.members,
-        transactions: dataset.transactions,
-        tasks: dataset.tasks,
-        documents: dataset.documents,
-        assemblies: dataset.assemblies,
-        activeCoopId: coopId,
-      })
+      localizeDemo(
+        buildDashboardData({
+          coops: dataset.cooperatives,
+          members: dataset.members,
+          transactions: dataset.transactions,
+          tasks: dataset.tasks,
+          documents: dataset.documents,
+          assemblies: dataset.assemblies,
+          activeCoopId: coopId,
+        })
+      )
   );
 
 // ─── الطفرات لكل مورد ─────────────────────────────────────────────────────
@@ -190,7 +197,7 @@ export const useDeleteCooperative = () =>
   useCmdpDelete((id) => `/api/cooperatives/${id}`, [["cooperatives"], ["stats"]]);
 
 export const useAllMembers = () =>
-  useCmdpQuery<Member[]>(["members"], "/api/members", () => dataset.members);
+  useCmdpQuery<Member[]>(["members"], "/api/members", () => localizeDemo(dataset.members));
 
 export const useSaveMember = (coopId: number) =>
   useCmdpSave<MemberInput>(
@@ -267,17 +274,21 @@ export function useResetSeed() {
 export const useUsers = () => {
   const user = useUIStore((s) => s.user);
   return useCmdpQuery<AppUser[]>(["users"], "/api/users", () =>
-    dataset.users.filter(
-      (u) =>
-        (user?.role === "SUPER_ADMIN"
-          ? true
-          : user?.role === "ADMIN"
-            ? u.role !== "SUPER_ADMIN"
-            : u.cooperativeId === user?.cooperativeId) && u.username !== user?.username
-    ).map((u) => ({
-      ...u,
-      cooperativeName: dataset.cooperatives.find((c) => c.id === u.cooperativeId)?.name ?? null,
-    }))
+    localizeDemo(
+      dataset.users
+        .filter(
+          (u) =>
+            (user?.role === "SUPER_ADMIN"
+              ? true
+              : user?.role === "ADMIN"
+                ? u.role !== "SUPER_ADMIN"
+                : u.cooperativeId === user?.cooperativeId) && u.username !== user?.username
+        )
+        .map((u) => ({
+          ...u,
+          cooperativeName: dataset.cooperatives.find((c) => c.id === u.cooperativeId)?.name ?? null,
+        }))
+    )
   );
 };
 
@@ -308,7 +319,7 @@ export const useDeleteUser = () =>
 export const useJoinRequests = () => {
   const user = useUIStore((s) => s.user);
   return useCmdpQuery<JoinRequest[]>(["join-requests"], "/api/join-requests", () =>
-    dataset.joinRequests
+    localizeDemo(dataset.joinRequests
       .filter((r) => user?.role === "COADMIN" ? r.cooperativeId === user.cooperativeId : true)
       .map((r) => ({
         ...r,
@@ -322,7 +333,7 @@ export const useJoinRequests = () => {
                 region: dataset.cooperatives.find((c) => c.id === r.cooperativeId)!.region,
               }
             : undefined),
-      }))
+      })))
   );
 };
 
@@ -358,16 +369,18 @@ export const useOpportunities = (filters?: { type?: string; sector?: string; reg
     ["opportunities", qs],
     `/api/opportunities${qs ? `?${qs}` : ""}`,
     () =>
-      dataset.opportunities
-        .filter((o) => o.status === "OPEN")
-        .filter((o) => (filters?.type ? o.type === filters.type : true))
-        .filter((o) => (filters?.sector ? o.sector === filters.sector : true))
-        .filter((o) => (filters?.region ? o.region === filters.region : true))
-        .filter((o) =>
-          filters?.q
-            ? o.title.includes(filters.q) || o.description.includes(filters.q)
-            : true
-        )
+      localizeDemo(
+        dataset.opportunities
+          .filter((o) => o.status === "OPEN")
+          .filter((o) => (filters?.type ? o.type === filters.type : true))
+          .filter((o) => (filters?.sector ? o.sector === filters.sector : true))
+          .filter((o) => (filters?.region ? o.region === filters.region : true))
+          .filter((o) =>
+            filters?.q
+              ? o.title.includes(filters.q) || o.description.includes(filters.q)
+              : true
+          )
+      )
   );
 };
 
@@ -375,9 +388,9 @@ export const useOpportunities = (filters?: { type?: string; sector?: string; reg
 export const useMyOpportunities = () => {
   const user = useUIStore((s) => s.user);
   return useCmdpQuery<Opportunity[]>(["opportunities", "mine"], "/api/opportunities?mine=1", () =>
-    dataset.opportunities.filter((o) =>
+    localizeDemo(dataset.opportunities.filter((o) =>
       user?.role === "COADMIN" ? o.cooperativeId === user.cooperativeId : true
-    )
+    ))
   );
 };
 
@@ -420,11 +433,11 @@ export function useApplyToOpportunity() {
 export const useApplications = () => {
   const user = useUIStore((s) => s.user);
   return useCmdpQuery<OpportunityApplication[]>(["applications"], "/api/applications", () =>
-    dataset.applications.filter((a) => {
+    localizeDemo(dataset.applications.filter((a) => {
       if (user?.role !== "COADMIN") return true;
       const opp = dataset.opportunities.find((o) => o.id === a.opportunityId);
       return opp?.cooperativeId === user.cooperativeId;
-    })
+    }))
   );
 };
 

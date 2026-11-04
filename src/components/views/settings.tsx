@@ -19,7 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { t } from "@/lib/i18n";
+import { t, tError } from "@/lib/i18n";
 
 export function SettingsView() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -87,7 +87,7 @@ export function SettingsView() {
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   <LBadge map={ROLE_LABELS} value={user?.role ?? "USER"} />
                   {user?.accountType && (
-                    <Badge variant="outline" className="border-saffron/30 bg-saffron/10 text-[10px] font-bold text-[#8a6414]">
+                    <Badge variant="outline" className="border-saffron/30 bg-saffron/10 text-[10px] font-bold text-saffron-ink">
                       {t(ACCOUNT_TYPE_LABELS[user.accountType])}
                     </Badge>
                   )}
@@ -161,7 +161,7 @@ export function SettingsView() {
             {testResult && (
               <p className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold ${testResult.ok ? "bg-zellij/10 text-zellij" : "bg-destructive/10 text-destructive"}`}>
                 <CheckCircle2 className="size-3.5" />
-                {testResult.message}
+                {t(testResult.message)}
               </p>
             )}
             <div className="flex items-center justify-between rounded-xl border border-border bg-background p-3 text-xs">
@@ -169,7 +169,7 @@ export function SettingsView() {
                 <Link2 className="size-3.5" />
                 {t("الحالة الحالية")}
               </span>
-              <span className={`font-bold ${demoMode ? "text-[#8a6414]" : "text-zellij"}`}>
+              <span className={`font-bold ${demoMode ? "text-saffron-ink" : "text-zellij"}`}>
                 {demoMode ? t("وضع العرض التجريبي (بدون حفظ)") : t("متصل بنفس الأصل")}
               </span>
             </div>
@@ -188,7 +188,7 @@ export function SettingsView() {
               {t("البيانات التجريبية")}
             </CardTitle>
             <CardDescription>
-              إعادة ضبط كاملة لقاعدة SQLite المحلية بالبيانات النموذجية (9 تعاونيات، 90 عضواً، 146 حركة مالية...)
+              {t("إعادة ضبط كاملة لقاعدة SQLite المحلية بالبيانات النموذجية (9 تعاونيات، 90 عضواً، 146 حركة مالية...)")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -199,7 +199,7 @@ export function SettingsView() {
               onClick={() =>
                 resetSeed.mutate(undefined, {
                   onSuccess: () => toast({ title: t("أُعيدت البيانات التجريبية بنجاح") }),
-                  onError: (e) => toast({ variant: "destructive", title: t("تعذر إعادة الضبط"), description: e.message }),
+                  onError: (e) => toast({ variant: "destructive", title: t("تعذر إعادة الضبط"), description: tError(e) }),
                 })
               }
             >
@@ -228,10 +228,7 @@ export function SettingsView() {
             </div>
           </div>
           <p className="mt-4 text-xs leading-7 text-muted-foreground">
-            CMDP منصة رقمية لإدارة التعاونيات بالمغرب: رقمنة الأنشطة، تتبع الالتزامات القانونية وفق
-            القانون رقم 112.12، وتوثيق العلاقة مع الجهات الوصية. الفرونت إند تُنشر ساكنة على
-            Cloudflare Pages، والباك إند يعمل محلياً بقاعدة بيانات SQLite يديرها المساعد الألي
-            المسؤول عن البيئة المحلية وفق بروتوكول العمل المشترك (docs/AGENT-PROTOCOL.md).
+            {t("CMDP منصة رقمية لإدارة التعاونيات بالمغرب: رقمنة الأنشطة، تتبع الالتزامات القانونية وفق القانون رقم 112.12، وتوثيق العلاقة مع الجهات الوصية. الفرونت إند تُنشر ساكنة على Cloudflare Pages، والباك إند يعمل محلياً بقاعدة بيانات SQLite يديرها المساعد الألي المسؤول عن البيئة المحلية وفق بروتوكول العمل المشترك (docs/AGENT-PROTOCOL.md).")}
           </p>
         </CardContent>
       </Card>

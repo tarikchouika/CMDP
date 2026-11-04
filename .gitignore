@@ -63,3 +63,4 @@ local-*
 .z-ai-config
 prompt
 test
+tool-results/

@@ -58,7 +58,7 @@ export function LBadge({
   const item = map[value] ?? { label: value, className: "bg-muted text-muted-foreground border-border" };
   return (
     <Badge variant="outline" className={cn(item.className, "font-medium", className)}>
-      {item.label}
+      {t(item.label)}
     </Badge>
   );
 }
@@ -80,7 +80,7 @@ export function StatCard({
   const tones: Record<string, string> = {
     terra: "bg-terra/10 text-terra",
     zellij: "bg-zellij/10 text-zellij",
-    saffron: "bg-saffron/15 text-[#8a6414]",
+    saffron: "bg-saffron/15 text-saffron-ink",
     plum: "bg-chart-5/10 text-chart-5",
     olive: "bg-chart-4/10 text-chart-4",
   };

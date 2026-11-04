@@ -55,7 +55,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { t } from "@/lib/i18n";
+import { t, tError } from "@/lib/i18n";
 
 type CoopForm = Omit<Cooperative, "id" | "createdAt"> & { id?: number | null };
 
@@ -142,7 +142,7 @@ export function CooperativesView() {
         toast({ title: form.id ? t("تم تحديث التعاونية") : t("تمت إضافة التعاونية") });
         setFormOpen(false);
       },
-      onError: (err) => toast({ variant: "destructive", title: t("تعذر الحفظ"), description: err.message }),
+      onError: (err) => toast({ variant: "destructive", title: t("تعذر الحفظ"), description: tError(err) }),
     });
   }
 
@@ -280,7 +280,7 @@ export function CooperativesView() {
                 <InfoRow icon={Building2} label={t("عدد الأعضاء")} value={formatNumber(memberCounts.get(detail.id) ?? 0)} />
               </div>
               {detail.notes && (
-                <p className="rounded-xl border border-saffron/30 bg-saffron/10 p-3 text-xs leading-6 text-[#8a6414]">{detail.notes}</p>
+                <p className="rounded-xl border border-saffron/30 bg-saffron/10 p-3 text-xs leading-6 text-saffron-ink">{detail.notes}</p>
               )}
               <DialogFooter className="gap-2 sm:justify-center">
                 <Button variant="outline" className="gap-1.5" onClick={() => { setActiveCoop(detail.id); setDetail(null); toast({ title: t("أصبحت التعاونية النشطة") }); }}>
@@ -399,7 +399,7 @@ export function CooperativesView() {
               toast({ title: t("تم حذف التعاونية") });
               setToDelete(null);
             },
-            onError: (e) => toast({ variant: "destructive", title: t("تعذر الحذف"), description: e.message }),
+            onError: (e) => toast({ variant: "destructive", title: t("تعذر الحذف"), description: tError(e) }),
           })
         }
       />

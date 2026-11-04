@@ -19,7 +19,7 @@ function numFmt(): Intl.NumberFormat {
 
 export function formatMAD(v: number | null | undefined): string {
   if (v == null) return "—";
-  return `${numFmt().format(v)} ${currencySuffix()}`;
+  return `${numFmt().format(v)}\u00A0${currencySuffix()}`;
 }
 
 export function formatNumber(v: number | null | undefined): string {

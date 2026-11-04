@@ -40,7 +40,7 @@ type Labeled = { label: string; className: string };
 export const ROLE_LABELS: Record<string, Labeled> = {
   SUPER_ADMIN: { label: "سوبر أدمين — مالك المنصة", className: "bg-terra/10 text-terra border-terra/25" },
   ADMIN: { label: "أدمن منصة", className: "bg-zellij/10 text-zellij border-zellij/25" },
-  COADMIN: { label: "كوأدمن تعاونية", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  COADMIN: { label: "كوأدمن تعاونية", className: "bg-saffron/15 text-saffron-ink border-saffron/30" },
   USER: { label: "مستخدم", className: "bg-muted text-muted-foreground border-border" },
 };
 
@@ -52,27 +52,27 @@ export const ACCOUNT_TYPE_LABELS: Record<string, string> = {
 };
 
 export const USER_STATUS: Record<string, Labeled> = {
-  PENDING: { label: "بانتظار المصادقة", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  PENDING: { label: "بانتظار المصادقة", className: "bg-saffron/15 text-saffron-ink border-saffron/30" },
   ACTIVE: { label: "نشط", className: "bg-zellij/10 text-zellij border-zellij/25" },
   SUSPENDED: { label: "موقوف", className: "bg-destructive/10 text-destructive border-destructive/25" },
   REJECTED: { label: "مرفوض", className: "bg-muted text-muted-foreground border-border" },
 };
 
 export const APPROVAL_STATUS: Record<string, Labeled> = {
-  PENDING: { label: "بانتظار المصادقة", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  PENDING: { label: "بانتظار المصادقة", className: "bg-saffron/15 text-saffron-ink border-saffron/30" },
   APPROVED: { label: "مسجلة", className: "bg-zellij/10 text-zellij border-zellij/25" },
   REJECTED: { label: "مرفوضة", className: "bg-destructive/10 text-destructive border-destructive/25" },
 };
 
 export const COOP_STATUS: Record<string, Labeled> = {
   ACTIVE: { label: "نشطة", className: "bg-zellij/10 text-zellij border-zellij/25" },
-  DORMANT: { label: "خاملة", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  DORMANT: { label: "خاملة", className: "bg-saffron/15 text-saffron-ink border-saffron/30" },
   DISSOLVED: { label: "منحلة", className: "bg-destructive/10 text-destructive border-destructive/25" },
 };
 
 export const MEMBER_STATUS: Record<string, Labeled> = {
   ACTIVE: { label: "نشط", className: "bg-zellij/10 text-zellij border-zellij/25" },
-  SUSPENDED: { label: "موقوف", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  SUSPENDED: { label: "موقوف", className: "bg-saffron/15 text-saffron-ink border-saffron/30" },
   WITHDRAWN: { label: "منسحب", className: "bg-muted text-muted-foreground border-border" },
 };
 
@@ -88,11 +88,11 @@ export const BOARD_ROLES: Record<string, string> = {
 export const ASSEMBLY_TYPES: Record<string, Labeled> = {
   ORDINARY: { label: "جمع عام عادي", className: "bg-zellij/10 text-zellij border-zellij/25" },
   EXTRAORDINARY: { label: "جمع عام استثنائي", className: "bg-terra/10 text-terra border-terra/25" },
-  CONSTITUENT: { label: "جمع عام تأسيسي", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  CONSTITUENT: { label: "جمع عام تأسيسي", className: "bg-saffron/15 text-saffron-ink border-saffron/30" },
 };
 
 export const ASSEMBLY_STATUS: Record<string, Labeled> = {
-  SCHEDULED: { label: "مُبرمج", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  SCHEDULED: { label: "مُبرمج", className: "bg-saffron/15 text-saffron-ink border-saffron/30" },
   HELD: { label: "منعقد", className: "bg-zellij/10 text-zellij border-zellij/25" },
   CANCELLED: { label: "ملغى", className: "bg-destructive/10 text-destructive border-destructive/25" },
 };
@@ -100,7 +100,7 @@ export const ASSEMBLY_STATUS: Record<string, Labeled> = {
 export const DOC_TYPES: Record<string, Labeled> = {
   STATUTE: { label: "القانون الأساسي", className: "bg-terra/10 text-terra border-terra/25" },
   MINUTE: { label: "محضر", className: "bg-zellij/10 text-zellij border-zellij/25" },
-  FINANCIAL: { label: "تقرير مالي", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  FINANCIAL: { label: "تقرير مالي", className: "bg-saffron/15 text-saffron-ink border-saffron/30" },
   TAX: { label: "وثيقة جبائية", className: "bg-chart-5/10 text-chart-5 border-chart-5/25" },
   ODCO: { label: "وثيقة ODCO", className: "bg-terra/10 text-terra border-terra/25" },
   CONTRACT: { label: "عقد", className: "bg-chart-4/10 text-chart-4 border-chart-4/25" },
@@ -109,7 +109,7 @@ export const DOC_TYPES: Record<string, Labeled> = {
 
 export const DOC_STATUS: Record<string, Labeled> = {
   VALID: { label: "سارية", className: "bg-zellij/10 text-zellij border-zellij/25" },
-  EXPIRING: { label: "قاربت الانتهاء", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  EXPIRING: { label: "قاربت الانتهاء", className: "bg-saffron/15 text-saffron-ink border-saffron/30" },
   EXPIRED: { label: "منتهية", className: "bg-destructive/10 text-destructive border-destructive/25" },
   ARCHIVED: { label: "مؤرشفة", className: "bg-muted text-muted-foreground border-border" },
 };
@@ -118,13 +118,13 @@ export const INTERACTION_TYPES: Record<string, Labeled> = {
   DECLARATION: { label: "تصريح", className: "bg-zellij/10 text-zellij border-zellij/25" },
   REQUEST: { label: "طلب", className: "bg-terra/10 text-terra border-terra/25" },
   CORRESPONDENCE: { label: "مراسلة", className: "bg-chart-4/10 text-chart-4 border-chart-4/25" },
-  VISIT: { label: "زيارة ميدانية", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  VISIT: { label: "زيارة ميدانية", className: "bg-saffron/15 text-saffron-ink border-saffron/30" },
   AUDIT: { label: "تدقيق", className: "bg-chart-5/10 text-chart-5 border-chart-5/25" },
   SUPPORT: { label: "دعم ومواكبة", className: "bg-zellij/10 text-zellij border-zellij/25" },
 };
 
 export const INTERACTION_STATUS: Record<string, Labeled> = {
-  PENDING: { label: "قيد الانتظار", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  PENDING: { label: "قيد الانتظار", className: "bg-saffron/15 text-saffron-ink border-saffron/30" },
   IN_PROGRESS: { label: "قيد المعالجة", className: "bg-terra/10 text-terra border-terra/25" },
   DONE: { label: "منجز", className: "bg-zellij/10 text-zellij border-zellij/25" },
   REJECTED: { label: "مرفوض", className: "bg-destructive/10 text-destructive border-destructive/25" },
@@ -135,14 +135,14 @@ export const ENTITY_TYPES: Record<string, Labeled> = {
   OFFICE: { label: "مكتب / مؤسسة عمومية", className: "bg-zellij/10 text-zellij border-zellij/25" },
   AGENCY: { label: "مديرية / وكالة", className: "bg-chart-4/10 text-chart-4 border-chart-4/25" },
   COURT: { label: "محكمة", className: "bg-chart-5/10 text-chart-5 border-chart-5/25" },
-  LOCAL_AUTHORITY: { label: "سلطة محلية", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  LOCAL_AUTHORITY: { label: "سلطة محلية", className: "bg-saffron/15 text-saffron-ink border-saffron/30" },
   INSTITUTE: { label: "معهد", className: "bg-muted text-muted-foreground border-border" },
 };
 
 export const REGULATION_CATEGORIES: Record<string, Labeled> = {
   LAW: { label: "قانون", className: "bg-terra/10 text-terra border-terra/25" },
   DECREE: { label: "مرسوم / قرار", className: "bg-zellij/10 text-zellij border-zellij/25" },
-  TAX: { label: "نص جبائي", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  TAX: { label: "نص جبائي", className: "bg-saffron/15 text-saffron-ink border-saffron/30" },
   GUIDE: { label: "دليل توجيهي", className: "bg-chart-4/10 text-chart-4 border-chart-4/25" },
   PRINCIPLE: { label: "مبادئ التعاون", className: "bg-chart-5/10 text-chart-5 border-chart-5/25" },
   INTERNATIONAL: { label: "مرجعية دولية", className: "bg-muted text-muted-foreground border-border" },
@@ -151,12 +151,12 @@ export const REGULATION_CATEGORIES: Record<string, Labeled> = {
 export const REGULATION_STATUS: Record<string, Labeled> = {
   IN_FORCE: { label: "ساري", className: "bg-zellij/10 text-zellij border-zellij/25" },
   REPEALED: { label: "ملغى", className: "bg-destructive/10 text-destructive border-destructive/25" },
-  REFERENCE: { label: "مرجع", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  REFERENCE: { label: "مرجع", className: "bg-saffron/15 text-saffron-ink border-saffron/30" },
 };
 
 export const TASK_TYPES: Record<string, Labeled> = {
   ASSEMBLY: { label: "الجمع العام", className: "bg-terra/10 text-terra border-terra/25" },
-  TAX: { label: "الضرائب", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  TAX: { label: "الضرائب", className: "bg-saffron/15 text-saffron-ink border-saffron/30" },
   CNSS: { label: "الضمان الاجتماعي", className: "bg-chart-4/10 text-chart-4 border-chart-4/25" },
   ODCO: { label: "ODCO", className: "bg-zellij/10 text-zellij border-zellij/25" },
   RENEWAL: { label: "تجديد", className: "bg-chart-5/10 text-chart-5 border-chart-5/25" },
@@ -177,7 +177,7 @@ export const JOIN_REQUEST_TYPES: Record<string, Labeled> = {
 };
 
 export const REQUEST_STATUS: Record<string, Labeled> = {
-  PENDING: { label: "قيد الدراسة", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  PENDING: { label: "قيد الدراسة", className: "bg-saffron/15 text-saffron-ink border-saffron/30" },
   APPROVED: { label: "مقبول", className: "bg-zellij/10 text-zellij border-zellij/25" },
   REJECTED: { label: "مرفوض", className: "bg-destructive/10 text-destructive border-destructive/25" },
 };
@@ -186,7 +186,7 @@ export const REQUEST_STATUS: Record<string, Labeled> = {
 export const OPPORTUNITY_TYPES: Record<string, Labeled> = {
   JOB: { label: "منصب شاغر", className: "bg-terra/10 text-terra border-terra/25" },
   CONTRACT: { label: "فرصة تعاقد", className: "bg-zellij/10 text-zellij border-zellij/25" },
-  SERVICE_NEED: { label: "حاجة خدمية", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  SERVICE_NEED: { label: "حاجة خدمية", className: "bg-saffron/15 text-saffron-ink border-saffron/30" },
   INTERNSHIP: { label: "تدريب", className: "bg-chart-4/10 text-chart-4 border-chart-4/25" },
 };
 
@@ -204,7 +204,7 @@ export const OPPORTUNITY_STATUS: Record<string, Labeled> = {
 };
 
 export const APPLICATION_STATUS: Record<string, Labeled> = {
-  PENDING: { label: "بانتظار الدراسة", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  PENDING: { label: "بانتظار الدراسة", className: "bg-saffron/15 text-saffron-ink border-saffron/30" },
   REVIEWED: { label: "تمت الدراسة", className: "bg-terra/10 text-terra border-terra/25" },
   ACCEPTED: { label: "مقبول", className: "bg-zellij/10 text-zellij border-zellij/25" },
   REJECTED: { label: "غير مقبول", className: "bg-destructive/10 text-destructive border-destructive/25" },

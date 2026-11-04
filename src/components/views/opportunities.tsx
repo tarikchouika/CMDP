@@ -67,7 +67,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { t } from "@/lib/i18n";
+import { t, tError } from "@/lib/i18n";
 
 const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   JOB: Briefcase,
@@ -120,9 +120,9 @@ function OpportunityCard({ o, onApply, onDetails }: { o: Opportunity; onApply: (
             </span>
           )}
           {dl != null && (
-            <span className={cn("inline-flex items-center gap-1 font-semibold", dl <= 7 && !closed ? "text-[#8a6414]" : "")}>
+            <span className={cn("inline-flex items-center gap-1 font-semibold", dl <= 7 && !closed ? "text-saffron-ink" : "")}>
               <CalendarClock className="size-3" />
-              {closed ? t("انتهى الأجل") : dl === 0 ? t("آخر أجل اليوم") : `آخر أجل بعد ${formatNumber(dl)} يوماً`}
+              {closed ? t("انتهى الأجل") : dl === 0 ? t("آخر أجل اليوم") : t("آخر أجل بعد {n} يوماً", { n: formatNumber(dl) })}
             </span>
           )}
           {o.applicationsCount != null && o.applicationsCount > 0 && (
@@ -203,12 +203,12 @@ function DetailsDialog({ o, open, onOpenChange }: { o: Opportunity | null; open:
             <div className="rounded-xl border border-border p-3">
               <p className="font-bold text-foreground">{t("آخر أجل")}</p>
               <p className="mt-1 text-muted-foreground">
-                {dl == null ? t("غير محدد") : closedCheck(o) ? t("انتهى") : `بعد ${dl} يوماً`}
+                {dl == null ? t("غير محدد") : closedCheck(o) ? t("انتهى") : t("بعد {n} يوماً", { n: dl })}
               </p>
             </div>
           </div>
           {(o.contactEmail || o.contactPhone) && (
-            <div className="rounded-xl border border-saffron/30 bg-saffron/10 p-3 text-xs leading-6 text-[#8a6414]">
+            <div className="rounded-xl border border-saffron/30 bg-saffron/10 p-3 text-xs leading-6 text-saffron-ink">
               <span className="font-bold">{t("للتواصل المباشر:")}</span>
               {o.contactEmail && <span dir="ltr">{o.contactEmail}</span>}
               {o.contactEmail && o.contactPhone && " • "}
@@ -258,10 +258,10 @@ function ApplyDialog({ o, open, onOpenChange }: { o: Opportunity | null; open: b
         motivation: form.motivation || undefined,
         experience: form.experience || undefined,
       });
-      toast({ title: t("تم تسجيل الترشيح"), description: (res as { message?: string })?.message });
+      toast({ title: t("تم تسجيل الترشيح"), description: t((res as { message?: string })?.message ?? "") });
       onOpenChange(false);
     } catch (err) {
-      toast({ variant: "destructive", title: t("تعذر إرسال الترشيح"), description: (err as Error).message });
+      toast({ variant: "destructive", title: t("تعذر إرسال الترشيح"), description: tError(err) });
     }
   }
 
@@ -411,7 +411,7 @@ function OpportunityDialog({
       toast({ title: editing ? t("تم تحديث الفرصة") : "تم نشر الفرصة", description: t("ظهرت مباشرة في السوق العمومي") });
       onOpenChange(false);
     } catch (err) {
-      toast({ variant: "destructive", title: t("تعذر الحفظ"), description: (err as Error).message });
+      toast({ variant: "destructive", title: t("تعذر الحفظ"), description: tError(err) });
     }
   }
 
@@ -695,11 +695,11 @@ export function OpportunitiesView() {
                         <p className="mt-1 text-[11px] text-muted-foreground">
                           {o.city ? `${o.city}${t("، ")}` : ""}
                           {o.region} • {o.positions} {t("منصب")}
-                          {o.applicationsCount != null ? t(" • {n} ترشيحاً", { n: o.applicationsCount }) : ""}
+                          {o.applicationsCount != null ? ` ${t("• {n} ترشيحاً", { n: o.applicationsCount })}` : ""}
                           {daysLeft(o.deadline) != null
                             ? daysLeft(o.deadline)! < 0
-                              ? t(" • انتهى الأجل")
-                              : ` • باقي ${daysLeft(o.deadline)} يوماً`
+                              ? ` ${t("• انتهى الأجل")}`
+                              : ` ${t("• باقي {n} يوماً", { n: daysLeft(o.deadline)! })}`
                             : ""}
                         </p>
                       </div>
@@ -755,7 +755,7 @@ export function OpportunitiesView() {
                             await decideApp.mutateAsync({ id: a.id, status: v });
                             toast({ title: t("تم تحديث حالة الترشيح") });
                           } catch (err) {
-                            toast({ variant: "destructive", title: t("تعذر التحديث"), description: (err as Error).message });
+                            toast({ variant: "destructive", title: t("تعذر التحديث"), description: tError(err) });
                           }
                         }}
                       >
@@ -795,7 +795,7 @@ export function OpportunitiesView() {
             toast({ title: t("تم حذف الفرصة") });
             setDeleting(null);
           } catch (err) {
-            toast({ variant: "destructive", title: t("تعذر الحذف"), description: (err as Error).message });
+            toast({ variant: "destructive", title: t("تعذر الحذف"), description: tError(err) });
           }
         }}
       />

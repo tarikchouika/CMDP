@@ -59,7 +59,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { t } from "@/lib/i18n";
+import { t, tError } from "@/lib/i18n";
 
 type InteractionForm = Omit<EntityInteraction, "id" | "createdAt" | "entity"> & { id?: number | null };
 
@@ -120,7 +120,7 @@ export function EntitiesView() {
           toast({ title: form.id ? t("تم تحديث التفاعل") : t("تمت تسجيل التفاعل") });
           setFormOpen(false);
         },
-        onError: (err) => toast({ variant: "destructive", title: t("تعذر الحفظ"), description: err.message }),
+        onError: (err) => toast({ variant: "destructive", title: t("تعذر الحفظ"), description: tError(err) }),
       }
     );
   }
@@ -385,7 +385,7 @@ export function EntitiesView() {
               toast({ title: t("تم الحذف") });
               setToDelete(null);
             },
-            onError: (e) => toast({ variant: "destructive", title: t("تعذر الحذف"), description: e.message }),
+            onError: (e) => toast({ variant: "destructive", title: t("تعذر الحذف"), description: tError(e) }),
           })
         }
       />

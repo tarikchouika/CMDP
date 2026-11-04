@@ -38,7 +38,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { t } from "@/lib/i18n";
+import { t, tError } from "@/lib/i18n";
 
 // ─── بطاقة الجمع العام للعضو ────────────────────────────────────────────────
 function MemberAssemblyCard({ assembly, memberCount }: { assembly: Assembly; memberCount: number }) {
@@ -52,7 +52,7 @@ function MemberAssemblyCard({ assembly, memberCount }: { assembly: Assembly; mem
       await action.mutateAsync({ assemblyId: assembly.id, action: payload.action, decision: payload.decision });
       toast({ title: payload.label, description: t("مشاركتكم مسجلة — شكراً لالتزامكم") });
     } catch (err) {
-      toast({ variant: "destructive", title: t("تعذر تسجيل المشاركة"), description: (err as Error).message });
+      toast({ variant: "destructive", title: t("تعذر تسجيل المشاركة"), description: tError(err) });
     } finally {
       setBusy(false);
     }
@@ -254,8 +254,7 @@ export function MySpaceView() {
             </div>
             {isContractor ? (
               <p className="rounded-xl bg-muted/60 p-3 text-[11px] leading-6 text-muted-foreground">
-                حسابكم مرتبط بعلاقة تعاقد مع التعاونية. تطلعون حصراً على الوثائق والمعلومات التي يصرح
-                لكم بها رئيس التعاونية أو أحد أعضائها المسييرين.
+                {t("حسابكم مرتبط بعلاقة تعاقد مع التعاونية. تطلعون حصراً على الوثائق والمعلومات التي يصرح لكم بها رئيس التعاونية أو أحد أعضائها المسييرين.")}
               </p>
             ) : (
               <div className="space-y-1.5 text-xs text-muted-foreground">
@@ -276,7 +275,7 @@ export function MySpaceView() {
                     )}
                   </>
                 ) : (
-                  <p className="rounded-xl bg-saffron/10 p-3 text-[11px] leading-6 text-[#8a6414]">
+                  <p className="rounded-xl bg-saffron/10 p-3 text-[11px] leading-6 text-saffron-ink">
                     {t("سجل عضويتكم قيد التحديث من طرف المسيّرين.")}
                   </p>
                 )}
@@ -302,7 +301,7 @@ export function MySpaceView() {
               <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">{t("جمع مسجل")}</p>
             </div>
             <div className="rounded-xl bg-saffron/15 p-3 text-center">
-              <p className="font-display text-2xl font-black text-[#8a6414]">{sharedDocs.length}</p>
+              <p className="font-display text-2xl font-black text-saffron-ink">{sharedDocs.length}</p>
               <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">{t("وثيقة مصرحة")}</p>
             </div>
             <div className="rounded-xl bg-chart-5/10 p-3 text-center">

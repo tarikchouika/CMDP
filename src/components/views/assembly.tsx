@@ -44,7 +44,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { t } from "@/lib/i18n";
+import { t, tError } from "@/lib/i18n";
 
 type AssemblyForm = Omit<Assembly, "id" | "createdAt"> & { id?: number | null };
 type MeetingForm = Omit<Meeting, "id" | "createdAt"> & { id?: number | null };
@@ -125,7 +125,7 @@ export function AssemblyView() {
           toast({ title: gaForm.id ? t("تم تحديث الجمع العام") : t("تمت برمجة الجمع العام") });
           setGaFormOpen(false);
         },
-        onError: (err) => toast({ variant: "destructive", title: t("تعذر الحفظ"), description: err.message }),
+        onError: (err) => toast({ variant: "destructive", title: t("تعذر الحفظ"), description: tError(err) }),
       }
     );
   }
@@ -154,7 +154,7 @@ export function AssemblyView() {
           toast({ title: mtForm.id ? t("تم تحديث الاجتماع") : t("تمت إضافة الاجتماع") });
           setMtFormOpen(false);
         },
-        onError: (err) => toast({ variant: "destructive", title: t("تعذر الحفظ"), description: err.message }),
+        onError: (err) => toast({ variant: "destructive", title: t("تعذر الحفظ"), description: tError(err) }),
       }
     );
   }
@@ -163,7 +163,7 @@ export function AssemblyView() {
     <div className="space-y-6">
       <PageHeader
         title={t("الجمع العام والمجلس")}
-        desc={`الحياة التعاونية لـ ${coop?.name ?? t("التعاونية")} — الجمعات العامة واجتماعات مجلس الإدارة ومحاضرها`}
+        desc={t("الحياة التعاونية لـ {name} — الجمعات العامة واجتماعات مجلس الإدارة ومحاضرها", { name: coop?.name ?? t("التعاونية") })}
       />
 
       <Tabs defaultValue="ga" dir="rtl">
@@ -313,7 +313,7 @@ export function AssemblyView() {
                           <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                             <CalendarDays className="size-3" />
                             {formatDate(m.date)}
-                            {upcoming && <span className="ms-1 rounded-full bg-saffron/15 px-2 py-0.5 text-[9px] font-bold text-[#8a6414]">{t("قادم")}</span>}
+                            {upcoming && <span className="ms-1 rounded-full bg-saffron/15 px-2 py-0.5 text-[9px] font-bold text-saffron-ink">{t("قادم")}</span>}
                           </p>
                           <ul className="mt-2.5 space-y-1.5">
                             {lines(m.agenda).map((l, i) => (
@@ -465,7 +465,7 @@ export function AssemblyView() {
               toast({ title: t("تم الحذف") });
               setGaToDelete(null);
             },
-            onError: (e) => toast({ variant: "destructive", title: t("تعذر الحذف"), description: e.message }),
+            onError: (e) => toast({ variant: "destructive", title: t("تعذر الحذف"), description: tError(e) }),
           })
         }
       />
@@ -481,7 +481,7 @@ export function AssemblyView() {
               toast({ title: t("تم الحذف") });
               setMtToDelete(null);
             },
-            onError: (e) => toast({ variant: "destructive", title: t("تعذر الحذف"), description: e.message }),
+            onError: (e) => toast({ variant: "destructive", title: t("تعذر الحذف"), description: tError(e) }),
           })
         }
       />

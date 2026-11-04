@@ -278,7 +278,7 @@ export function LegalView() {
 
           <DividerZellige className="my-6 opacity-60" />
 
-          <p className="rounded-2xl border border-saffron/25 bg-saffron/10 p-4 text-sm leading-8 text-[#8a6414]">
+          <p className="rounded-2xl border border-saffron/25 bg-saffron/10 p-4 text-sm leading-8 text-saffron-ink">
             {t(doc.intro)}
           </p>
 

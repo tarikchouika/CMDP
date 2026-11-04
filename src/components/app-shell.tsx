@@ -194,7 +194,7 @@ function SidebarFooter() {
   const user = useUIStore((s) => s.user);
   const setAuthed = useUIStore((s) => s.setAuthed);
   const demoMode = useUIStore((s) => s.demoMode);
-  const roleLabel = user ? ROLE_LABELS[user.role]?.label ?? user.role : "";
+  const roleLabel = user ? t(ROLE_LABELS[user.role]?.label ?? user.role) : "";
   return (
     <div className="border-t border-sidebar-border p-3">
       <div className="flex items-center gap-3 rounded-xl px-2 py-2">
@@ -268,28 +268,30 @@ function CoopSelector({ compact = false }: { compact?: boolean }) {
       </span>
     );
   }
-  // الأدمن والمالك: كل التعاونيات المسجلة
+  // الأدمن والمالك: كل التعاونيات المسجلة (من md فصاعداً — حماية من فيضان الهيدر على الهواتف)
   return (
-    <Select value={String(activeCoopId)} onValueChange={(v) => setActiveCoop(Number(v))}>
-      <SelectTrigger
-        className={cn(
-          "h-9 gap-1 border-border bg-card text-xs font-semibold md:text-sm",
-          compact ? "w-40" : "w-56"
-        )}
-        aria-label={t("التعاونية النشطة")}
-      >
-        <SelectValue placeholder={t("اختر التعاونية")} />
-      </SelectTrigger>
-      <SelectContent className="max-h-72">
-        {(coops ?? [])
-          .filter((c) => c.approvalStatus === "APPROVED")
-          .map((c) => (
-            <SelectItem key={c.id} value={String(c.id)} className="text-xs md:text-sm">
-              {c.name}
-            </SelectItem>
-          ))}
-      </SelectContent>
-    </Select>
+    <div className="hidden md:block">
+      <Select value={String(activeCoopId)} onValueChange={(v) => setActiveCoop(Number(v))}>
+        <SelectTrigger
+          className={cn(
+            "h-9 gap-1 border-border bg-card text-xs font-semibold md:text-sm",
+            compact ? "w-40" : "w-56"
+          )}
+          aria-label={t("التعاونية النشطة")}
+        >
+          <SelectValue placeholder={t("اختر التعاونية")} />
+        </SelectTrigger>
+        <SelectContent className="max-h-72">
+          {(coops ?? [])
+            .filter((c) => c.approvalStatus === "APPROVED")
+            .map((c) => (
+              <SelectItem key={c.id} value={String(c.id)} className="text-xs md:text-sm">
+                {c.name}
+              </SelectItem>
+            ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 
@@ -314,7 +316,7 @@ function DemoBadge() {
   const demoMode = useUIStore((s) => s.demoMode);
   if (!demoMode) return null;
   return (
-    <span className="hidden items-center gap-1.5 rounded-full border border-saffron/40 bg-saffron/15 px-3 py-1 text-[11px] font-bold text-[#8a6414] md:inline-flex">
+    <span className="hidden items-center gap-1.5 rounded-full border border-saffron/40 bg-saffron/15 px-3 py-1 text-[11px] font-bold text-saffron-ink md:inline-flex">
       <FlaskConical className="size-3" />
       {t("وضع العرض التجريبي — بيانات غير محفوظة")}
     </span>
@@ -427,8 +429,8 @@ function BottomNav({ onMore }: { onMore: () => void }) {
             )}
             aria-current={active ? "page" : undefined}
           >
-            <q.icon className="size-5" />
-            {t(q.label)}
+            <q.icon className="size-5 shrink-0" />
+            <span className="max-w-full truncate px-0.5">{t(q.label)}</span>
           </button>
         );
       })}
