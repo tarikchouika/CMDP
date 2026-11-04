@@ -59,6 +59,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { t } from "@/lib/i18n";
 
 type InteractionForm = Omit<EntityInteraction, "id" | "createdAt" | "entity"> & { id?: number | null };
 
@@ -116,10 +117,10 @@ export function EntitiesView() {
       { ...form, cooperativeId: activeCoopId },
       {
         onSuccess: () => {
-          toast({ title: form.id ? "تم تحديث التفاعل" : "تمت تسجيل التفاعل" });
+          toast({ title: form.id ? t("تم تحديث التفاعل") : t("تمت تسجيل التفاعل") });
           setFormOpen(false);
         },
-        onError: (err) => toast({ variant: "destructive", title: "تعذر الحفظ", description: err.message }),
+        onError: (err) => toast({ variant: "destructive", title: t("تعذر الحفظ"), description: err.message }),
       }
     );
   }
@@ -127,18 +128,18 @@ export function EntitiesView() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="الجهات الوصية"
-        desc="دليل الجهات الحكومية والإدارية ذات الصلة بالتعاونيات — مع سجل تتبع التفاعلات"
+        title={t("الجهات الوصية")}
+        desc={t("دليل الجهات الحكومية والإدارية ذات الصلة بالتعاونيات — مع سجل تتبع التفاعلات")}
       />
 
       <Tabs defaultValue="directory" dir="rtl">
         <TabsList className="bg-secondary">
           <TabsTrigger value="directory" className="gap-1.5 text-xs">
             <Landmark className="size-3.5" />
-            الدليل ({(entities ?? []).length})
+            {t("الدليل")} ({(entities ?? []).length})
           </TabsTrigger>
           <TabsTrigger value="interactions" className="gap-1.5 text-xs">
-            سجل التفاعلات ({(interactions ?? []).length})
+            {t("سجل التفاعلات")} ({(interactions ?? []).length})
             {openInteractions > 0 && (
               <span className="rounded-full bg-terra px-1.5 text-[9px] font-black text-cream">{openInteractions}</span>
             )}
@@ -160,14 +161,14 @@ export function EntitiesView() {
                         <LBadge map={ENTITY_TYPES} value={e.type} className="px-2 py-0 text-[10px]" />
                         <h3 className="mt-1.5 text-sm font-extrabold leading-6 text-foreground">{e.name}</h3>
                         {e.supervisor && (
-                          <p className="mt-0.5 text-[10px] text-muted-foreground">الوصاية: {e.supervisor}</p>
+                          <p className="mt-0.5 text-[10px] text-muted-foreground">{t("الوصاية:")} {e.supervisor}</p>
                         )}
                       </div>
                     </div>
 
                     <CollapsibleTrigger asChild>
                       <Button variant="ghost" size="sm" className="mt-3 h-7 w-full gap-1 text-[11px] text-terra">
-                        المهام والاختصاصات
+                        {t("المهام والاختصاصات")}
                         <ArrowUpRight className="size-3" />
                       </Button>
                     </CollapsibleTrigger>
@@ -185,11 +186,11 @@ export function EntitiesView() {
                     <div className="mt-3 flex items-center justify-between border-t border-border/60 pt-3 text-[11px] text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <MapPin className="size-3" />
-                        {e.address ?? "المغرب"}
+                        {e.address ?? t("المغرب")}
                       </span>
                       <span className="flex items-center gap-2">
                         <span className="rounded-full bg-terra/10 px-2 py-0.5 font-bold text-terra">
-                          {interactionCounts.get(e.id) ?? 0} تفاعل
+                          {interactionCounts.get(e.id) ?? 0} {t("تفاعل")}
                         </span>
                         {e.website && (
                           <a
@@ -197,7 +198,7 @@ export function EntitiesView() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="grid size-7 place-items-center rounded-full border border-border text-muted-foreground transition-colors hover:border-terra hover:text-terra"
-                            aria-label={`موقع ${e.name}`}
+                            aria-label={t("موقع {name}", { name: e.name })}
                           >
                             <Globe className="size-3.5" />
                           </a>
@@ -217,7 +218,7 @@ export function EntitiesView() {
             <Select value={entityFilter} onValueChange={setEntityFilter}>
               <SelectTrigger className="w-64 bg-card text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">كل الجهات</SelectItem>
+                <SelectItem value="ALL">{t("كل الجهات")}</SelectItem>
                 {(entities ?? []).map((e) => (
                   <SelectItem key={e.id} value={String(e.id)}>{e.acronym ?? e.name}</SelectItem>
                 ))}
@@ -225,12 +226,12 @@ export function EntitiesView() {
             </Select>
             <Button onClick={openCreate} className="gap-1.5 font-bold">
               <Plus className="size-4" />
-              تسجيل تفاعل
+              {t("تسجيل تفاعل")}
             </Button>
           </div>
 
           {filteredInteractions.length === 0 ? (
-            <EmptyState icon={Landmark} title="لا توجد تفاعلات" desc="سجّل التصريحات والطلبات والمراسلات مع الجهات الوصية." action={<Button onClick={openCreate} className="gap-1.5"><Plus className="size-4" />تسجيل تفاعل</Button>} />
+            <EmptyState icon={Landmark} title={t("لا توجد تفاعلات")} desc={t("سجّل التصريحات والطلبات والمراسلات مع الجهات الوصية.")} action={<Button onClick={openCreate} className="gap-1.5"><Plus className="size-4" />{t("تسجيل تفاعل")}</Button>} />
           ) : (
             <>
               {/* جدول — md+ */}
@@ -240,11 +241,11 @@ export function EntitiesView() {
                     <Table>
                       <TableHeader className="sticky top-0 z-10 bg-card">
                         <TableRow>
-                          <TableHead className="text-start">التاريخ</TableHead>
-                          <TableHead className="text-start">الجهة</TableHead>
-                          <TableHead className="text-start">النوع</TableHead>
-                          <TableHead className="text-start">الموضوع</TableHead>
-                          <TableHead className="text-start">الحالة</TableHead>
+                          <TableHead className="text-start">{t("التاريخ")}</TableHead>
+                          <TableHead className="text-start">{t("الجهة")}</TableHead>
+                          <TableHead className="text-start">{t("النوع")}</TableHead>
+                          <TableHead className="text-start">{t("الموضوع")}</TableHead>
+                          <TableHead className="text-start">{t("الحالة")}</TableHead>
                           <TableHead className="w-20" />
                         </TableRow>
                       </TableHeader>
@@ -261,10 +262,10 @@ export function EntitiesView() {
                             <TableCell><LBadge map={INTERACTION_STATUS} value={i.status} className="px-2 py-0 text-[10px]" /></TableCell>
                             <TableCell>
                               <div className="flex justify-end gap-1 opacity-60 transition-opacity group-hover:opacity-100">
-                                <Button variant="ghost" size="icon" className="size-7" aria-label="تحرير" onClick={() => openEdit(i)}>
+                                <Button variant="ghost" size="icon" className="size-7" aria-label={t("تحرير")} onClick={() => openEdit(i)}>
                                   <Pencil className="size-3.5" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="size-7 text-destructive" aria-label="حذف" onClick={() => setToDelete(i)}>
+                                <Button variant="ghost" size="icon" className="size-7 text-destructive" aria-label={t("حذف")} onClick={() => setToDelete(i)}>
                                   <Trash2 className="size-3.5" />
                                 </Button>
                               </div>
@@ -295,10 +296,10 @@ export function EntitiesView() {
                       </div>
                       {i.notes && <p className="mt-2 rounded-lg bg-muted/50 px-3 py-1.5 text-[10px] text-muted-foreground">{i.notes}</p>}
                       <div className="mt-2 flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="size-7" aria-label="تحرير" onClick={() => openEdit(i)}>
+                        <Button variant="ghost" size="icon" className="size-7" aria-label={t("تحرير")} onClick={() => openEdit(i)}>
                           <Pencil className="size-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="size-7 text-destructive" aria-label="حذف" onClick={() => setToDelete(i)}>
+                        <Button variant="ghost" size="icon" className="size-7 text-destructive" aria-label={t("حذف")} onClick={() => setToDelete(i)}>
                           <Trash2 className="size-3.5" />
                         </Button>
                       </div>
@@ -316,13 +317,13 @@ export function EntitiesView() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-display">
               <ZelligeStar className="size-4 text-saffron" />
-              {form.id ? "تحرير التفاعل" : "تسجيل تفاعل مع جهة"}
+              {form.id ? t("تحرير التفاعل") : t("تسجيل تفاعل مع جهة")}
             </DialogTitle>
-            <DialogDescription>التصريحات والطلبات والمراسلات مع الجهات الوصية باسم {coop?.name ?? "التعاونية"}</DialogDescription>
+            <DialogDescription>{t("التصريحات والطلبات والمراسلات مع الجهات الوصية باسم {name}", { name: coop?.name ?? t("التعاونية") })}</DialogDescription>
           </DialogHeader>
           <form onSubmit={submit} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">الجهة *</Label>
+              <Label className="text-xs">{t("الجهة *")}</Label>
               <Select value={String(form.entityId)} onValueChange={(v) => setForm({ ...form, entityId: Number(v) })}>
                 <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -333,7 +334,7 @@ export function EntitiesView() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">نوع التفاعل</Label>
+              <Label className="text-xs">{t("نوع التفاعل")}</Label>
               <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
                 <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -342,11 +343,11 @@ export function EntitiesView() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">التاريخ *</Label>
+              <Label className="text-xs">{t("التاريخ *")}</Label>
               <Input required type="date" value={toInputDate(form.date)} onChange={(e) => setForm({ ...form, date: new Date(e.target.value).toISOString() })} className="bg-background" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">الحالة</Label>
+              <Label className="text-xs">{t("الحالة")}</Label>
               <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
                 <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -355,17 +356,17 @@ export function EntitiesView() {
               </Select>
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs">الموضوع *</Label>
+              <Label className="text-xs">{t("الموضوع *")}</Label>
               <Input required value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} className="bg-background" />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs">ملاحظات</Label>
+              <Label className="text-xs">{t("ملاحظات")}</Label>
               <Textarea value={form.notes ?? ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="min-h-16 bg-background" />
             </div>
             <DialogFooter className="sm:col-span-2">
-              <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>إلغاء</Button>
+              <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>{t("إلغاء")}</Button>
               <Button type="submit" disabled={saveInteraction.isPending} className="font-bold">
-                {saveInteraction.isPending ? "جارٍ الحفظ..." : "حفظ"}
+                {saveInteraction.isPending ? t("جارٍ الحفظ...") : t("حفظ")}
               </Button>
             </DialogFooter>
           </form>
@@ -375,16 +376,16 @@ export function EntitiesView() {
       <ConfirmDialog
         open={!!toDelete}
         onOpenChange={(v) => !v && setToDelete(null)}
-        desc={`سيتم حذف التفاعل «${toDelete?.subject}» نهائياً.`}
+        desc={t("سيتم حذف التفاعل «{subject}» نهائياً.", { subject: toDelete?.subject ?? "" })}
         loading={deleteInteraction.isPending}
         onConfirm={() =>
           toDelete &&
           deleteInteraction.mutate(toDelete.id, {
             onSuccess: () => {
-              toast({ title: "تم الحذف" });
+              toast({ title: t("تم الحذف") });
               setToDelete(null);
             },
-            onError: (e) => toast({ variant: "destructive", title: "تعذر الحذف", description: e.message }),
+            onError: (e) => toast({ variant: "destructive", title: t("تعذر الحذف"), description: e.message }),
           })
         }
       />

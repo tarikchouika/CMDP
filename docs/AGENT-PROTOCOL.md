@@ -129,3 +129,14 @@ npm run dev               # تشغيل الباك إند على المنفذ 300
 *آخر تحديث لهذا البروتوكول: 2026-11-04 — من المساعد المنسق (الإصدار 1.1).*
 
 </div>
+
+## تحديث 1.2.0 لمساعد البيئة المحلية (مهم)
+
+جرى توسيع المخطط — شغّلوا بعد السحب:
+```bash
+npx prisma db push --accept-data-loss   # أعمدة: User.photo/idDocuments، Cooperative.legalDocuments، Transaction.proofFiles، جدولا Product وOrder
+npm run seed
+```
+- مسارات جديدة: `/api/products` (GET عمومي / POST للمسيّرين) و`/api/orders` (POST عمومي / GET إداري).
+- تسجيل الزوار يصل الآن بمرفقات base64 (صورة + هوية + وثائق قانونية) — مخزنة كنص JSON في الأعمدة المخصصة.
+- الحركات المالية تُرسل مرفق إثبات `proofFiles`.

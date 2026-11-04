@@ -20,6 +20,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ZelligeStar } from "@/components/patterns";
 import type { LucideIcon } from "lucide-react";
+import { t } from "@/lib/i18n";
 
 /** ترويسة صفحة داخلية */
 export function PageHeader({
@@ -155,10 +156,10 @@ export function ConfirmDialog({
         </DialogHeader>
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            إلغاء
+            {t("إلغاء")}
           </Button>
           <Button variant="destructive" onClick={onConfirm} disabled={loading}>
-            {loading ? "جارٍ الحذف..." : "حذف نهائي"}
+            {loading ? t("جارٍ الحذف...") : t("حذف نهائي")}
           </Button>
         </DialogFooter>
       </DialogContent>

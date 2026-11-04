@@ -44,6 +44,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { t } from "@/lib/i18n";
 
 type DocForm = Omit<DocumentItem, "id" | "createdAt"> & { id?: number | null };
 
@@ -110,10 +111,10 @@ export function DocumentsView() {
       { ...form, cooperativeId: activeCoopId, expiryDate: form.expiryDate || null },
       {
         onSuccess: () => {
-          toast({ title: form.id ? "تم تحديث الوثيقة" : "تمت إضافة الوثيقة" });
+          toast({ title: form.id ? t("تم تحديث الوثيقة") : t("تمت إضافة الوثيقة") });
           setFormOpen(false);
         },
-        onError: (err) => toast({ variant: "destructive", title: "تعذر الحفظ", description: err.message }),
+        onError: (err) => toast({ variant: "destructive", title: t("تعذر الحفظ"), description: err.message }),
       }
     );
   }
@@ -121,20 +122,20 @@ export function DocumentsView() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="سجل الوثائق"
-        desc={`أرشيف وثائق ${coop?.name ?? "التعاونية"} — النظام الأساسي، المحاضر، التقارير، والوثائق الإدارية`}
+        title={t("سجل الوثائق")}
+        desc={`أرشيف وثائق ${coop?.name ?? t("التعاونية")} — النظام الأساسي، المحاضر، التقارير، والوثائق الإدارية`}
         actions={
           <Button onClick={openCreate} className="gap-1.5 font-bold">
             <Plus className="size-4" />
-            إضافة وثيقة
+            {t("إضافة وثيقة")}
           </Button>
         }
       />
 
       <div className="grid grid-cols-3 gap-4">
-        <StatCard label="وثائق سارية" value={health.valid} icon={FileCheck2} tone="zellij" />
-        <StatCard label="قاربت الانتهاء" value={health.expiring} icon={FileWarning} tone="saffron" />
-        <StatCard label="منتهية الصلاحية" value={health.expired} icon={CalendarClock} tone="plum" />
+        <StatCard label={t("وثائق سارية")} value={health.valid} icon={FileCheck2} tone="zellij" />
+        <StatCard label={t("قاربت الانتهاء")} value={health.expiring} icon={FileWarning} tone="saffron" />
+        <StatCard label={t("منتهية الصلاحية")} value={health.expired} icon={CalendarClock} tone="plum" />
       </div>
 
       {/* تصفية حسب النوع */}
@@ -143,7 +144,7 @@ export function DocumentsView() {
           onClick={() => setTypeFilter("ALL")}
           className={`rounded-full border px-3.5 py-1.5 text-xs font-bold transition-colors ${typeFilter === "ALL" ? "border-terra bg-terra text-cream" : "border-border bg-card text-muted-foreground hover:border-terra/40"}`}
         >
-          الكل ({computed.length})
+          {t("الكل")} ({computed.length})
         </button>
         {Object.entries(DOC_TYPES).map(([k, v]) => {
           const count = computed.filter((d) => d.type === k).length;
@@ -161,7 +162,7 @@ export function DocumentsView() {
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState icon={FileText} title="لا توجد وثائق" desc="أضف القانون الأساسي والمحاضر والتقارير لبناء الأرشيف الرقمي." action={<Button onClick={openCreate} className="gap-1.5"><Plus className="size-4" />إضافة وثيقة</Button>} />
+        <EmptyState icon={FileText} title={t("لا توجد وثائق")} desc={t("أضف القانون الأساسي والمحاضر والتقارير لبناء الأرشيف الرقمي.")} action={<Button onClick={openCreate} className="gap-1.5"><Plus className="size-4" />{t("إضافة وثيقة")}</Button>} />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {filtered.map((d) => (
@@ -177,21 +178,21 @@ export function DocumentsView() {
                   </div>
                   <h3 className="mt-2 text-sm font-extrabold leading-6 text-foreground">{d.title}</h3>
                   <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
-                    <span>مرجع: {d.reference ?? "—"}</span>
-                    <span>الإصدار: {formatDate(d.issueDate)}</span>
+                    <span>{t("مرجع:")} {d.reference ?? "—"}</span>
+                    <span>{t("الإصدار:")} {formatDate(d.issueDate)}</span>
                     {d.expiryDate && (
                       <span className={d.daysLeft !== null && d.daysLeft < 0 ? "font-bold text-destructive" : d.daysLeft !== null && d.daysLeft <= 90 ? "font-bold text-[#8a6414]" : ""}>
-                        الانتهاء: {formatDate(d.expiryDate)}
-                        {d.daysLeft !== null && d.daysLeft >= 0 ? ` (بعد ${d.daysLeft} يوم)` : d.daysLeft !== null ? " (منتهية)" : ""}
+                        {t("الانتهاء:")} {formatDate(d.expiryDate)}
+                        {d.daysLeft !== null && d.daysLeft >= 0 ? ` (بعد ${d.daysLeft} يوم)` : d.daysLeft !== null ? t(" (منتهية)") : ""}
                       </span>
                     )}
                   </div>
                   {d.notes && <p className="mt-2 rounded-lg bg-muted/50 px-3 py-2 text-[11px] leading-5 text-muted-foreground">{d.notes}</p>}
                   <div className="mt-3 flex justify-end gap-1 border-t border-border/60 pt-2.5">
-                    <Button variant="ghost" size="icon" className="size-7" aria-label="تحرير" onClick={() => openEdit(d)}>
+                    <Button variant="ghost" size="icon" className="size-7" aria-label={t("تحرير")} onClick={() => openEdit(d)}>
                       <Pencil className="size-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="size-7 text-destructive" aria-label="حذف" onClick={() => setToDelete(d)}>
+                    <Button variant="ghost" size="icon" className="size-7 text-destructive" aria-label={t("حذف")} onClick={() => setToDelete(d)}>
                       <Trash2 className="size-3.5" />
                     </Button>
                   </div>
@@ -207,17 +208,17 @@ export function DocumentsView() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-display">
               <ZelligeStar className="size-4 text-saffron" />
-              {form.id ? "تحرير الوثيقة" : "إضافة وثيقة"}
+              {form.id ? t("تحرير الوثيقة") : t("إضافة وثيقة")}
             </DialogTitle>
-            <DialogDescription>سجّل الوثيقة مع مراجعها وتاريخ انتهائها لتفادي الغرامات.</DialogDescription>
+            <DialogDescription>{t("سجّل الوثيقة مع مراجعها وتاريخ انتهائها لتفادي الغرامات.")}</DialogDescription>
           </DialogHeader>
           <form onSubmit={submit} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs">عنوان الوثيقة *</Label>
-              <Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="bg-background" placeholder="محضر الجمع العام العادي..." />
+              <Label className="text-xs">{t("عنوان الوثيقة *")}</Label>
+              <Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="bg-background" placeholder={t("محضر الجمع العام العادي...")} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">النوع *</Label>
+              <Label className="text-xs">{t("النوع *")}</Label>
               <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
                 <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -226,26 +227,26 @@ export function DocumentsView() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">المرجع</Label>
-              <Input value={form.reference ?? ""} onChange={(e) => setForm({ ...form, reference: e.target.value })} className="bg-background" placeholder="م.ع/2026/06" />
+              <Label className="text-xs">{t("المرجع")}</Label>
+              <Input value={form.reference ?? ""} onChange={(e) => setForm({ ...form, reference: e.target.value })} className="bg-background" placeholder={t("م.ع/2026/06")} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">تاريخ الإصدار *</Label>
+              <Label className="text-xs">{t("تاريخ الإصدار *")}</Label>
               <Input required type="date" value={toInputDate(form.issueDate)} onChange={(e) => setForm({ ...form, issueDate: new Date(e.target.value).toISOString() })} className="bg-background" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">تاريخ الانتهاء (إن وجد)</Label>
+              <Label className="text-xs">{t("تاريخ الانتهاء (إن وجد)")}</Label>
               <Input type="date" value={toInputDate(form.expiryDate || null)} onChange={(e) => setForm({ ...form, expiryDate: e.target.value ? new Date(e.target.value).toISOString() : "" })} className="bg-background" />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs">ملاحظات</Label>
+              <Label className="text-xs">{t("ملاحظات")}</Label>
               <Textarea value={form.notes ?? ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="min-h-16 bg-background" />
             </div>
             <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 p-3 sm:col-span-2">
               <div>
-                <Label htmlFor="doc-shared" className="text-xs font-bold">المشاركة مع المتعاقدين والمصرح لهم</Label>
+                <Label htmlFor="doc-shared" className="text-xs font-bold">{t("المشاركة مع المتعاقدين والمصرح لهم")}</Label>
                 <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
-                  تُظهر الوثيقة في فضاء المتعاقدين والأعضاء ضمن «الوثائق المصرح بها»
+                  {t("تُظهر الوثيقة في فضاء المتعاقدين والأعضاء ضمن «الوثائق المصرح بها»")}
                 </p>
               </div>
               <Switch
@@ -255,10 +256,10 @@ export function DocumentsView() {
               />
             </div>
             <DialogFooter className="sm:col-span-2">
-              <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>إلغاء</Button>
+              <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>{t("إلغاء")}</Button>
               <Button type="submit" disabled={saveDoc.isPending} className="gap-1.5 font-bold">
                 <BadgeCheck className="size-4" />
-                {saveDoc.isPending ? "جارٍ الحفظ..." : "حفظ"}
+                {saveDoc.isPending ? t("جارٍ الحفظ...") : t("حفظ")}
               </Button>
             </DialogFooter>
           </form>
@@ -268,16 +269,16 @@ export function DocumentsView() {
       <ConfirmDialog
         open={!!toDelete}
         onOpenChange={(v) => !v && setToDelete(null)}
-        desc={`سيتم حذف «${toDelete?.title}» نهائياً من السجل.`}
+        desc={t("سيتم حذف «{title}» نهائياً من السجل.", { title: toDelete?.title ?? "" })}
         loading={deleteDoc.isPending}
         onConfirm={() =>
           toDelete &&
           deleteDoc.mutate(toDelete.id, {
             onSuccess: () => {
-              toast({ title: "تم حذف الوثيقة" });
+              toast({ title: t("تم حذف الوثيقة") });
               setToDelete(null);
             },
-            onError: (e) => toast({ variant: "destructive", title: "تعذر الحذف", description: e.message }),
+            onError: (e) => toast({ variant: "destructive", title: t("تعذر الحذف"), description: e.message }),
           })
         }
       />

@@ -23,6 +23,10 @@ type RegisterBody = {
   phone?: string;
   email?: string;
   cin?: string;
+  // مرفقات الهوية والوثائق القانونية (base64)
+  photo?: { name: string; type: string; size: number; dataUrl: string };
+  idDocuments?: { name: string; type: string; size: number; dataUrl: string }[];
+  legalDocuments?: { name: string; type: string; size: number; dataUrl: string }[];
   // JOIN
   cooperativeId?: number;
   requestType?: "MEMBERSHIP" | "CONTRACT";
@@ -43,6 +47,33 @@ type RegisterBody = {
 };
 
 const clean = (v: unknown, max = 200) => String(v ?? "").trim().slice(0, max);
+
+type Attachment = { name: string; type: string; size: number; dataUrl: string };
+
+/** تنظيف قائمة مرفقات: يرفض غير PDF/الصور ويقص عن الحد المسموح */
+function sanitizeFiles(input: unknown, maxFiles = 8): Attachment[] {
+  if (!Array.isArray(input)) return [];
+  const out: Attachment[] = [];
+  for (const raw of input.slice(0, maxFiles)) {
+    const f = raw as Partial<Attachment>;
+    if (typeof f?.dataUrl !== "string") continue;
+    if (!/^(application\/pdf|image\/(jpeg|png|webp))$/.test(String(f.type))) continue;
+    if (f.dataUrl.length > 6_000_000) continue; // ~4.4MB
+    out.push({
+      name: clean(f.name, 160) || "ملف",
+      type: String(f.type),
+      size: Number(f.size) || 0,
+      dataUrl: f.dataUrl,
+    });
+    if (out.length >= maxFiles) break;
+  }
+  return out;
+}
+
+function sanitizePhoto(input: unknown): string | null {
+  const [photo] = sanitizeFiles(input ? [input] : [], 1);
+  return photo ? JSON.stringify(photo) : null;
+}
 
 export async function POST(req: Request) {
   const body = await readJson<RegisterBody>(req);
@@ -76,6 +107,8 @@ export async function POST(req: Request) {
         phone: clean(body.phone, 30) || null,
         email: clean(body.email, 120) || null,
         cin: clean(body.cin, 30) || null,
+        photo: sanitizePhoto(body.photo),
+        idDocuments: JSON.stringify(sanitizeFiles(body.idDocuments)) ,
         role: "USER",
         accountType: requestType === "CONTRACT" ? "CONTRACTOR" : "MEMBER",
         cooperativeId: coopId,
@@ -114,6 +147,7 @@ export async function POST(req: Request) {
 
     const coop = await db.cooperative.create({
       data: {
+      legalDocuments: JSON.stringify(sanitizeFiles(body.legalDocuments, 12)) || null,
         name,
         registrationNumber: `طلب-${Date.now().toString(36)}`, // مؤقت إلى حين استكمال التسجيل الرسمي
         sector: clean(c.sector, 80),
@@ -138,6 +172,8 @@ export async function POST(req: Request) {
         phone: clean(body.phone, 30) || null,
         email: clean(body.email, 120) || null,
         cin: clean(body.cin, 30) || null,
+        photo: sanitizePhoto(body.photo),
+        idDocuments: JSON.stringify(sanitizeFiles(body.idDocuments)) ,
         role: "COADMIN",
         accountType: "PRESIDENT",
         cooperativeId: coop.id,
@@ -159,6 +195,8 @@ export async function POST(req: Request) {
       phone: clean(body.phone, 30) || null,
       email: clean(body.email, 120) || null,
       cin: clean(body.cin, 30) || null,
+        photo: sanitizePhoto(body.photo),
+        idDocuments: JSON.stringify(sanitizeFiles(body.idDocuments)) ,
       role: "USER",
       accountType: null,
       cooperativeId: null,

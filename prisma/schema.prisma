@@ -18,6 +18,10 @@ datasource db {
 // نوع الحساب (accountType): PRESIDENT رئيس | MANAGER عضو مسير
 //                 MEMBER عضو غير مسير | CONTRACTOR متعاقد مع التعاونية
 model User {
+  // مرفقات الهوية (base64 JSON) — صورة شخصية + وثيقة هوية
+  photo           String?
+  idDocuments     String? // JSON: [{name,type,size,dataUrl}]
+
   id             Int           @id @default(autoincrement())
   username       String        @unique
   passwordHash   String
@@ -39,6 +43,10 @@ model User {
 
 // ─── التعاونية ────────────────────────────────────────────────────────────
 model Cooperative {
+  products      Product[]
+  // الوثائق القانونية المثبتة للوجود والنشاط (base64 JSON)
+  legalDocuments  String? // JSON: [{name,type,size,dataUrl}]
+
   id                 Int               @id @default(autoincrement())
   name               String
   registrationNumber String            @unique // رقم التسجيل بالسجل المحلي
@@ -143,6 +151,9 @@ model Meeting {
 
 // ─── الحركات المالية ──────────────────────────────────────────────────────
 model Transaction {
+  // إثبات الحركة: فاتورة/وصل أداء (base64 JSON)
+  proofFiles      String? // JSON: [{name,type,size,dataUrl}]
+
   id             Int          @id @default(autoincrement())
   cooperativeId  Int
   cooperative    Cooperative  @relation(fields: [cooperativeId], references: [id], onDelete: Cascade)
@@ -285,4 +296,35 @@ model OpportunityApplication {
   experience     String? // نبذة عن التجربة والمؤهلات
   status         String       @default("PENDING") // PENDING | REVIEWED | ACCEPTED | REJECTED
   createdAt      DateTime     @default(now())
+}
+
+// ─── المتجر الإلكتروني ──────────────────────────────────────────────────────
+model Product {
+  id             Int          @id @default(autoincrement())
+  cooperativeId  Int
+  cooperative    Cooperative  @relation(fields: [cooperativeId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  category       String // غذائي | حرفي | نسيج | خدمات | ...
+  unit           String? // لتر، كغ، قطعة...
+  price          Float // بالدرهم
+  imageUrl       String?
+  inStock        Boolean      @default(true)
+  featured       Boolean      @default(false)
+  status         String       @default("ACTIVE") // ACTIVE | HIDDEN
+  createdAt      DateTime     @default(now())
+  orders         Order[]
+}
+
+model Order {
+  id           Int       @id @default(autoincrement())
+  productId    Int
+  product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity     Int       @default(1)
+  customerName String
+  phone        String
+  city         String?
+  note         String?
+  status       String    @default("NEW") // NEW | CONTACTED | DONE | CANCELLED
+  createdAt    DateTime  @default(now())
 }

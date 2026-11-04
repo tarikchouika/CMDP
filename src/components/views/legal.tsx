@@ -12,6 +12,7 @@ import { useUIStore } from "@/store/ui";
 import { CmdpLogo, DividerZellige, ZelligeStar } from "@/components/patterns";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { t } from "@/lib/i18n";
 
 interface LegalSection {
   h: string;
@@ -155,7 +156,7 @@ const LEGAL_DOCS: LegalDoc[] = [
       {
         h: "1. المحرر والاستضافة",
         body: [
-          `المحرر: إدارة منصة ${APP_NAME} — ${APP_FULL_NAME}، المملكة المغربية. للتواصل: عبر وحدات التواصل داخل المنصة أو عبر بيانات الاتصال المعلنة في صفحة التعريف.`,
+          t("المحرر: إدارة منصة {app} — {fullname}، المملكة المغربية. للتواصل: عبر وحدات التواصل داخل المنصة أو عبر بيانات الاتصال المعلنة في صفحة التعريف.", { app: APP_NAME, fullname: APP_FULL_NAME }),
           "الاستضافة السحابية للواجهة العمومية: Cloudflare Pages، مع باك إند محلي لدى كل تعاونية تختار تشغيله على بنيتها الخاصة.",
         ],
       },
@@ -229,21 +230,21 @@ export function LegalView() {
           <button onClick={() => setView("landing")} aria-label={APP_NAME}>
             <CmdpLogo light />
           </button>
-          <span className="me-auto hidden text-sm text-cream/75 md:block">المركز القانوني للمنصة</span>
+          <span className="me-auto hidden text-sm text-cream/75 md:block">{t("المركز القانوني للمنصة")}</span>
           <Button
             onClick={() => setView("landing")}
             variant="outline"
             className="gap-1.5 border-cream/25 bg-transparent text-cream hover:bg-cream/10 hover:text-cream"
           >
             <ArrowRight className="size-4" />
-            الرئيسية
+            {t("الرئيسية")}
           </Button>
         </div>
       </header>
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 md:px-6">
         {/* اختيار الوثيقة */}
-        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4" role="tablist" aria-label="الوثائق القانونية">
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4" role="tablist" aria-label={t("الوثائق القانونية")}>
           {LEGAL_DOCS.map((d) => (
             <button
               key={d.id}
@@ -270,28 +271,28 @@ export function LegalView() {
               <doc.icon className="size-5" />
             </span>
             <div>
-              <h1 className="font-display text-xl font-extrabold text-foreground md:text-2xl">{doc.title}</h1>
-              <p className="mt-1 text-xs text-muted-foreground">آخر تحديث: {doc.updated}</p>
+              <h1 className="font-display text-xl font-extrabold text-foreground md:text-2xl">{t(doc.title)}</h1>
+              <p className="mt-1 text-xs text-muted-foreground">{t('آخر تحديث:')} {t(doc.updated)}</p>
             </div>
           </div>
 
           <DividerZellige className="my-6 opacity-60" />
 
           <p className="rounded-2xl border border-saffron/25 bg-saffron/10 p-4 text-sm leading-8 text-[#8a6414]">
-            {doc.intro}
+            {t(doc.intro)}
           </p>
 
           <div className="mt-6 space-y-8">
             {doc.sections.map((s) => (
-              <section key={s.h}>
+              <section key={t(s.h)}>
                 <h2 className="flex items-center gap-2 font-display text-base font-extrabold text-foreground">
                   <ZelligeStar className="size-3.5 text-terra" />
-                  {s.h}
+                  {t(s.h)}
                 </h2>
                 <div className="mt-3 space-y-3 border-s-2 border-terra/20 ps-4">
                   {s.body.map((p, i) => (
                     <p key={i} className="text-sm leading-8 text-muted-foreground">
-                      {p}
+                      {t(p)}
                     </p>
                   ))}
                 </div>
@@ -302,12 +303,12 @@ export function LegalView() {
 
         <p className="mt-6 flex items-center justify-center gap-2 text-center text-[11px] text-muted-foreground">
           <ScrollText className="size-3.5" />
-          للاستفسارات القانونية حول استعمال المنصة: <span className="font-bold text-foreground">إدارة CMDP</span>
+          {t("للاستفسارات القانونية حول استعمال المنصة:")} <span className="font-bold text-foreground">{t("إدارة CMDP")}</span>
         </p>
       </main>
 
       <footer className="mt-auto border-t border-border bg-card/60 px-6 py-5 text-center text-xs text-muted-foreground">
-        © 2026 {APP_NAME} — {APP_FULL_NAME} • وثائق قانونية متوافقة مع التشريع المغربي
+        © 2026 {APP_NAME} — {t(APP_FULL_NAME)} • {t("وثائق قانونية متوافقة مع التشريع المغربي")}
       </footer>
     </div>
   );

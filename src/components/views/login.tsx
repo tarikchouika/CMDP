@@ -15,15 +15,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { t } from "@/lib/i18n";
 
 /** حسابات العرض التجريبي — كلمة المرور الموحدة cmdp2026 */
 const DEMO_ACCOUNTS: { username: string; label: string }[] = [
-  { username: "superadmin", label: "مالك المنصة" },
-  { username: "admin", label: "أدمن المنصة" },
-  { username: "president", label: "رئيسة تعاونية" },
-  { username: "manager", label: "عضو مسير" },
-  { username: "member", label: "عضو غير مسير" },
-  { username: "contractor", label: "متعاقد" },
+  { username: "superadmin", label: t("مالك المنصة") },
+  { username: "admin", label: t("أدمن المنصة") },
+  { username: "president", label: t("رئيسة تعاونية") },
+  { username: "manager", label: t("عضو مسير") },
+  { username: "member", label: t("عضو غير مسير") },
+  { username: "contractor", label: t("متعاقد") },
 ];
 
 export function LoginView() {
@@ -47,8 +48,8 @@ export function LoginView() {
       setAuthToken(res.token);
       setAuthed(res.user);
       toast({
-        title: `مرحباً، ${res.user.fullName}`,
-        description: "تم تسجيل الدخول بنجاح",
+        title: t("مرحباً، {name}", { name: res.user.fullName }),
+        description: t("تم تسجيل الدخول بنجاح"),
       });
     } catch (err) {
       if (err instanceof ApiUnavailableError) {
@@ -60,7 +61,7 @@ export function LoginView() {
           setAuthed({
             id: 0,
             username: account.username,
-            fullName: `${account.label} (عرض)`,
+            fullName: t("{name} (عرض)", { name: account.label }),
             role:
               account.username === "superadmin"
                 ? "SUPER_ADMIN"
@@ -89,27 +90,27 @@ export function LoginView() {
                     : null,
             cooperativeName:
               account.username === "president" || account.username === "member"
-                ? "تعاونية تافوكت لإنتاج زيت أركان"
+                ? t("تعاونية تافوكت لإنتاج زيت أركان")
                 : account.username === "manager"
-                  ? "تعاونية نسج الأطلس للنسيج التقليدي"
+                  ? t("تعاونية نسج الأطلس للنسيج التقليدي")
                   : account.username === "contractor"
-                    ? "تعاونية دار الزليج للصناعة التقليدية"
+                    ? t("تعاونية دار الزليج للصناعة التقليدية")
                     : null,
             status: "ACTIVE",
           });
           toast({
-            title: "دخول في وضع العرض التجريبي",
-            description: "الباك إند غير متاح حالياً — البيانات للعرض فقط",
+            title: t("دخول في وضع العرض التجريبي"),
+            description: t("الباك إند غير متاح حالياً — البيانات للعرض فقط"),
           });
         } else {
           toast({
             variant: "destructive",
-            title: "لا يمكن الوصول إلى الخادم",
-            description: "في وضع العرض: اختر حساباً من القائمة وكلمة المرور cmdp2026",
+            title: t("لا يمكن الوصول إلى الخادم"),
+            description: t("في وضع العرض: اختر حساباً من القائمة وكلمة المرور cmdp2026"),
           });
         }
       } else {
-        toast({ variant: "destructive", title: "فشل تسجيل الدخول", description: (err as Error).message });
+        toast({ variant: "destructive", title: t("فشل تسجيل الدخول"), description: (err as Error).message });
       }
     } finally {
       setLoading(false);
@@ -132,7 +133,7 @@ export function LoginView() {
             <CmdpMark className="size-16 text-terra-soft" />
             <div>
               <h1 className="font-display text-2xl font-extrabold text-cream">CMDP</h1>
-              <p className="mt-1 text-xs text-cream/70">المنصة الرقمية لإدارة التعاونيات</p>
+              <p className="mt-1 text-xs text-cream/70">{t("المنصة الرقمية لإدارة التعاونيات")}</p>
             </div>
             <DividerZellige className="w-40" />
           </div>
@@ -140,7 +141,7 @@ export function LoginView() {
           <form onSubmit={onSubmit} className="space-y-4 p-6">
             <div className="space-y-2">
               <Label htmlFor="username" className="flex items-center gap-1.5 text-xs font-bold">
-                <User className="size-3.5 text-terra" /> اسم المستخدم
+                <User className="size-3.5 text-terra" /> {t("اسم المستخدم")}
               </Label>
               <Input
                 id="username"
@@ -155,7 +156,7 @@ export function LoginView() {
 
             <div className="space-y-2">
               <Label htmlFor="password" className="flex items-center gap-1.5 text-xs font-bold">
-                <Lock className="size-3.5 text-terra" /> كلمة المرور
+                <Lock className="size-3.5 text-terra" /> {t("كلمة المرور")}
               </Label>
               <Input
                 id="password"
@@ -171,12 +172,12 @@ export function LoginView() {
 
             <Button type="submit" className="h-11 w-full gap-2 text-sm font-bold" disabled={loading}>
               {loading ? <Loader2 className="size-4 animate-spin" /> : <KeyRound className="size-4" />}
-              {loading ? "جارٍ التحقق..." : "الدخول إلى المنصة"}
+              {loading ? t("جارٍ التحقق...") : t("الدخول إلى المنصة")}
             </Button>
 
             <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
               <span className="h-px flex-1 bg-border" />
-              أو
+              {t("أو")}
               <span className="h-px flex-1 bg-border" />
             </div>
 
@@ -187,14 +188,14 @@ export function LoginView() {
               onClick={() => setView("register")}
             >
               <UserPlus className="size-4 text-terra" />
-              حساب جديد أو انخراط في تعاونية
+              {t("حساب جديد أو انخراط في تعاونية")}
             </Button>
 
             {/* حسابات العرض حسب الأدوار */}
             <div className="rounded-xl border border-saffron/30 bg-saffron/10 p-3">
               <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold text-[#8a6414]">
                 <Users2 className="size-3.5" />
-                حسابات العرض حسب الأدوار (كلمة المرور: cmdp2026)
+                {t("حسابات العرض حسب الأدوار (كلمة المرور: cmdp2026)")}
               </p>
               <div className="grid grid-cols-2 gap-1.5">
                 {DEMO_ACCOUNTS.map((a) => (
@@ -212,12 +213,12 @@ export function LoginView() {
                         : "border-saffron/25 bg-card text-[#8a6414] hover:bg-saffron/20"
                     )}
                   >
-                    {a.label}
+                    {t(a.label)}
                   </button>
                 ))}
               </div>
               <p className="mt-2 text-[10px] leading-4 text-[#8a6414]/80">
-                تعمل المنصة محلياً بقاعدة SQLite، أو في وضع عرض ساكن دون باك إند.
+                {t("تعمل المنصة محلياً بقاعدة SQLite، أو في وضع عرض ساكن دون باك إند.")}
               </p>
             </div>
           </form>
@@ -228,12 +229,12 @@ export function LoginView() {
           className="mx-auto mt-6 flex items-center gap-2 rounded-full border border-cream/20 bg-cream/5 px-5 py-2 text-xs font-semibold text-cream/80 transition-colors hover:bg-cream/10"
         >
           <ArrowRight className="size-3.5" />
-          العودة إلى الصفحة الرئيسية
+          {t("العودة إلى الصفحة الرئيسية")}
         </button>
 
         <div className="mt-6 flex items-center justify-center gap-2 text-[10px] text-cream/40">
           <ZelligeStar className="size-3" />
-          <span>© 2026 CMDP — المملكة المغربية</span>
+          <span>{t("© 2026 CMDP — المملكة المغربية")}</span>
         </div>
       </div>
     </div>

@@ -23,7 +23,9 @@ export type View =
   | "regulations"
   | "users"
   | "myspace"
-  | "settings";
+  | "settings"
+  | "install"
+  | "store";
 
 export const VIEWS: View[] = [
   "landing",
@@ -42,10 +44,12 @@ export const VIEWS: View[] = [
   "users",
   "myspace",
   "settings",
+  "install",
+  "store",
 ];
 
 /** الوحدات العمومية المتاحة دائماً */
-export const PUBLIC_VIEWS: View[] = ["landing", "login", "register", "opportunities", "legal"];
+export const PUBLIC_VIEWS: View[] = ["landing", "login", "register", "opportunities", "legal", "install", "store"];
 
 interface UIState {
   view: View;

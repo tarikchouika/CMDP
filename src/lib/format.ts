@@ -1,33 +1,40 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// CMDP — أدوات التنسيق (الدرهم، التواريخ، الأرقام)
+// CMDP — أدوات التنسيق (الدرهم، التواريخ، الأرقام) — متوافقة مع لغة العرض
 // ═══════════════════════════════════════════════════════════════════════════
 
-const madFmt = new Intl.NumberFormat("ar-MA", {
-  style: "currency",
-  currency: "MAD",
-  maximumFractionDigits: 0,
-});
+import { getLang, LANGS } from "@/lib/i18n";
 
-const numFmt = new Intl.NumberFormat("ar-MA");
+/** رمز العملة حسب اللغة (ar: د.م. — غير ذلك: MAD) */
+function currencySuffix(): string {
+  return getLang() === "ar" ? "د.م." : "MAD";
+}
+
+function locale(): string {
+  return LANGS.find((l) => l.code === getLang())?.locale ?? "ar-MA";
+}
+
+function numFmt(): Intl.NumberFormat {
+  return new Intl.NumberFormat(locale());
+}
 
 export function formatMAD(v: number | null | undefined): string {
   if (v == null) return "—";
-  return madFmt.format(v);
+  return `${numFmt().format(v)} ${currencySuffix()}`;
 }
 
 export function formatNumber(v: number | null | undefined): string {
   if (v == null) return "—";
-  return numFmt.format(v);
+  return numFmt().format(v);
 }
 
 export function formatDate(iso: string | Date | null | undefined): string {
   if (!iso) return "—";
-  return new Intl.DateTimeFormat("ar-MA", { dateStyle: "long" }).format(new Date(iso));
+  return new Intl.DateTimeFormat(locale(), { dateStyle: "long" }).format(new Date(iso));
 }
 
 export function formatShortDate(iso: string | Date | null | undefined): string {
   if (!iso) return "—";
-  return new Intl.DateTimeFormat("ar-MA", {
+  return new Intl.DateTimeFormat(locale(), {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -35,7 +42,7 @@ export function formatShortDate(iso: string | Date | null | undefined): string {
 }
 
 export function formatMonthYear(iso: string | Date): string {
-  return new Intl.DateTimeFormat("ar-MA", { month: "short", year: "numeric" }).format(
+  return new Intl.DateTimeFormat(locale(), { month: "short", year: "numeric" }).format(
     new Date(iso)
   );
 }

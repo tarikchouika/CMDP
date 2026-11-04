@@ -44,6 +44,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { t } from "@/lib/i18n";
 
 type AssemblyForm = Omit<Assembly, "id" | "createdAt"> & { id?: number | null };
 type MeetingForm = Omit<Meeting, "id" | "createdAt"> & { id?: number | null };
@@ -121,10 +122,10 @@ export function AssemblyView() {
       { ...gaForm, cooperativeId: activeCoopId },
       {
         onSuccess: () => {
-          toast({ title: gaForm.id ? "تم تحديث الجمع العام" : "تمت برمجة الجمع العام" });
+          toast({ title: gaForm.id ? t("تم تحديث الجمع العام") : t("تمت برمجة الجمع العام") });
           setGaFormOpen(false);
         },
-        onError: (err) => toast({ variant: "destructive", title: "تعذر الحفظ", description: err.message }),
+        onError: (err) => toast({ variant: "destructive", title: t("تعذر الحفظ"), description: err.message }),
       }
     );
   }
@@ -150,10 +151,10 @@ export function AssemblyView() {
       { ...mtForm, cooperativeId: activeCoopId },
       {
         onSuccess: () => {
-          toast({ title: mtForm.id ? "تم تحديث الاجتماع" : "تمت إضافة الاجتماع" });
+          toast({ title: mtForm.id ? t("تم تحديث الاجتماع") : t("تمت إضافة الاجتماع") });
           setMtFormOpen(false);
         },
-        onError: (err) => toast({ variant: "destructive", title: "تعذر الحفظ", description: err.message }),
+        onError: (err) => toast({ variant: "destructive", title: t("تعذر الحفظ"), description: err.message }),
       }
     );
   }
@@ -161,19 +162,19 @@ export function AssemblyView() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="الجمع العام والمجلس"
-        desc={`الحياة التعاونية لـ ${coop?.name ?? "التعاونية"} — الجمعات العامة واجتماعات مجلس الإدارة ومحاضرها`}
+        title={t("الجمع العام والمجلس")}
+        desc={`الحياة التعاونية لـ ${coop?.name ?? t("التعاونية")} — الجمعات العامة واجتماعات مجلس الإدارة ومحاضرها`}
       />
 
       <Tabs defaultValue="ga" dir="rtl">
         <TabsList className="bg-secondary">
           <TabsTrigger value="ga" className="gap-1.5 text-xs">
             <Gavel className="size-3.5" />
-            الجمع العام ({(assemblies ?? []).length})
+            {t("الجمع العام")} ({(assemblies ?? []).length})
           </TabsTrigger>
           <TabsTrigger value="council" className="gap-1.5 text-xs">
             <Users2 className="size-3.5" />
-            اجتماعات المجلس ({(meetings ?? []).length})
+            {t("اجتماعات المجلس")} ({(meetings ?? []).length})
           </TabsTrigger>
         </TabsList>
 
@@ -182,12 +183,12 @@ export function AssemblyView() {
           <div className="flex justify-end">
             <Button onClick={openGaCreate} className="gap-1.5 font-bold">
               <Plus className="size-4" />
-              برمجة جمع عام
+              {t("برمجة جمع عام")}
             </Button>
           </div>
 
           {(assemblies ?? []).length === 0 ? (
-            <EmptyState icon={Gavel} title="لا توجد جمعات عامة" desc="برمج الجمع العام العادي السنوي — التزام قانوني بمقتضى القانون 112.12." />
+            <EmptyState icon={Gavel} title={t("لا توجد جمعات عامة")} desc={t("برمج الجمع العام العادي السنوي — التزام قانوني بمقتضى القانون 112.12.")} />
           ) : (
             <div className="relative space-y-4 before:absolute before:inset-y-2 before:start-5 before:w-px before:bg-border">
               {(assemblies ?? []).map((a) => {
@@ -210,10 +211,10 @@ export function AssemblyView() {
                           </p>
                         </div>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="size-8" aria-label="تحرير" onClick={() => openGaEdit(a)}>
+                          <Button variant="ghost" size="icon" className="size-8" aria-label={t("تحرير")} onClick={() => openGaEdit(a)}>
                             <Pencil className="size-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="size-8 text-destructive" aria-label="حذف" onClick={() => setGaToDelete(a)}>
+                          <Button variant="ghost" size="icon" className="size-8 text-destructive" aria-label={t("حذف")} onClick={() => setGaToDelete(a)}>
                             <Trash2 className="size-3.5" />
                           </Button>
                         </div>
@@ -221,7 +222,7 @@ export function AssemblyView() {
 
                       <div className="mt-4 grid gap-3 md:grid-cols-2">
                         <div className="rounded-xl bg-muted/50 p-3.5">
-                          <p className="mb-2 text-[11px] font-extrabold text-terra">جدول الأعمال</p>
+                          <p className="mb-2 text-[11px] font-extrabold text-terra">{t("جدول الأعمال")}</p>
                           <ul className="space-y-1.5">
                             {lines(a.agenda).map((l, i) => (
                               <li key={i} className="flex items-start gap-2 text-xs leading-6 text-foreground">
@@ -232,10 +233,10 @@ export function AssemblyView() {
                           </ul>
                         </div>
                         <div className="rounded-xl bg-zellij/5 p-3.5">
-                          <p className="mb-2 text-[11px] font-extrabold text-zellij">القرارات والتوصيات</p>
+                          <p className="mb-2 text-[11px] font-extrabold text-zellij">{t("القرارات والتوصيات")}</p>
                           {lines(a.decisions).length === 0 ? (
                             <p className="text-xs italic text-muted-foreground">
-                              {upcoming ? "لم يُعقد الجمع بعد — ستُدوَّن القرارات بعد الانعقاد" : "—"}
+                              {upcoming ? t("لم يُعقد الجمع بعد — ستُدوَّن القرارات بعد الانعقاد") : "—"}
                             </p>
                           ) : (
                             <ul className="space-y-1.5">
@@ -251,7 +252,7 @@ export function AssemblyView() {
                       </div>
 
                       <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3">
-                        <span className="text-[11px] font-bold text-muted-foreground">نسبة الحضور</span>
+                        <span className="text-[11px] font-bold text-muted-foreground">{t("نسبة الحضور")}</span>
                         <AttendanceBar attendees={a.attendeesCount} total={totalMembers} />
                       </div>
                     </CardContent>
@@ -269,10 +270,10 @@ export function AssemblyView() {
             <CardContent className="p-5">
               <p className="mb-3 flex items-center gap-2 text-sm font-extrabold">
                 <Users2 className="size-4 text-terra" />
-                تركيبة المجلس الإداري
+                {t("تركيبة المجلس الإداري")}
               </p>
               {council.length === 0 ? (
-                <p className="text-xs text-muted-foreground">لم تُحدَّد مناصب المجلس بعد — حدّدها من سجل الأعضاء.</p>
+                <p className="text-xs text-muted-foreground">{t("لم تُحدَّد مناصب المجلس بعد — حدّدها من سجل الأعضاء.")}</p>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {council
@@ -283,7 +284,7 @@ export function AssemblyView() {
                           {m.fullName[0]}
                         </span>
                         <span className="font-bold">{m.fullName}</span>
-                        <span className="text-[10px] text-muted-foreground">— {m.boardRole ? BOARD_ROLES[m.boardRole] : ""}</span>
+                        <span className="text-[10px] text-muted-foreground">— {m.boardRole ? t(BOARD_ROLES[m.boardRole]) : ""}</span>
                       </span>
                     ))}
                 </div>
@@ -294,12 +295,12 @@ export function AssemblyView() {
           <div className="flex justify-end">
             <Button onClick={openMtCreate} className="gap-1.5 font-bold">
               <Plus className="size-4" />
-              إضافة اجتماع
+              {t("إضافة اجتماع")}
             </Button>
           </div>
 
           {(meetings ?? []).length === 0 ? (
-            <EmptyState icon={Users2} title="لا توجد اجتماعات" desc="سجّل اجتماعات مجلس الإدارة ومحاضرها." />
+            <EmptyState icon={Users2} title={t("لا توجد اجتماعات")} desc={t("سجّل اجتماعات مجلس الإدارة ومحاضرها.")} />
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {(meetings ?? []).map((m) => {
@@ -312,7 +313,7 @@ export function AssemblyView() {
                           <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                             <CalendarDays className="size-3" />
                             {formatDate(m.date)}
-                            {upcoming && <span className="ms-1 rounded-full bg-saffron/15 px-2 py-0.5 text-[9px] font-bold text-[#8a6414]">قادم</span>}
+                            {upcoming && <span className="ms-1 rounded-full bg-saffron/15 px-2 py-0.5 text-[9px] font-bold text-[#8a6414]">{t("قادم")}</span>}
                           </p>
                           <ul className="mt-2.5 space-y-1.5">
                             {lines(m.agenda).map((l, i) => (
@@ -324,7 +325,7 @@ export function AssemblyView() {
                           </ul>
                           {lines(m.decisions).length > 0 && (
                             <div className="mt-3 rounded-lg bg-zellij/5 p-2.5">
-                              <p className="text-[10px] font-extrabold text-zellij">القرارات</p>
+                              <p className="text-[10px] font-extrabold text-zellij">{t("القرارات")}</p>
                               <ul className="mt-1 space-y-1">
                                 {lines(m.decisions).map((l, i) => (
                                   <li key={i} className="text-[11px] leading-5 text-foreground">• {l}</li>
@@ -335,13 +336,13 @@ export function AssemblyView() {
                         </div>
                         <div className="flex shrink-0 flex-col items-end gap-1">
                           <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold tabular-nums text-muted-foreground">
-                            {m.attendeesCount} حاضر
+                            {m.attendeesCount} {t("حاضر")}
                           </span>
                           <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" className="size-7" aria-label="تحرير" onClick={() => openMtEdit(m)}>
+                            <Button variant="ghost" size="icon" className="size-7" aria-label={t("تحرير")} onClick={() => openMtEdit(m)}>
                               <Pencil className="size-3.5" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="size-7 text-destructive" aria-label="حذف" onClick={() => setMtToDelete(m)}>
+                            <Button variant="ghost" size="icon" className="size-7 text-destructive" aria-label={t("حذف")} onClick={() => setMtToDelete(m)}>
                               <Trash2 className="size-3.5" />
                             </Button>
                           </div>
@@ -362,13 +363,13 @@ export function AssemblyView() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-display">
               <ZelligeStar className="size-4 text-saffron" />
-              {gaForm.id ? "تحرير الجمع العام" : "برمجة جمع عام"}
+              {gaForm.id ? t("تحرير الجمع العام") : t("برمجة جمع عام")}
             </DialogTitle>
-            <DialogDescription>المادة القانونية توجب عقد الجمع العام العادي مرة واحدة على الأقل سنوياً.</DialogDescription>
+            <DialogDescription>{t("المادة القانونية توجب عقد الجمع العام العادي مرة واحدة على الأقل سنوياً.")}</DialogDescription>
           </DialogHeader>
           <form onSubmit={submitGa} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">النوع</Label>
+              <Label className="text-xs">{t("النوع")}</Label>
               <Select value={gaForm.type} onValueChange={(v) => setGaForm({ ...gaForm, type: v })}>
                 <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -377,7 +378,7 @@ export function AssemblyView() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">الحالة</Label>
+              <Label className="text-xs">{t("الحالة")}</Label>
               <Select value={gaForm.status} onValueChange={(v) => setGaForm({ ...gaForm, status: v })}>
                 <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -386,29 +387,29 @@ export function AssemblyView() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">التاريخ *</Label>
+              <Label className="text-xs">{t("التاريخ *")}</Label>
               <Input required type="date" value={toInputDate(gaForm.date)} onChange={(e) => setGaForm({ ...gaForm, date: new Date(e.target.value).toISOString() })} className="bg-background" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">محل الانعقاد</Label>
+              <Label className="text-xs">{t("محل الانعقاد")}</Label>
               <Input value={gaForm.location ?? ""} onChange={(e) => setGaForm({ ...gaForm, location: e.target.value })} className="bg-background" />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs">جدول الأعمال (بند في كل سطر) *</Label>
-              <Textarea required value={gaForm.agenda} onChange={(e) => setGaForm({ ...gaForm, agenda: e.target.value })} className="min-h-20 bg-background" placeholder={"المصادقة على التقرير الأدبي\nالمصادقة على الحسابات"} />
+              <Label className="text-xs">{t("جدول الأعمال (بند في كل سطر) *")}</Label>
+              <Textarea required value={gaForm.agenda} onChange={(e) => setGaForm({ ...gaForm, agenda: e.target.value })} className="min-h-20 bg-background" placeholder={t("المصادقة على التقرير الأدبي\nالمصادقة على الحسابات")} />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs">القرارات (بند في كل سطر)</Label>
+              <Label className="text-xs">{t("القرارات (بند في كل سطر)")}</Label>
               <Textarea value={gaForm.decisions ?? ""} onChange={(e) => setGaForm({ ...gaForm, decisions: e.target.value })} className="min-h-20 bg-background" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">عدد الحاضرين</Label>
+              <Label className="text-xs">{t("عدد الحاضرين")}</Label>
               <Input type="number" min={0} max={999} value={gaForm.attendeesCount} onChange={(e) => setGaForm({ ...gaForm, attendeesCount: Number(e.target.value) || 0 })} className="bg-background" />
             </div>
             <DialogFooter className="sm:col-span-2">
-              <Button type="button" variant="outline" onClick={() => setGaFormOpen(false)}>إلغاء</Button>
+              <Button type="button" variant="outline" onClick={() => setGaFormOpen(false)}>{t("إلغاء")}</Button>
               <Button type="submit" disabled={saveAssembly.isPending} className="font-bold">
-                {saveAssembly.isPending ? "جارٍ الحفظ..." : "حفظ"}
+                {saveAssembly.isPending ? t("جارٍ الحفظ...") : t("حفظ")}
               </Button>
             </DialogFooter>
           </form>
@@ -421,31 +422,31 @@ export function AssemblyView() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-display">
               <ZelligeStar className="size-4 text-saffron" />
-              {mtForm.id ? "تحرير الاجتماع" : "إضافة اجتماع مجلس"}
+              {mtForm.id ? t("تحرير الاجتماع") : t("إضافة اجتماع مجلس")}
             </DialogTitle>
-            <DialogDescription>اجتماع مجلس الإدارة — جدول الأعمال والقرارات</DialogDescription>
+            <DialogDescription>{t("اجتماع مجلس الإدارة — جدول الأعمال والقرارات")}</DialogDescription>
           </DialogHeader>
           <form onSubmit={submitMt} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">التاريخ *</Label>
+              <Label className="text-xs">{t("التاريخ *")}</Label>
               <Input required type="date" value={toInputDate(mtForm.date)} onChange={(e) => setMtForm({ ...mtForm, date: new Date(e.target.value).toISOString() })} className="bg-background" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">عدد الحاضرين</Label>
+              <Label className="text-xs">{t("عدد الحاضرين")}</Label>
               <Input type="number" min={0} max={99} value={mtForm.attendeesCount} onChange={(e) => setMtForm({ ...mtForm, attendeesCount: Number(e.target.value) || 0 })} className="bg-background" />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs">جدول الأعمال (بند في كل سطر) *</Label>
+              <Label className="text-xs">{t("جدول الأعمال (بند في كل سطر) *")}</Label>
               <Textarea required value={mtForm.agenda} onChange={(e) => setMtForm({ ...mtForm, agenda: e.target.value })} className="min-h-20 bg-background" />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs">القرارات (بند في كل سطر)</Label>
+              <Label className="text-xs">{t("القرارات (بند في كل سطر)")}</Label>
               <Textarea value={mtForm.decisions ?? ""} onChange={(e) => setMtForm({ ...mtForm, decisions: e.target.value })} className="min-h-20 bg-background" />
             </div>
             <DialogFooter className="sm:col-span-2">
-              <Button type="button" variant="outline" onClick={() => setMtFormOpen(false)}>إلغاء</Button>
+              <Button type="button" variant="outline" onClick={() => setMtFormOpen(false)}>{t("إلغاء")}</Button>
               <Button type="submit" disabled={saveMeeting.isPending} className="font-bold">
-                {saveMeeting.isPending ? "جارٍ الحفظ..." : "حفظ"}
+                {saveMeeting.isPending ? t("جارٍ الحفظ...") : t("حفظ")}
               </Button>
             </DialogFooter>
           </form>
@@ -455,32 +456,32 @@ export function AssemblyView() {
       <ConfirmDialog
         open={!!gaToDelete}
         onOpenChange={(v) => !v && setGaToDelete(null)}
-        desc={`سيتم حذف محضر «${gaToDelete ? ASSEMBLY_TYPES[gaToDelete.type]?.label : ""}» بتاريخ ${gaToDelete ? formatDate(gaToDelete.date) : ""} نهائياً.`}
+        desc={t("سيتم حذف محضر «{type}» بتاريخ {date} نهائياً.", { type: gaToDelete ? ASSEMBLY_TYPES[gaToDelete.type]?.label ?? "" : "", date: gaToDelete ? formatDate(gaToDelete.date) : "" })}
         loading={deleteAssembly.isPending}
         onConfirm={() =>
           gaToDelete &&
           deleteAssembly.mutate(gaToDelete.id, {
             onSuccess: () => {
-              toast({ title: "تم الحذف" });
+              toast({ title: t("تم الحذف") });
               setGaToDelete(null);
             },
-            onError: (e) => toast({ variant: "destructive", title: "تعذر الحذف", description: e.message }),
+            onError: (e) => toast({ variant: "destructive", title: t("تعذر الحذف"), description: e.message }),
           })
         }
       />
       <ConfirmDialog
         open={!!mtToDelete}
         onOpenChange={(v) => !v && setMtToDelete(null)}
-        desc={`سيتم حذف اجتماع ${mtToDelete ? formatDate(mtToDelete.date) : ""} نهائياً.`}
+        desc={t("سيتم حذف اجتماع {date} نهائياً.", { date: mtToDelete ? formatDate(mtToDelete.date) : "" })}
         loading={deleteMeeting.isPending}
         onConfirm={() =>
           mtToDelete &&
           deleteMeeting.mutate(mtToDelete.id, {
             onSuccess: () => {
-              toast({ title: "تم الحذف" });
+              toast({ title: t("تم الحذف") });
               setMtToDelete(null);
             },
-            onError: (e) => toast({ variant: "destructive", title: "تعذر الحذف", description: e.message }),
+            onError: (e) => toast({ variant: "destructive", title: t("تعذر الحذف"), description: e.message }),
           })
         }
       />

@@ -17,6 +17,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Skeleton } from "@/components/ui/skeleton";
+import { t } from "@/lib/i18n";
 
 export function RegulationsView() {
   const { data: regulations, isLoading } = useRegulations();
@@ -36,8 +37,8 @@ export function RegulationsView() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="القوانين واللوائح"
-        desc="مكتبة الإطار القانوني المنظم للتعاونيات بالمملكة المغربية — للتوثيق والتوعية"
+        title={t("القوانين واللوائح")}
+        desc={t("مكتبة الإطار القانوني المنظم للتعاونيات بالمملكة المغربية — للتوثيق والتوعية")}
       />
 
       {/* مسار التأسيس */}
@@ -45,7 +46,7 @@ export function RegulationsView() {
         <CardContent className="p-6">
           <h3 className="flex items-center gap-2 font-display text-sm font-extrabold text-foreground">
             <BookOpenCheck className="size-4 text-terra" />
-            دليل التأسيس — من الفكرة إلى بطاقة التسجيل
+            {t("دليل التأسيس — من الفكرة إلى بطاقة التسجيل")}
           </h3>
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {FOUNDATION_STEPS.map((s, i) => (
@@ -69,7 +70,7 @@ export function RegulationsView() {
           onClick={() => setCat("ALL")}
           className={`rounded-full border px-3.5 py-1.5 text-xs font-bold transition-colors ${cat === "ALL" ? "border-terra bg-terra text-cream" : "border-border bg-card text-muted-foreground hover:border-terra/40"}`}
         >
-          الكل ({(regulations ?? []).length})
+          {t("الكل")} ({(regulations ?? []).length})
         </button>
         {cats.map(([k, count]) => (
           <button
@@ -87,7 +88,7 @@ export function RegulationsView() {
           {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-52" />)}
         </div>
       ) : filtered.length === 0 ? (
-        <EmptyState icon={Scale} title="لا توجد نصوص في هذا التصنيف" />
+        <EmptyState icon={Scale} title={t("لا توجد نصوص في هذا التصنيف")} />
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {filtered.map((r) => (
@@ -117,7 +118,7 @@ export function RegulationsView() {
                   <CollapsibleTrigger asChild>
                     <button className="mt-3 flex items-center gap-1 text-[11px] font-bold text-terra transition-colors hover:text-terra-soft">
                       <ArrowUpRight className="size-3.5" />
-                      النقاط الأساسية ({r.keyPoints.length})
+                      {t("النقاط الأساسية")} ({r.keyPoints.length})
                     </button>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
@@ -139,7 +140,7 @@ export function RegulationsView() {
                       className="mt-3 inline-flex items-center gap-1 text-[11px] font-bold text-zellij hover:underline"
                     >
                       <ExternalLink className="size-3" />
-                      النص الرسمي على موقع الجهة
+                      {t("النص الرسمي على موقع الجهة")}
                     </a>
                   )}
                 </CardContent>

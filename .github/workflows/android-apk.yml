@@ -1,0 +1,110 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# CMDP — سير عمل بناء تطبيق أندرويد (APK) آلياً
+#
+# • بناء موقَّع بشهادة الملكية الرقمية لمدة 30 سنة: CN=TARIK CHOUIKA (حتى 2056)
+# • رابط دائم لآخر إصدار:
+#   https://github.com/tarikchouika/CMDP/releases/download/android-latest/CMDP.apk
+# • يعمل آلياً مع كل دفع إلى main + تشغيل يدوي (workflow_dispatch)
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: "Android APK — CMDP"
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-apk:
+    name: بناء وتوقيع ونشر APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: استنساخ المستودع
+        uses: actions/checkout@v4
+
+      - name: تهيئة Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: تهيئة Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: حساب رقم الإصدار
+        id: ver
+        run: |
+          CODE="$(date -u +%y%m%d)01"
+          NAME="$(date -u +%Y.%m.%d)-${GITHUB_SHA::7}"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "date=$(date -u '+%Y-%m-%d %H:%M UTC')" >> "$GITHUB_OUTPUT"
+
+      - name: بناء APK الموقَّع
+        working-directory: android
+        run: |
+          gradle assembleRelease \
+            -PversionCode=${{ steps.ver.outputs.code }} \
+            -PversionName=${{ steps.ver.outputs.name }} \
+            --no-daemon --stacktrace
+
+      - name: التحقق من التوقيع وشهادة الملكية
+        working-directory: android
+        run: |
+          APK="app/build/outputs/apk/release/app-release.apk"
+          $ANDROID_HOME/build-tools/35.0.0/apksigner verify --print-certs "$APK" | tee ../apksign.txt
+          echo "---"
+          grep -E "Owner:|CN=" ../apksign.txt || { echo "❌ فشل التحقق من التوقيع"; exit 1; }
+
+      - name: تجهيز الأصول للنشر
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk CMDP.apk
+          cp android/cmdp-release.keystore.properties /dev/null 2>/dev/null || true
+          sha256sum CMDP.apk | tee sha256.txt
+          {
+            echo "# تطبيق CMDP لأندرويد — ${{ steps.ver.outputs.name }}"
+            echo ""
+            echo "- **تاريخ البناء:** ${{ steps.ver.outputs.date }}"
+            echo "- **رقم الإصدار:** \`${{ steps.ver.outputs.code }}\`"
+            echo "- **الالتزام:** \`${GITHUB_SHA::7}\`"
+            echo "- **الشهادة:** CN=TARIK CHOUIKA — ملكية رقمية صالحة 30 سنة (2026 → 2056)"
+            echo ""
+            echo "### التثبيت"
+            echo "حمّلوا الملف \`CMDP.apk\` ثم فعّلوا «تثبيت التطبيقات من مصادر غير معروفة» من إعدادات المتصفح، وتجاوزوا تنبيه Play Protect بـ«تفاصيل إضافية ← تثبيت على أي حال». الدليل الكامل داخل المنصة: صفحة **تثبيت التطبيق**."
+            echo ""
+            echo "### بصمة SHA-256"
+            echo "\`\`\`"
+            cat sha256.txt
+            echo "\`\`\`"
+          } > release-notes.md
+          cat release-notes.md
+
+      - name: النشر إلى الإصدار الدائم (android-latest)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-latest
+          name: "تطبيق CMDP لأندرويد — أحدث إصدار"
+          body_path: release-notes.md
+          files: |
+            CMDP.apk
+          make_latest: true
+          preserve_files: false
+
+      - name: رفع مخرجات البناء كأرشيف
+        uses: actions/upload-artifact@v4
+        with:
+          name: CMDP-apk-${{ steps.ver.outputs.name }}
+          path: |
+            CMDP.apk
+            apksign.txt
+            sha256.txt
+          retention-days: 90

@@ -67,6 +67,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { t } from "@/lib/i18n";
 
 const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   JOB: Briefcase,
@@ -96,7 +97,7 @@ function OpportunityCard({ o, onApply, onDetails }: { o: Opportunity; onApply: (
           <div className="flex flex-col items-end gap-1.5">
             <LBadge map={OPPORTUNITY_TYPES} value={o.type} />
             {o.contractType && (
-              <span className="text-[10px] font-semibold text-muted-foreground">{CONTRACT_TYPES[o.contractType] ?? o.contractType}</span>
+              <span className="text-[10px] font-semibold text-muted-foreground">{t(CONTRACT_TYPES[o.contractType]) ?? o.contractType}</span>
             )}
           </div>
         </div>
@@ -109,25 +110,25 @@ function OpportunityCard({ o, onApply, onDetails }: { o: Opportunity; onApply: (
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[11px] text-muted-foreground">
           <span className="inline-flex items-center gap-1">
             <MapPin className="size-3" />
-            {o.city ? `${o.city}، ` : ""}
+            {o.city ? `${o.city}${t("، ")}` : ""}
             {o.region}
           </span>
           {o.positions > 1 && (
             <span className="inline-flex items-center gap-1">
               <Users2 className="size-3" />
-              {o.positions} مناصب
+              {o.positions} {t("مناصب")}
             </span>
           )}
           {dl != null && (
             <span className={cn("inline-flex items-center gap-1 font-semibold", dl <= 7 && !closed ? "text-[#8a6414]" : "")}>
               <CalendarClock className="size-3" />
-              {closed ? "انتهى الأجل" : dl === 0 ? "آخر أجل اليوم" : `آخر أجل بعد ${formatNumber(dl)} يوماً`}
+              {closed ? t("انتهى الأجل") : dl === 0 ? t("آخر أجل اليوم") : `آخر أجل بعد ${formatNumber(dl)} يوماً`}
             </span>
           )}
           {o.applicationsCount != null && o.applicationsCount > 0 && (
             <span className="inline-flex items-center gap-1">
               <FileText className="size-3" />
-              {o.applicationsCount} ترشيحاً
+              {o.applicationsCount} {t("ترشيحاً")}
             </span>
           )}
         </div>
@@ -140,10 +141,10 @@ function OpportunityCard({ o, onApply, onDetails }: { o: Opportunity; onApply: (
             onClick={() => onApply(o)}
           >
             <Send className="size-3.5" />
-            {closed ? "مغلقة" : o.type === "JOB" || o.type === "INTERNSHIP" ? "الترشح" : "إبداء الاهتمام"}
+            {closed ? t("مغلقة") : o.type === "JOB" || o.type === "INTERNSHIP" ? t("الترشح") : t("إبداء الاهتمام")}
           </Button>
           <Button size="sm" variant="outline" className="text-xs" onClick={() => onDetails(o)}>
-            التفاصيل
+            {t("التفاصيل")}
           </Button>
         </div>
       </div>
@@ -175,7 +176,7 @@ function DetailsDialog({ o, open, onOpenChange }: { o: Opportunity | null; open:
           <p className="leading-7 text-muted-foreground">{o.description}</p>
           {o.requirements && (
             <div>
-              <h4 className="mb-1.5 text-xs font-extrabold text-foreground">المؤهلات والمتطلبات</h4>
+              <h4 className="mb-1.5 text-xs font-extrabold text-foreground">{t("المؤهلات والمتطلبات")}</h4>
               <p className="whitespace-pre-line rounded-xl bg-muted/60 p-3 text-xs leading-6 text-muted-foreground">
                 {o.requirements}
               </p>
@@ -183,32 +184,32 @@ function DetailsDialog({ o, open, onOpenChange }: { o: Opportunity | null; open:
           )}
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div className="rounded-xl border border-border p-3">
-              <p className="font-bold text-foreground">الموقع</p>
+              <p className="font-bold text-foreground">{t("الموقع")}</p>
               <p className="mt-1 text-muted-foreground">
-                {o.city ? `${o.city}، ` : ""}
+                {o.city ? `${o.city}${t("، ")}` : ""}
                 {o.region}
               </p>
             </div>
             <div className="rounded-xl border border-border p-3">
-              <p className="font-bold text-foreground">المناصب</p>
+              <p className="font-bold text-foreground">{t("المناصب")}</p>
               <p className="mt-1 text-muted-foreground">{o.positions}</p>
             </div>
             {o.contractType && (
               <div className="rounded-xl border border-border p-3">
-                <p className="font-bold text-foreground">نوع العقد</p>
-                <p className="mt-1 text-muted-foreground">{CONTRACT_TYPES[o.contractType]}</p>
+                <p className="font-bold text-foreground">{t("نوع العقد")}</p>
+                <p className="mt-1 text-muted-foreground">{t(CONTRACT_TYPES[o.contractType])}</p>
               </div>
             )}
             <div className="rounded-xl border border-border p-3">
-              <p className="font-bold text-foreground">آخر أجل</p>
+              <p className="font-bold text-foreground">{t("آخر أجل")}</p>
               <p className="mt-1 text-muted-foreground">
-                {dl == null ? "غير محدد" : closedCheck(o) ? "انتهى" : `بعد ${dl} يوماً`}
+                {dl == null ? t("غير محدد") : closedCheck(o) ? t("انتهى") : `بعد ${dl} يوماً`}
               </p>
             </div>
           </div>
           {(o.contactEmail || o.contactPhone) && (
             <div className="rounded-xl border border-saffron/30 bg-saffron/10 p-3 text-xs leading-6 text-[#8a6414]">
-              <span className="font-bold">للتواصل المباشر: </span>
+              <span className="font-bold">{t("للتواصل المباشر:")}</span>
               {o.contactEmail && <span dir="ltr">{o.contactEmail}</span>}
               {o.contactEmail && o.contactPhone && " • "}
               {o.contactPhone && <span dir="ltr">{o.contactPhone}</span>}
@@ -257,10 +258,10 @@ function ApplyDialog({ o, open, onOpenChange }: { o: Opportunity | null; open: b
         motivation: form.motivation || undefined,
         experience: form.experience || undefined,
       });
-      toast({ title: "تم تسجيل الترشيح", description: (res as { message?: string })?.message });
+      toast({ title: t("تم تسجيل الترشيح"), description: (res as { message?: string })?.message });
       onOpenChange(false);
     } catch (err) {
-      toast({ variant: "destructive", title: "تعذر إرسال الترشيح", description: (err as Error).message });
+      toast({ variant: "destructive", title: t("تعذر إرسال الترشيح"), description: (err as Error).message });
     }
   }
 
@@ -268,51 +269,51 @@ function ApplyDialog({ o, open, onOpenChange }: { o: Opportunity | null; open: b
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-start">الترشح: {o?.title}</DialogTitle>
+          <DialogTitle className="text-start">{t("الترشح: {title}", { title: o?.title ?? "" })}</DialogTitle>
           <DialogDescription>
-            ستتلقى التعاونية ترشيحكم وتتواصل معكم عند القبول. بياناتكم تبقى محفوظة لدى التعاونية حصراً.
+            {t("ستتلقى التعاونية ترشيحكم وتتواصل معكم عند القبول. بياناتكم تبقى محفوظة لدى التعاونية حصراً.")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold">الاسم الكامل *</Label>
+              <Label className="text-xs font-bold">{t("الاسم الكامل *")}</Label>
               <Input value={form.fullName} onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} required />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold">الهاتف</Label>
+              <Label className="text-xs font-bold">{t("الهاتف")}</Label>
               <Input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} dir="ltr" placeholder="06..." />
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-bold">البريد الإلكتروني</Label>
+            <Label className="text-xs font-bold">{t("البريد الإلكتروني")}</Label>
             <Input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} dir="ltr" placeholder="name@mail.ma" />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-bold">نبذة عن المؤهلات والتجربة</Label>
+            <Label className="text-xs font-bold">{t("نبذة عن المؤهلات والتجربة")}</Label>
             <Textarea
               value={form.experience}
               onChange={(e) => setForm((f) => ({ ...f, experience: e.target.value }))}
               rows={2}
-              placeholder="شهاداتي، سنوات التجربة، مهاراتي..."
+              placeholder={t("شهاداتي، سنوات التجربة، مهاراتي...")}
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-bold">رسالة التحفيز</Label>
+            <Label className="text-xs font-bold">{t("رسالة التحفيز")}</Label>
             <Textarea
               value={form.motivation}
               onChange={(e) => setForm((f) => ({ ...f, motivation: e.target.value }))}
               rows={3}
-              placeholder="لماذا أنا المرشح المناسب لهذه الفرصة؟"
+              placeholder={t("لماذا أنا المرشح المناسب لهذه الفرصة؟")}
             />
           </div>
           <DialogFooter className="gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              إلغاء
+              {t("إلغاء")}
             </Button>
             <Button type="submit" disabled={apply.isPending} className="gap-2 font-bold">
               {apply.isPending && <Loader2 className="size-4 animate-spin" />}
-              إرسال الترشيح
+              {t("إرسال الترشيح")}
             </Button>
           </DialogFooter>
         </form>
@@ -407,10 +408,10 @@ function OpportunityDialog({
     };
     try {
       await save.mutateAsync(payload);
-      toast({ title: editing ? "تم تحديث الفرصة" : "تم نشر الفرصة", description: "ظهرت مباشرة في السوق العمومي" });
+      toast({ title: editing ? t("تم تحديث الفرصة") : "تم نشر الفرصة", description: t("ظهرت مباشرة في السوق العمومي") });
       onOpenChange(false);
     } catch (err) {
-      toast({ variant: "destructive", title: "تعذر الحفظ", description: (err as Error).message });
+      toast({ variant: "destructive", title: t("تعذر الحفظ"), description: (err as Error).message });
     }
   }
 
@@ -418,15 +419,15 @@ function OpportunityDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editing ? "تعديل الفرصة" : "نشر فرصة جديدة"}</DialogTitle>
+          <DialogTitle>{editing ? t("تعديل الفرصة") : t("نشر فرصة جديدة")}</DialogTitle>
           <DialogDescription>
-            تُنشر الفرص باسم تعاونيتكم وتظهر للعموم — زواراً ومستخدمين.
+            {t("تُنشر الفرص باسم تعاونيتكم وتظهر للعموم — زواراً ومستخدمين.")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold">نوع الفرصة *</Label>
+              <Label className="text-xs font-bold">{t("نوع الفرصة *")}</Label>
               <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v }))}>
                 <SelectTrigger>
                   <SelectValue />
@@ -441,10 +442,10 @@ function OpportunityDialog({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold">نوع العقد</Label>
+              <Label className="text-xs font-bold">{t("نوع العقد")}</Label>
               <Select value={form.contractType} onValueChange={(v) => setForm((f) => ({ ...f, contractType: v }))}>
                 <SelectTrigger>
-                  <SelectValue placeholder="غير محدد" />
+                  <SelectValue placeholder={t("غير محدد")} />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(CONTRACT_TYPES).map(([k, v]) => (
@@ -457,16 +458,16 @@ function OpportunityDialog({
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-bold">العنوان *</Label>
-            <Input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} required placeholder="مسؤول(ة)..." />
+            <Label className="text-xs font-bold">{t("العنوان *")}</Label>
+            <Input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} required placeholder={t("مسؤول(ة)...")} />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-bold">الوصف *</Label>
+            <Label className="text-xs font-bold">{t("الوصف *")}</Label>
             <Textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} rows={3} required />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold">القطاع *</Label>
+              <Label className="text-xs font-bold">{t("القطاع *")}</Label>
               <Select value={form.sector} onValueChange={(v) => setForm((f) => ({ ...f, sector: v }))}>
                 <SelectTrigger>
                   <SelectValue />
@@ -481,7 +482,7 @@ function OpportunityDialog({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold">الجهة *</Label>
+              <Label className="text-xs font-bold">{t("الجهة *")}</Label>
               <Select value={form.region} onValueChange={(v) => setForm((f) => ({ ...f, region: v }))}>
                 <SelectTrigger>
                   <SelectValue />
@@ -496,39 +497,39 @@ function OpportunityDialog({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold">المدينة</Label>
+              <Label className="text-xs font-bold">{t("المدينة")}</Label>
               <Input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold">عدد المناصب</Label>
+              <Label className="text-xs font-bold">{t("عدد المناصب")}</Label>
               <Input type="number" min={1} value={form.positions} onChange={(e) => setForm((f) => ({ ...f, positions: e.target.value }))} dir="ltr" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold">آخر أجل للترشح</Label>
+              <Label className="text-xs font-bold">{t("آخر أجل للترشح")}</Label>
               <Input type="date" value={form.deadline} onChange={(e) => setForm((f) => ({ ...f, deadline: e.target.value }))} />
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-bold">المؤهلات والمتطلبات</Label>
+            <Label className="text-xs font-bold">{t("المؤهلات والمتطلبات")}</Label>
             <Textarea value={form.requirements} onChange={(e) => setForm((f) => ({ ...f, requirements: e.target.value }))} rows={2} />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold">بريد التواصل</Label>
+              <Label className="text-xs font-bold">{t("بريد التواصل")}</Label>
               <Input type="email" value={form.contactEmail} onChange={(e) => setForm((f) => ({ ...f, contactEmail: e.target.value }))} dir="ltr" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold">هاتف التواصل</Label>
+              <Label className="text-xs font-bold">{t("هاتف التواصل")}</Label>
               <Input value={form.contactPhone} onChange={(e) => setForm((f) => ({ ...f, contactPhone: e.target.value }))} dir="ltr" />
             </div>
           </div>
           <DialogFooter className="gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              إلغاء
+              {t("إلغاء")}
             </Button>
             <Button type="submit" disabled={save.isPending} className="gap-2 font-bold">
               {save.isPending && <Loader2 className="size-4 animate-spin" />}
-              {editing ? "حفظ التعديلات" : "نشر الفرصة"}
+              {editing ? t("حفظ التعديلات") : t("نشر الفرصة")}
             </Button>
           </DialogFooter>
         </form>
@@ -562,13 +563,13 @@ export function OpportunitiesView() {
   return (
     <div>
       <PageHeader
-        title="فرص العمل والتعاقد"
-        desc="منصة موحدة تعرض مناصب التعاونيات الشاغرة، وفرص التعاقد والشراكة، وحاجاتها الخدمية — متاحة للزوار والمستخدمين."
+        title={t("فرص العمل والتعاقد")}
+        desc={t("منصة موحدة تعرض مناصب التعاونيات الشاغرة، وفرص التعاقد والشراكة، وحاجاتها الخدمية — متاحة للزوار والمستخدمين.")}
         actions={
           canManage ? (
             <Button onClick={() => { setEditing(null); setDialogOpen(true); }} className="gap-2 font-bold">
               <Plus className="size-4" />
-              نشر فرصة
+              {t("نشر فرصة")}
             </Button>
           ) : undefined
         }
@@ -578,18 +579,18 @@ export function OpportunitiesView() {
         <TabsList className="mb-4">
           <TabsTrigger value="market" className="gap-1.5">
             <Search className="size-3.5" />
-            السوق العمومي
+            {t("السوق العمومي")}
           </TabsTrigger>
           {canManage && (
             <TabsTrigger value="manage" className="gap-1.5">
               <Megaphone className="size-3.5" />
-              فرص تعاونيتي ({(mine ?? []).length})
+              {t("فرص تعاونيتي")} ({(mine ?? []).length})
             </TabsTrigger>
           )}
           {canManage && (
             <TabsTrigger value="applications" className="gap-1.5">
               <FileText className="size-3.5" />
-              الترشيحات ({(applications ?? []).length})
+              {t("الترشيحات")} ({(applications ?? []).length})
             </TabsTrigger>
           )}
         </TabsList>
@@ -603,13 +604,13 @@ export function OpportunitiesView() {
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="ابحث عن فرصة..."
+                placeholder={t("ابحث عن فرصة...")}
                 className="bg-background ps-9"
               />
             </div>
             <Select value={type} onValueChange={setType}>
               <SelectTrigger className="bg-background">
-                <SelectValue placeholder="كل الأنواع" />
+                <SelectValue placeholder={t("كل الأنواع")} />
               </SelectTrigger>
               <SelectContent>
                 {Object.entries(OPPORTUNITY_TYPES).map(([k, v]) => (
@@ -621,7 +622,7 @@ export function OpportunitiesView() {
             </Select>
             <Select value={sector} onValueChange={setSector}>
               <SelectTrigger className="bg-background">
-                <SelectValue placeholder="كل القطاعات" />
+                <SelectValue placeholder={t("كل القطاعات")} />
               </SelectTrigger>
               <SelectContent className="max-h-64">
                 {SECTORS.map((s) => (
@@ -633,7 +634,7 @@ export function OpportunitiesView() {
             </Select>
             <Select value={region} onValueChange={setRegion}>
               <SelectTrigger className="bg-background">
-                <SelectValue placeholder="كل الجهات" />
+                <SelectValue placeholder={t("كل الجهات")} />
               </SelectTrigger>
               <SelectContent className="max-h-64">
                 {REGIONS.map((r) => (
@@ -654,8 +655,8 @@ export function OpportunitiesView() {
           ) : (opportunities ?? []).length === 0 ? (
             <EmptyState
               icon={Briefcase}
-              title="لا توجد فرص مطابقة"
-              desc="جرّب تغيير عوامل التصفية، أو عد لاحقاً — تُنشر فرص جديدة باستمرار."
+              title={t("لا توجد فرص مطابقة")}
+              desc={t("جرّب تغيير عوامل التصفية، أو عد لاحقاً — تُنشر فرص جديدة باستمرار.")}
             />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -672,11 +673,11 @@ export function OpportunitiesView() {
             {(mine ?? []).length === 0 ? (
               <EmptyState
                 icon={Megaphone}
-                title="لم تنشروا أي فرصة بعد"
-                desc="انشروا المناصب الشاغرة وحاجاتكم الخدمية لتصل إلى مرشحين من كل الجهات."
+                title={t("لم تنشروا أي فرصة بعد")}
+                desc={t("انشروا المناصب الشاغرة وحاجاتكم الخدمية لتصل إلى مرشحين من كل الجهات.")}
                 action={
                   <Button onClick={() => { setEditing(null); setDialogOpen(true); }} className="gap-2 font-bold">
-                    <Plus className="size-4" /> نشر أول فرصة
+                    <Plus className="size-4" /> {t("نشر أول فرصة")}
                   </Button>
                 }
               />
@@ -692,22 +693,22 @@ export function OpportunitiesView() {
                           <LBadge map={OPPORTUNITY_STATUS} value={o.status} />
                         </div>
                         <p className="mt-1 text-[11px] text-muted-foreground">
-                          {o.city ? `${o.city}، ` : ""}
-                          {o.region} • {o.positions} منصب
-                          {o.applicationsCount != null ? ` • ${o.applicationsCount} ترشيحاً` : ""}
+                          {o.city ? `${o.city}${t("، ")}` : ""}
+                          {o.region} • {o.positions} {t("منصب")}
+                          {o.applicationsCount != null ? t(" • {n} ترشيحاً", { n: o.applicationsCount }) : ""}
                           {daysLeft(o.deadline) != null
                             ? daysLeft(o.deadline)! < 0
-                              ? " • انتهى الأجل"
+                              ? t(" • انتهى الأجل")
                               : ` • باقي ${daysLeft(o.deadline)} يوماً`
                             : ""}
                         </p>
                       </div>
                       <div className="flex shrink-0 gap-1.5">
                         <Button size="sm" variant="outline" className="h-8 gap-1 px-2 text-xs" onClick={() => { setEditing(o); setDialogOpen(true); }}>
-                          <Pencil className="size-3.5" /> تعديل
+                          <Pencil className="size-3.5" /> {t("تعديل")}
                         </Button>
                         <Button size="sm" variant="outline" className="h-8 gap-1 px-2 text-xs text-destructive hover:text-destructive" onClick={() => setDeleting(o)}>
-                          <Trash2 className="size-3.5" /> حذف
+                          <Trash2 className="size-3.5" /> {t("حذف")}
                         </Button>
                       </div>
                     </div>
@@ -722,7 +723,7 @@ export function OpportunitiesView() {
         {canManage && (
           <TabsContent value="applications">
             {(applications ?? []).length === 0 ? (
-              <EmptyState icon={FileText} title="لا توجد ترشيحات بعد" desc="ستظهر ترشيحات المرشحين على فرصكم هنا." />
+              <EmptyState icon={FileText} title={t("لا توجد ترشيحات بعد")} desc={t("ستظهر ترشيحات المرشحين على فرصكم هنا.")} />
             ) : (
               <div className="space-y-3">
                 {(applications ?? []).map((a) => (
@@ -752,9 +753,9 @@ export function OpportunitiesView() {
                         onValueChange={async (v) => {
                           try {
                             await decideApp.mutateAsync({ id: a.id, status: v });
-                            toast({ title: "تم تحديث حالة الترشيح" });
+                            toast({ title: t("تم تحديث حالة الترشيح") });
                           } catch (err) {
-                            toast({ variant: "destructive", title: "تعذر التحديث", description: (err as Error).message });
+                            toast({ variant: "destructive", title: t("تعذر التحديث"), description: (err as Error).message });
                           }
                         }}
                       >
@@ -784,17 +785,17 @@ export function OpportunitiesView() {
       <ConfirmDialog
         open={!!deleting}
         onOpenChange={(v) => !v && setDeleting(null)}
-        title="حذف الفرصة"
-        desc={`هل تريدون حذف "${deleting?.title}" نهائياً؟ سيُحذف معها سجل الترشيحات المرتبطة بها.`}
+        title={t("حذف الفرصة")}
+        desc={t("هل تريدون حذف {title} نهائياً؟ سيُحذف معها سجل الترشيحات المرتبطة بها.", { title: deleting?.title ?? "" })}
         loading={del.isPending}
         onConfirm={async () => {
           if (!deleting) return;
           try {
             await del.mutateAsync(deleting.id);
-            toast({ title: "تم حذف الفرصة" });
+            toast({ title: t("تم حذف الفرصة") });
             setDeleting(null);
           } catch (err) {
-            toast({ variant: "destructive", title: "تعذر الحذف", description: (err as Error).message });
+            toast({ variant: "destructive", title: t("تعذر الحذف"), description: (err as Error).message });
           }
         }}
       />

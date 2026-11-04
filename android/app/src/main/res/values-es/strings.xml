@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="downloading">Descargando…</string>
+    <string name="confirm_exit">¿Desea salir de la aplicación CMDP?</string>
+    <string name="exit">Salir</string>
+    <string name="cancel">Cancelar</string>
+    <string name="no_app">Ninguna aplicación puede abrir este enlace</string>
+</resources>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- شاشة البدء: الشعار الرسمي على خلفية داكنة دافئة -->
+    <style name="Theme.CMDP" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/ink</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <style name="Theme.CMDP.Splash" parent="Theme.CMDP">
+        <item name="android:windowBackground">@drawable/splash</item>
+    </style>
+</resources>

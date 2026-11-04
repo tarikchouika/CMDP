@@ -68,6 +68,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { t as i18n } from "@/lib/i18n";
+import { t } from "@/lib/i18n";
+import { FileUploadField, type StoredFile } from "@/components/file-upload";
 
 type TxForm = Omit<Transaction, "id" | "createdAt"> & { id?: number | null };
 
@@ -112,6 +115,8 @@ export function FinanceView() {
     reference: "",
   });
   const [form, setForm] = React.useState<TxForm>(emptyForm());
+  // إثبات الحركة: فاتورة أو وصل أداء (إلزامي لكل حركة جديدة)
+  const [proofFiles, setProofFiles] = React.useState<StoredFile[]>([]);
 
   const ytd = React.useMemo(() => (txs ?? []).filter((t) => new Date(t.date).getFullYear() === year), [txs, year]);
   const incomeYTD = ytd.filter((t) => t.type === "INCOME").reduce((s, t) => s + t.amount, 0);
@@ -139,22 +144,28 @@ export function FinanceView() {
 
   function openCreate() {
     setForm(emptyForm());
+    setProofFiles([]);
     setFormOpen(true);
   }
   function openEdit(t: Transaction) {
     setForm({ ...t });
+    setProofFiles([]);
     setFormOpen(true);
   }
   function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (proofFiles.length === 0 && form.id == null) {
+      toast({ variant: "destructive", title: i18n("إثبات الحركة إلزامي"), description: i18n("أرفقوا فاتورة أو وصل أداء يثبت هذه الحركة المالية") });
+      return;
+    }
     saveTx.mutate(
-      { ...form, cooperativeId: activeCoopId },
+      { ...form, cooperativeId: activeCoopId, proofFiles: proofFiles.length > 0 ? proofFiles : undefined },
       {
         onSuccess: () => {
-          toast({ title: form.id ? "تم تحديث الحركة" : "تمت تسجيل الحركة" });
+          toast({ title: form.id ? i18n("تم تحديث الحركة") : i18n("تمت تسجيل الحركة") });
           setFormOpen(false);
         },
-        onError: (err) => toast({ variant: "destructive", title: "تعذر الحفظ", description: err.message }),
+        onError: (err) => toast({ variant: "destructive", title: i18n("تعذر الحفظ"), description: err.message }),
       }
     );
   }
@@ -162,34 +173,34 @@ export function FinanceView() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="المالية والصندوق"
-        desc={`تدبير مالية ${coop?.name ?? "التعاونية"} — المداخيل والمصاريف والتقارير`}
+        title={i18n("المالية والصندوق")}
+        desc={`تدبير مالية ${coop?.name ?? i18n("التعاونية")} — المداخيل والمصاريف والتقارير`}
         actions={
           <Button onClick={openCreate} className="gap-1.5 font-bold">
             <Plus className="size-4" />
-            تسجيل حركة
+            {i18n("تسجيل حركة")}
           </Button>
         }
       />
 
       <Tabs defaultValue="overview" dir="rtl">
         <TabsList className="bg-secondary">
-          <TabsTrigger value="overview" className="text-xs">نظرة عامة</TabsTrigger>
-          <TabsTrigger value="tx" className="text-xs">الحركات ({formatNumber((txs ?? []).length)})</TabsTrigger>
+          <TabsTrigger value="overview" className="text-xs">{i18n("نظرة عامة")}</TabsTrigger>
+          <TabsTrigger value="tx" className="text-xs">{i18n("الحركات")} ({formatNumber((txs ?? []).length)})</TabsTrigger>
           <TabsTrigger value="reports" className="gap-1.5 text-xs">
             <FileBarChart className="size-3.5" />
-            التقارير
+            {i18n("التقارير")}
           </TabsTrigger>
         </TabsList>
 
         {/* ─── نظرة عامة ─── */}
         <TabsContent value="overview" className="mt-4 space-y-4">
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatCard label={`إيرادات ${year}`} value={formatMAD(incomeYTD)} icon={TrendingUp} tone="zellij" />
-            <StatCard label={`مصاريف ${year}`} value={formatMAD(expenseYTD)} icon={TrendingDown} tone="terra" />
-            <StatCard label="الرصيد الصافي" value={formatMAD(balance)} icon={Wallet} tone={balance >= 0 ? "olive" : "plum"} />
+            <StatCard label={i18n("إيرادات {year}", { year })} value={formatMAD(incomeYTD)} icon={TrendingUp} tone="zellij" />
+            <StatCard label={i18n("مصاريف {year}", { year })} value={formatMAD(expenseYTD)} icon={TrendingDown} tone="terra" />
+            <StatCard label={i18n("الرصيد الصافي")} value={formatMAD(balance)} icon={Wallet} tone={balance >= 0 ? "olive" : "plum"} />
             <StatCard
-              label="المتوسط الشهري الصافي"
+              label={i18n("المتوسط الشهري الصافي")}
               value={formatMAD((incomeYTD - expenseYTD) / Math.max(1, new Date().getMonth() + 1))}
               icon={Banknote}
               tone="saffron"
@@ -200,7 +211,7 @@ export function FinanceView() {
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm font-extrabold">
                 <ZelligeStar className="size-3 text-saffron" />
-                الإيرادات والمصاريف شهرياً — آخر 12 شهراً
+                {i18n("الإيرادات والمصاريف شهرياً — آخر 12 شهراً")}
               </CardTitle>
             </CardHeader>
             <CardContent className="h-72">
@@ -210,8 +221,8 @@ export function FinanceView() {
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                     <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
                     <YAxis orientation="right" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))} />
-                    <ReTooltip contentStyle={tooltipStyle} formatter={(v: number, n: string) => [formatMAD(v), n === "income" ? "الإيرادات" : "المصاريف"]} />
-                    <Legend formatter={(v: string) => (v === "income" ? "الإيرادات" : "المصاريف")} wrapperStyle={{ fontSize: 11 }} />
+                    <ReTooltip contentStyle={tooltipStyle} formatter={(v: number, n: string) => [formatMAD(v), n === "income" ? i18n("الإيرادات") : i18n("المصاريف")]} />
+                    <Legend formatter={(v: string) => (v === "income" ? i18n("الإيرادات") : i18n("المصاريف"))} wrapperStyle={{ fontSize: 11 }} />
                     <Bar dataKey="income" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="expense" fill="var(--chart-2)" radius={[4, 4, 0, 0]} />
                   </BarChart>
@@ -229,12 +240,12 @@ export function FinanceView() {
                   <CardHeader className="pb-2">
                     <CardTitle className={`flex items-center gap-2 text-sm font-extrabold ${isIncome ? "text-zellij" : "text-terra"}`}>
                       {isIncome ? <ArrowUpRight className="size-4" /> : <ArrowDownLeft className="size-4" />}
-                      {isIncome ? "مصادر الإيرادات" : "بنود المصاريف"} — {year}
+                      {isIncome ? i18n("مصادر الإيرادات") : i18n("بنود المصاريف")} — {year}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="h-64">
                     {data.length === 0 ? (
-                      <p className="grid h-full place-items-center text-xs text-muted-foreground">لا توجد بيانات</p>
+                      <p className="grid h-full place-items-center text-xs text-muted-foreground">{i18n("لا توجد بيانات")}</p>
                     ) : (
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
@@ -257,20 +268,20 @@ export function FinanceView() {
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative min-w-52 flex-1">
               <Search className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث في البيان أو الفئة أو المرجع..." className="bg-card ps-9" />
+              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={i18n("ابحث في البيان أو الفئة أو المرجع...")} className="bg-card ps-9" />
             </div>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger className="w-36 bg-card text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">كل الحركات</SelectItem>
-                <SelectItem value="INCOME">المداخيل</SelectItem>
-                <SelectItem value="EXPENSE">المصاريف</SelectItem>
+                <SelectItem value="ALL">{i18n("كل الحركات")}</SelectItem>
+                <SelectItem value="INCOME">{i18n("المداخيل")}</SelectItem>
+                <SelectItem value="EXPENSE">{i18n("المصاريف")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {filtered.length === 0 ? (
-            <EmptyState icon={Wallet} title="لا توجد حركات مطابقة" desc="سجّل أول حركة مالية للتعاونية." action={<Button onClick={openCreate} className="gap-1.5"><Plus className="size-4" />تسجيل حركة</Button>} />
+            <EmptyState icon={Wallet} title={i18n("لا توجد حركات مطابقة")} desc={i18n("سجّل أول حركة مالية للتعاونية.")} action={<Button onClick={openCreate} className="gap-1.5"><Plus className="size-4" />{i18n("تسجيل حركة")}</Button>} />
           ) : (
             <Card className="border-border/80">
               <CardContent className="p-0">
@@ -278,11 +289,11 @@ export function FinanceView() {
                   <Table>
                     <TableHeader className="sticky top-0 z-10 bg-card">
                       <TableRow>
-                        <TableHead className="text-start">التاريخ</TableHead>
-                        <TableHead className="text-start">البيان</TableHead>
-                        <TableHead className="text-start">الفئة</TableHead>
-                        <TableHead className="text-start hidden md:table-cell">الأداء</TableHead>
-                        <TableHead className="text-end">المبلغ</TableHead>
+                        <TableHead className="text-start">{i18n("التاريخ")}</TableHead>
+                        <TableHead className="text-start">{i18n("البيان")}</TableHead>
+                        <TableHead className="text-start">{i18n("الفئة")}</TableHead>
+                        <TableHead className="text-start hidden md:table-cell">{i18n("الأداء")}</TableHead>
+                        <TableHead className="text-end">{i18n("المبلغ")}</TableHead>
                         <TableHead className="w-20" />
                       </TableRow>
                     </TableHeader>
@@ -295,16 +306,16 @@ export function FinanceView() {
                             {t.reference && <p className="text-[10px] text-muted-foreground">{t.reference}</p>}
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">{t.category}</TableCell>
-                          <TableCell className="hidden text-xs text-muted-foreground md:table-cell">{TX_METHODS[t.method] ?? t.method}</TableCell>
+                          <TableCell className="hidden text-xs text-muted-foreground md:table-cell">{i18n(TX_METHODS[t.method]) ?? t.method}</TableCell>
                           <TableCell className={`text-end text-xs font-extrabold tabular-nums ${t.type === "INCOME" ? "text-zellij" : "text-terra"}`}>
                             {t.type === "INCOME" ? "+" : "−"}{formatMAD(t.amount)}
                           </TableCell>
                           <TableCell>
                             <div className="flex justify-end gap-1 opacity-60 transition-opacity group-hover:opacity-100">
-                              <Button variant="ghost" size="icon" className="size-7" aria-label="تحرير" onClick={() => openEdit(t)}>
+                              <Button variant="ghost" size="icon" className="size-7" aria-label={i18n("تحرير")} onClick={() => openEdit(t)}>
                                 <Pencil className="size-3.5" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="size-7 text-destructive" aria-label="حذف" onClick={() => setToDelete(t)}>
+                              <Button variant="ghost" size="icon" className="size-7 text-destructive" aria-label={i18n("حذف")} onClick={() => setToDelete(t)}>
                                 <Trash2 className="size-3.5" />
                               </Button>
                             </div>
@@ -328,8 +339,8 @@ export function FinanceView() {
                   <FileBarChart className="size-5" />
                 </span>
                 <div>
-                  <h3 className="font-display text-sm font-extrabold">التقرير المالي السنوي {year}</h3>
-                  <p className="mt-1 text-xs text-muted-foreground">الإيرادات والمصاريف حسب الفئات — جاهز للعرض على الجمع العام</p>
+                  <h3 className="font-display text-sm font-extrabold">{i18n("التقرير المالي السنوي {year}", { year })}</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">{i18n("الإيرادات والمصاريف حسب الفئات — جاهز للعرض على الجمع العام")}</p>
                 </div>
               </CardContent>
             </Card>
@@ -339,8 +350,8 @@ export function FinanceView() {
                   <Banknote className="size-5" />
                 </span>
                 <div>
-                  <h3 className="font-display text-sm font-extrabold">كشف الحساب المفصل</h3>
-                  <p className="mt-1 text-xs text-muted-foreground">آخر 30 حركة مسجلة بصندوق التعاونية</p>
+                  <h3 className="font-display text-sm font-extrabold">{i18n("كشف الحساب المفصل")}</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">{i18n("آخر 30 حركة مسجلة بصندوق التعاونية")}</p>
                 </div>
               </CardContent>
             </Card>
@@ -355,9 +366,9 @@ export function FinanceView() {
             <div className="mb-4 flex items-center justify-between border-b-2 border-[#9c4526] pb-3">
               <div>
                 <h2 className="font-display text-lg font-black text-[#9c4526]">
-                  {report === "financial" ? `التقرير المالي السنوي ${year}` : "كشف الحساب المفصل"}
+                  {report === "financial" ? `التقرير المالي السنوي ${year}` : i18n("كشف الحساب المفصل")}
                 </h2>
-                <p className="mt-0.5 text-xs text-gray-600">{coop?.name} — {coop?.province}، {coop?.region}</p>
+                <p className="mt-0.5 text-xs text-gray-600">{coop?.name} — {coop?.province}{i18n("، ")}{coop?.region}</p>
               </div>
               <svg viewBox="0 0 64 64" className="size-12">
                 <polygon points="32,2 36.98,19.99 53.21,10.79 44.02,27.04 62,32 44.02,36.96 53.21,53.21 36.98,44.01 32,62 27.02,44.01 10.79,53.21 19.98,36.96 2,32 19.98,27.04 10.79,10.79 27.02,19.99" fill="#9c4526" />
@@ -371,13 +382,13 @@ export function FinanceView() {
                 <table className="w-full border-collapse text-xs">
                   <thead>
                     <tr className="bg-[#f3ede1]">
-                      <th className="border border-gray-300 p-2 text-start">الفئة</th>
-                      <th className="border border-gray-300 p-2 text-end">المبلغ (د.م.)</th>
+                      <th className="border border-gray-300 p-2 text-start">{i18n("الفئة")}</th>
+                      <th className="border border-gray-300 p-2 text-end">{i18n("المبلغ (د.م.)")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr className="font-bold">
-                      <td className="border border-gray-300 bg-[#2a7f7a10] p-2" colSpan={2}>الإيرادات</td>
+                      <td className="border border-gray-300 bg-[#2a7f7a10] p-2" colSpan={2}>{i18n("الإيرادات")}</td>
                     </tr>
                     {catAgg.income.map((r) => (
                       <tr key={r.name}>
@@ -386,11 +397,11 @@ export function FinanceView() {
                       </tr>
                     ))}
                     <tr className="font-bold">
-                      <td className="border border-gray-300 p-2">مجموع الإيرادات</td>
+                      <td className="border border-gray-300 p-2">{i18n("مجموع الإيرادات")}</td>
                       <td className="border border-gray-300 p-2 text-end tabular-nums">{formatMAD(incomeYTD)}</td>
                     </tr>
                     <tr className="font-bold">
-                      <td className="border border-gray-300 bg-[#9c452610] p-2" colSpan={2}>المصاريف</td>
+                      <td className="border border-gray-300 bg-[#9c452610] p-2" colSpan={2}>{i18n("المصاريف")}</td>
                     </tr>
                     {catAgg.expense.map((r) => (
                       <tr key={r.name}>
@@ -399,17 +410,17 @@ export function FinanceView() {
                       </tr>
                     ))}
                     <tr className="font-bold">
-                      <td className="border border-gray-300 p-2">مجموع المصاريف</td>
+                      <td className="border border-gray-300 p-2">{i18n("مجموع المصاريف")}</td>
                       <td className="border border-gray-300 p-2 text-end tabular-nums">{formatMAD(expenseYTD)}</td>
                     </tr>
                     <tr className="text-sm font-black">
-                      <td className="border border-gray-300 bg-[#f3ede1] p-2">النتيجة الصافية</td>
+                      <td className="border border-gray-300 bg-[#f3ede1] p-2">{i18n("النتيجة الصافية")}</td>
                       <td className="border border-gray-300 bg-[#f3ede1] p-2 text-end tabular-nums">{formatMAD(incomeYTD - expenseYTD)}</td>
                     </tr>
                   </tbody>
                 </table>
                 <p className="mt-4 text-[10px] text-gray-500">
-                  وثيقة معدّة آلياً بواسطة منصة CMDP — تخضع للمصادقة أمام الجمع العام عملاً بالقانون رقم 112.12.
+                  {i18n("وثيقة معدّة آلياً بواسطة منصة CMDP — تخضع للمصادقة أمام الجمع العام عملاً بالقانون رقم 112.12.")}
                 </p>
               </>
             )}
@@ -418,10 +429,10 @@ export function FinanceView() {
               <table className="w-full border-collapse text-xs">
                 <thead>
                   <tr className="bg-[#f3ede1]">
-                    <th className="border border-gray-300 p-2">التاريخ</th>
-                    <th className="border border-gray-300 p-2 text-start">البيان</th>
-                    <th className="border border-gray-300 p-2">مدين (مصروف)</th>
-                    <th className="border border-gray-300 p-2">دائن (مدخل)</th>
+                    <th className="border border-gray-300 p-2">{i18n("التاريخ")}</th>
+                    <th className="border border-gray-300 p-2 text-start">{i18n("البيان")}</th>
+                    <th className="border border-gray-300 p-2">{i18n("مدين (مصروف)")}</th>
+                    <th className="border border-gray-300 p-2">{i18n("دائن (مدخل)")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -438,19 +449,19 @@ export function FinanceView() {
             )}
 
             <div className="mt-4 flex items-center justify-between">
-              <p className="text-[10px] text-gray-500">حُرّر بتاريخ: {formatShortDate(new Date())}</p>
+              <p className="text-[10px] text-gray-500">{i18n("حُرّر بتاريخ:")} {formatShortDate(new Date())}</p>
               <div className="text-center text-[10px] text-gray-600">
-                <p>أمين(ة) المال</p>
-                <div className="mt-6 border-t border-dashed border-gray-400 pt-1">التوقيع والإمضاء</div>
+                <p>{i18n("أمين(ة) المال")}</p>
+                <div className="mt-6 border-t border-dashed border-gray-400 pt-1">{i18n("التوقيع والإمضاء")}</div>
               </div>
             </div>
           </div>
 
           <DialogFooter className="print:hidden">
-            <Button variant="outline" onClick={() => setReport(null)}>إغلاق</Button>
+            <Button variant="outline" onClick={() => setReport(null)}>{i18n("إغلاق")}</Button>
             <Button onClick={() => window.print()} className="gap-1.5 font-bold">
               <Printer className="size-4" />
-              طباعة
+              {i18n("طباعة")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -462,23 +473,23 @@ export function FinanceView() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-display">
               <ZelligeStar className="size-4 text-saffron" />
-              {form.id ? "تحرير الحركة" : "تسجيل حركة مالية"}
+              {form.id ? i18n("تحرير الحركة") : i18n("تسجيل حركة مالية")}
             </DialogTitle>
-            <DialogDescription>حدّد الطبيعة والفئة والمبلغ — تُحدَّث التقارير آلياً.</DialogDescription>
+            <DialogDescription>{i18n("حدّد الطبيعة والفئة والمبلغ — تُحدَّث التقارير آلياً.")}</DialogDescription>
           </DialogHeader>
           <form onSubmit={submit} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">الطبيعة *</Label>
+              <Label className="text-xs">{i18n("الطبيعة *")}</Label>
               <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v, category: v === "INCOME" ? INCOME_CATEGORIES[0] : EXPENSE_CATEGORIES[0] })}>
                 <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="INCOME">مدخل (إيراد)</SelectItem>
-                  <SelectItem value="EXPENSE">مصروف</SelectItem>
+                  <SelectItem value="INCOME">{i18n("مدخل (إيراد)")}</SelectItem>
+                  <SelectItem value="EXPENSE">{i18n("مصروف")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">الفئة *</Label>
+              <Label className="text-xs">{i18n("الفئة *")}</Label>
               <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
                 <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -489,15 +500,15 @@ export function FinanceView() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">المبلغ (درهم) *</Label>
+              <Label className="text-xs">{i18n("المبلغ (درهم) *")}</Label>
               <Input required type="number" min={1} step="0.01" value={form.amount || ""} onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} className="bg-background" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">التاريخ *</Label>
+              <Label className="text-xs">{i18n("التاريخ *")}</Label>
               <Input required type="date" value={toInputDate(form.date)} onChange={(e) => setForm({ ...form, date: new Date(e.target.value).toISOString() })} className="bg-background" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">طريقة الأداء</Label>
+              <Label className="text-xs">{i18n("طريقة الأداء")}</Label>
               <Select value={form.method} onValueChange={(v) => setForm({ ...form, method: v })}>
                 <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -506,17 +517,28 @@ export function FinanceView() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">المرجع / رقم الوصل</Label>
+              <Label className="text-xs">{i18n("المرجع / رقم الوصل")}</Label>
               <Input value={form.reference ?? ""} onChange={(e) => setForm({ ...form, reference: e.target.value })} className="bg-background" />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs">البيان</Label>
+              <Label className="text-xs">{i18n("البيان")}</Label>
               <Textarea value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} className="min-h-16 bg-background" />
             </div>
+            <div className="sm:col-span-2">
+              <FileUploadField
+                id="tx-proof"
+                label={i18n("إثبات الحركة (فاتورة / وصل أداء) *")}
+                hint={i18n("إلزامي مع كل تسجيل: فاتورة شراء أو بيع، وصل أداء، كشف بنكي... — يُحفظ مع الحركة للمراجعة والجمع العام")}
+                required
+                files={proofFiles}
+                onChange={setProofFiles}
+                compact
+              />
+            </div>
             <DialogFooter className="sm:col-span-2">
-              <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>إلغاء</Button>
+              <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>{i18n("إلغاء")}</Button>
               <Button type="submit" disabled={saveTx.isPending} className="font-bold">
-                {saveTx.isPending ? "جارٍ الحفظ..." : "حفظ"}
+                {saveTx.isPending ? i18n("جارٍ الحفظ...") : i18n("حفظ")}
               </Button>
             </DialogFooter>
           </form>
@@ -526,16 +548,16 @@ export function FinanceView() {
       <ConfirmDialog
         open={!!toDelete}
         onOpenChange={(v) => !v && setToDelete(null)}
-        desc={`سيتم حذف الحركة «${toDelete?.description ?? toDelete?.category}» بمبلغ ${toDelete ? formatMAD(toDelete.amount) : ""} نهائياً.`}
+        desc={i18n("سيتم حذف الحركة «{name}» بمبلغ {amount} نهائياً.", { name: toDelete?.description ?? toDelete?.category ?? "", amount: toDelete ? formatMAD(toDelete.amount) : "" })}
         loading={deleteTx.isPending}
         onConfirm={() =>
           toDelete &&
           deleteTx.mutate(toDelete.id, {
             onSuccess: () => {
-              toast({ title: "تم حذف الحركة" });
+              toast({ title: i18n("تم حذف الحركة") });
               setToDelete(null);
             },
-            onError: (e) => toast({ variant: "destructive", title: "تعذر الحذف", description: e.message }),
+            onError: (e) => toast({ variant: "destructive", title: i18n("تعذر الحذف"), description: e.message }),
           })
         }
       />

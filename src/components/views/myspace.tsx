@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import type { Assembly } from "@/lib/types";
 import { ASSEMBLY_STATUS, ASSEMBLY_TYPES, BOARD_ROLES, DOC_TYPES } from "@/lib/constants";
-import { formatNumber } from "@/lib/format";
+import { formatNumber, formatShortDate } from "@/lib/format";
 import { useUIStore } from "@/store/ui";
 import {
   useAssemblies,
@@ -38,6 +38,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { t } from "@/lib/i18n";
 
 // ─── بطاقة الجمع العام للعضو ────────────────────────────────────────────────
 function MemberAssemblyCard({ assembly, memberCount }: { assembly: Assembly; memberCount: number }) {
@@ -49,9 +50,9 @@ function MemberAssemblyCard({ assembly, memberCount }: { assembly: Assembly; mem
     setBusy(true);
     try {
       await action.mutateAsync({ assemblyId: assembly.id, action: payload.action, decision: payload.decision });
-      toast({ title: payload.label, description: "مشاركتكم مسجلة — شكراً لالتزامكم" });
+      toast({ title: payload.label, description: t("مشاركتكم مسجلة — شكراً لالتزامكم") });
     } catch (err) {
-      toast({ variant: "destructive", title: "تعذر تسجيل المشاركة", description: (err as Error).message });
+      toast({ variant: "destructive", title: t("تعذر تسجيل المشاركة"), description: (err as Error).message });
     } finally {
       setBusy(false);
     }
@@ -78,12 +79,12 @@ function MemberAssemblyCard({ assembly, memberCount }: { assembly: Assembly; mem
             {assembly.location ? ` — ${assembly.location}` : ""}
           </p>
           <div className="mt-2 rounded-xl bg-muted/60 p-3">
-            <p className="text-[11px] font-bold text-foreground">جدول الأعمال</p>
+            <p className="text-[11px] font-bold text-foreground">{t("جدول الأعمال")}</p>
             <p className="mt-1 whitespace-pre-line text-[11px] leading-6 text-muted-foreground">{assembly.agenda}</p>
           </div>
           {assembly.decisions && !scheduled && (
             <div className="mt-2 rounded-xl border border-terra/25 bg-terra/5 p-3">
-              <p className="text-[11px] font-bold text-terra">القرارات المتخذة</p>
+              <p className="text-[11px] font-bold text-terra">{t("القرارات المتخذة")}</p>
               <p className="mt-1 whitespace-pre-line text-[11px] leading-6 text-muted-foreground">{assembly.decisions}</p>
             </div>
           )}
@@ -99,53 +100,53 @@ function MemberAssemblyCard({ assembly, memberCount }: { assembly: Assembly; mem
           {scheduled ? (
             assembly.myAttendance ? (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-zellij/25 bg-zellij/10 px-3 py-1.5 text-[11px] font-bold text-zellij">
-                <BadgeCheck className="size-3.5" /> حضوركم مؤكد
+                <BadgeCheck className="size-3.5" /> {t("حضوركم مؤكد")}
               </span>
             ) : (
               <Button
                 size="sm"
                 className="gap-1.5 text-xs font-bold"
                 disabled={busy}
-                onClick={() => run({ action: "attend", label: "تم تأكيد حضوركم" })}
+                onClick={() => run({ action: "attend", label: t("تم تأكيد حضوركم") })}
               >
-                <CalendarCheck2 className="size-3.5" /> تأكيد الحضور
+                <CalendarCheck2 className="size-3.5" /> {t("تأكيد الحضور")}
               </Button>
             )
           ) : voted ? (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-zellij/25 bg-zellij/10 px-3 py-1.5 text-[11px] font-bold text-zellij">
               <Vote className="size-3.5" />
-              صوّتم:{" "}
-              {assembly.myVote === "FOR" ? "موافقة" : assembly.myVote === "AGAINST" ? "معارضة" : "امتناع"}
+              {t("صوّتم:")}{" "}
+              {assembly.myVote === "FOR" ? t("موافقة") : assembly.myVote === "AGAINST" ? t("معارضة") : t("امتناع")}
             </span>
           ) : (
             <div className="space-y-1.5">
-              <p className="text-center text-[10px] font-bold text-muted-foreground">التصويت على القرارات</p>
+              <p className="text-center text-[10px] font-bold text-muted-foreground">{t("التصويت على القرارات")}</p>
               <div className="flex gap-1.5">
                 <Button
                   size="sm"
                   className="h-8 gap-1 px-2.5 text-xs font-bold"
                   disabled={busy}
-                  onClick={() => run({ action: "vote", decision: "FOR", label: "تم تسجيل صوتكم بالموافقة" })}
+                  onClick={() => run({ action: "vote", decision: "FOR", label: t("تم تسجيل صوتكم بالموافقة") })}
                 >
-                  <ThumbsUp className="size-3.5" /> موافقة
+                  <ThumbsUp className="size-3.5" /> {t("موافقة")}
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
                   className="h-8 gap-1 px-2.5 text-xs text-destructive hover:text-destructive"
                   disabled={busy}
-                  onClick={() => run({ action: "vote", decision: "AGAINST", label: "تم تسجيل صوتكم بالمعارضة" })}
+                  onClick={() => run({ action: "vote", decision: "AGAINST", label: t("تم تسجيل صوتكم بالمعارضة") })}
                 >
-                  <ThumbsDown className="size-3.5" /> معارضة
+                  <ThumbsDown className="size-3.5" /> {t("معارضة")}
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
                   className="h-8 gap-1 px-2.5 text-xs"
                   disabled={busy}
-                  onClick={() => run({ action: "vote", decision: "ABSTAIN", label: "تم تسجيل امتناعكم" })}
+                  onClick={() => run({ action: "vote", decision: "ABSTAIN", label: t("تم تسجيل امتناعكم") })}
                 >
-                  امتناع
+                  {t("امتناع")}
                 </Button>
               </div>
             </div>
@@ -178,14 +179,14 @@ export function MySpaceView() {
   if (!coopId || !coop) {
     return (
       <div>
-        <PageHeader title="فضائي" desc="فضاؤكم الشخصي داخل التعاونية" />
+        <PageHeader title={t("فضائي")} desc={t("فضاؤكم الشخصي داخل التعاونية")} />
         <EmptyState
           icon={Landmark}
-          title="لم تُربطوا بتعاونية بعد"
-          desc="تواصلوا مع رئيس تعاونيتكم أو إدارة المنصة لربط حسابكم، أو تفضلوا بتصفح الفرص المتاحة."
+          title={t("لم تُربطوا بتعاونية بعد")}
+          desc={t("تواصلوا مع رئيس تعاونيتكم أو إدارة المنصة لربط حسابكم، أو تفضلوا بتصفح الفرص المتاحة.")}
           action={
             <Button onClick={() => setView("opportunities")} className="gap-2 font-bold">
-              <Handshake className="size-4" /> تصفح الفرص
+              <Handshake className="size-4" /> {t("تصفح الفرص")}
             </Button>
           }
         />
@@ -196,11 +197,11 @@ export function MySpaceView() {
   return (
     <div>
       <PageHeader
-        title={`فضائي — ${coop.name}`}
+        title={t("فضائي — {name}", { name: coop.name })}
         desc={
           isContractor
-            ? "اطلاعكم على المحتوى المصرح لكم به من طرف رئيس التعاونية أو أحد أعضائها المسييرين."
-            : "حقوقكم كمنخرط حسب القانون رقم 112.12 والقانون الأساسي: الاطلاع والمشاركة في الجموع العامة والتصويت."
+            ? t("اطلاعكم على المحتوى المصرح لكم به من طرف رئيس التعاونية أو أحد أعضائها المسييرين.")
+            : t("حقوقكم كمنخرط حسب القانون رقم 112.12 والقانون الأساسي: الاطلاع والمشاركة في الجموع العامة والتصويت.")
         }
       />
 
@@ -216,22 +217,22 @@ export function MySpaceView() {
               <h3 className="font-display text-sm font-extrabold leading-6 text-foreground">{coop.name}</h3>
               <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                 <MapPin className="size-3" />
-                {coop.province}، {coop.region}
+                {coop.province}{t("، ")}{coop.region}
               </p>
             </div>
             <div className="space-y-1.5 text-xs text-muted-foreground">
               <p>
-                <span className="font-bold text-foreground">القطاع:</span> {coop.sector}
+                <span className="font-bold text-foreground">{t("القطاع:")}</span> {coop.sector}
               </p>
               <p>
-                <span className="font-bold text-foreground">الرئيس(ة):</span> {coop.presidentName}
+                <span className="font-bold text-foreground">{t("الرئيس(ة):")}</span> {coop.presidentName}
               </p>
               <p>
-                <span className="font-bold text-foreground">رقم التسجيل:</span> {coop.registrationNumber}
+                <span className="font-bold text-foreground">{t("رقم التسجيل:")}</span> {coop.registrationNumber}
               </p>
               {coop.odcCardNumber && (
                 <p>
-                  <span className="font-bold text-foreground">بطاقة ODCO:</span> {coop.odcCardNumber}
+                  <span className="font-bold text-foreground">{t("بطاقة ODCO:")}</span> {coop.odcCardNumber}
                 </p>
               )}
             </div>
@@ -247,7 +248,7 @@ export function MySpaceView() {
             </span>
             <div>
               <h3 className="font-display text-sm font-extrabold text-foreground">
-                {isContractor ? "علاقة التعاقد" : "عضويتي"}
+                {isContractor ? t("علاقة التعاقد") : t("عضويتي")}
               </h3>
               <p className="mt-1 text-xs text-muted-foreground">{user?.fullName}</p>
             </div>
@@ -261,27 +262,27 @@ export function MySpaceView() {
                 {myRecord ? (
                   <>
                     <p>
-                      <span className="font-bold text-foreground">الحصص:</span> {formatNumber(myRecord.shares)}
+                      <span className="font-bold text-foreground">{t("الحصص:")}</span> {formatNumber(myRecord.shares)}
                     </p>
                     <p>
-                      <span className="font-bold text-foreground">تاريخ الانخراط:</span>{" "}
+                      <span className="font-bold text-foreground">{t("تاريخ الانخراط:")}</span>{" "}
                       {new Date(myRecord.joinDate).toLocaleDateString("ar-MA")}
                     </p>
                     {myRecord.boardRole && (
                       <p>
-                        <span className="font-bold text-foreground">صفة داخل المجلس:</span>{" "}
-                        {BOARD_ROLES[myRecord.boardRole] ?? myRecord.boardRole}
+                        <span className="font-bold text-foreground">{t("صفة داخل المجلس:")}</span>{" "}
+                        {t(BOARD_ROLES[myRecord.boardRole]) ?? myRecord.boardRole}
                       </p>
                     )}
                   </>
                 ) : (
                   <p className="rounded-xl bg-saffron/10 p-3 text-[11px] leading-6 text-[#8a6414]">
-                    سجل عضويتكم قيد التحديث من طرف المسيّرين.
+                    {t("سجل عضويتكم قيد التحديث من طرف المسيّرين.")}
                   </p>
                 )}
                 <p className="flex items-start gap-1.5 rounded-xl bg-zellij/10 p-2.5 text-[11px] leading-6 text-zellij">
                   <Vote className="mt-1 size-3.5 shrink-0" />
-                  عضو واحد = صوت واحد — الرقابة الديمقراطية وفق مبادئ التعاون
+                  {t("عضو واحد = صوت واحد — الرقابة الديمقراطية وفق مبادئ التعاون")}
                 </p>
               </div>
             )}
@@ -294,19 +295,19 @@ export function MySpaceView() {
           <CardContent className="relative grid grid-cols-2 gap-3 p-5">
             <div className="rounded-xl bg-terra/10 p-3 text-center">
               <p className="font-display text-2xl font-black text-terra">{upcoming.length}</p>
-              <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">جمع مبرمج</p>
+              <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">{t("جمع مبرمج")}</p>
             </div>
             <div className="rounded-xl bg-zellij/10 p-3 text-center">
               <p className="font-display text-2xl font-black text-zellij">{(assemblies ?? []).length}</p>
-              <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">جمع مسجل</p>
+              <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">{t("جمع مسجل")}</p>
             </div>
             <div className="rounded-xl bg-saffron/15 p-3 text-center">
               <p className="font-display text-2xl font-black text-[#8a6414]">{sharedDocs.length}</p>
-              <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">وثيقة مصرحة</p>
+              <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">{t("وثيقة مصرحة")}</p>
             </div>
             <div className="rounded-xl bg-chart-5/10 p-3 text-center">
               <p className="font-display text-2xl font-black text-chart-5">{(members ?? []).length}</p>
-              <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">عضواً</p>
+              <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">{t("عضواً")}</p>
             </div>
           </CardContent>
         </Card>
@@ -317,11 +318,11 @@ export function MySpaceView() {
         <section className="mt-8">
           <h3 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-foreground">
             <Gavel className="size-4 text-terra" />
-            الجموع العامة — مشاركتي وتصويتي
+            {t("الجموع العامة — مشاركتي وتصويتي")}
           </h3>
           <div className="space-y-3">
             {upcoming.length === 0 && past.length === 0 ? (
-              <EmptyState icon={CalendarClock} title="لا توجد جموع عامة مسجلة" />
+              <EmptyState icon={CalendarClock} title={t("لا توجد جموع عامة مسجلة")} />
             ) : (
               <>
                 {upcoming.map((a) => (
@@ -340,13 +341,13 @@ export function MySpaceView() {
       <section className="mt-8">
         <h3 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-foreground">
           <Eye className="size-4 text-terra" />
-          {isContractor ? "الوثائق المصرح لكم بها" : "الوثائق المشتركة مع الأعضاء"}
+          {isContractor ? t("الوثائق المصرح لكم بها") : t("الوثائق المشتركة مع الأعضاء")}
         </h3>
         {sharedDocs.length === 0 ? (
           <EmptyState
             icon={FileCheck2}
-            title="لا توجد وثائق مصرح بها حالياً"
-            desc={isContractor ? "يحدد رئيس التعاونية أو المسيرون الوثائق المتاحة لكم." : "الوثائق التي تشاركها الإدارة مع الأعضاء ستظهر هنا."}
+            title={t("لا توجد وثائق مصرح بها حالياً")}
+            desc={isContractor ? t("يحدد رئيس التعاونية أو المسيرون الوثائق المتاحة لكم.") : t("الوثائق التي تشاركها الإدارة مع الأعضاء ستظهر هنا.")}
           />
         ) : (
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -357,7 +358,7 @@ export function MySpaceView() {
                   <LBadge map={DOC_TYPES} value={d.type} />
                 </div>
                 <p className="mt-2 text-[11px] text-muted-foreground">
-                  صادرة في {new Date(d.issueDate).toLocaleDateString("ar-MA")}
+                  {t("صادرة في")} {formatShortDate(d.issueDate)}
                   {d.reference ? ` • ${d.reference}` : ""}
                 </p>
               </div>

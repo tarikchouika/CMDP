@@ -26,6 +26,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   }
   if (b.amount !== undefined) data.amount = Number(b.amount);
   if (b.date !== undefined) data.date = toDate(b.date);
+  // تحديث إثبات الحركة عند رفع مرفقات جديدة
+  if (Array.isArray(b.proofFiles)) {
+    const clean = (b.proofFiles as { name?: string; type?: string; size?: number; dataUrl?: string }[])
+      .filter((f) => typeof f.dataUrl === "string" && /^(application\/pdf|image\/)/.test(String(f.type)) && String(f.dataUrl).length < 6_000_000)
+      .slice(0, 8)
+      .map((f) => ({ name: String(f.name ?? "ملف").slice(0, 160), type: String(f.type), size: Number(f.size) || 0, dataUrl: String(f.dataUrl) }));
+    if (clean.length > 0) data.proofFiles = JSON.stringify(clean);
+  }
 
   try {
     const row = await db.transaction.update({

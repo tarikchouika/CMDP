@@ -2,8 +2,11 @@
 // CMDP — العناصر الزخرفية المغربية (نجمة الزليج، القوس، الفواصل)
 // ═══════════════════════════════════════════════════════════════════════════
 
+"use client";
+
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { t } from "@/lib/i18n";
 
 /** نجمة الزليج الثمانية (الخطّام) */
 export function ZelligeStar({ className }: { className?: string }) {
@@ -14,17 +17,44 @@ export function ZelligeStar({ className }: { className?: string }) {
   );
 }
 
-/** شعار المنصة */
+/** شعار المنصة الرسمي الجديد (الشعار الذهبي المزخرف) */
 export function CmdpMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
-      <polygon
-        points="32,2 36.98,19.99 53.21,10.79 44.02,27.04 62,32 44.02,36.96 53.21,53.21 36.98,44.01 32,62 27.02,44.01 10.79,53.21 19.98,36.96 2,32 19.98,27.04 10.79,10.79 27.02,19.99"
-        fill="currentColor"
-      />
-      <circle cx="32" cy="32" r="10" fill="var(--cream, #faf6ee)" />
-      <circle cx="32" cy="32" r="4.5" fill="var(--saffron, #d9a03f)" />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/logo-96.png"
+      alt="CMDP"
+      className={cn("object-contain", className)}
+      draggable={false}
+    />
+  );
+}
+
+/** العلامة المائية الرسمية — شعار باهت فوق كل الصفحات */
+export function CmdpWatermark({ className }: { className?: string }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={cn(
+        "pointer-events-none fixed inset-0 z-[1] select-none bg-center bg-no-repeat",
+        "bg-[length:min(88vw,620px)]",
+        className
+      )}
+      style={{ backgroundImage: "url(/watermark.webp)" }}
+    />
+  );
+}
+
+/** أيقونة المساعد الألي الرسمية */
+export function CmdpAssistantIcon({ className }: { className?: string }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/chatbot-icon.webp"
+      alt=""
+      className={cn("rounded-full object-cover", className)}
+      draggable={false}
+    />
   );
 }
 
@@ -38,8 +68,8 @@ export function CmdpLogo({ compact = false, light = false }: { compact?: boolean
           CMDP
         </div>
         {!compact && (
-          <div className={cn("text-[11px]", light ? "text-sidebar-foreground/70" : "text-muted-foreground")}>
-            المنصة الرقمية لإدارة التعاونيات
+          <div className={cn("max-w-52 text-[11px] leading-4", light ? "text-sidebar-foreground/70" : "text-muted-foreground")}>
+            {t("المنصة الرقمية لإدارة التعاونيات")}
           </div>
         )}
       </div>

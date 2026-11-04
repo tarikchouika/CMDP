@@ -52,7 +52,11 @@ type CoopInput = Omit<Cooperative, "id" | "createdAt"> & { id?: number | null };
 type MemberInput = Omit<Member, "id" | "createdAt"> & { id?: number | null };
 type AssemblyInput = Omit<Assembly, "id" | "createdAt"> & { id?: number | null };
 type MeetingInput = Omit<Meeting, "id" | "createdAt"> & { id?: number | null };
-type TxInput = Omit<Transaction, "id" | "createdAt"> & { id?: number | null };
+type TxInput = Omit<Transaction, "id" | "createdAt"> & {
+  id?: number | null;
+  // مرفقات إثبات الحركة (فاتورة/وصل أداء) — base64
+  proofFiles?: { name: string; type: string; size: number; dataUrl: string }[];
+};
 type DocInput = Omit<DocumentItem, "id" | "createdAt"> & { id?: number | null };
 type TaskInput = Omit<ComplianceTask, "id" | "createdAt"> & { id?: number | null };
 type InteractionInput = Omit<EntityInteraction, "id" | "createdAt" | "entity"> & {

@@ -35,8 +35,9 @@ import { ACCOUNT_TYPE_LABELS, ROLE_LABELS } from "@/lib/constants";
 import { allowedViews } from "@/lib/permissions";
 import { useUIStore, VIEWS, type View } from "@/store/ui";
 import { useCooperatives } from "@/hooks/use-cmdp";
-import { CmdpLogo, CmdpMark, DividerZellige, ZelligeStar } from "@/components/patterns";
+import { CmdpLogo, CmdpMark, CmdpWatermark, DividerZellige, ZelligeStar } from "@/components/patterns";
 import { ChatbotWidget } from "@/components/chatbot";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -64,6 +65,9 @@ import { UsersView } from "@/components/views/users";
 import { OpportunitiesView } from "@/components/views/opportunities";
 import { MySpaceView } from "@/components/views/myspace";
 import { SettingsView } from "@/components/views/settings";
+import { InstallView } from "@/components/views/install";
+import { StoreView } from "@/components/views/store";
+import { t, useI18n } from "@/lib/i18n";
 
 // ─── عناصر التنقل الكاملة (تُفلتر حسب دور المستخدم) ────────────────────────
 const NAV_GROUPS: {
@@ -126,6 +130,8 @@ const VIEW_TITLES: Record<View, string> = {
   users: "المستخدمون والمصادقات",
   myspace: "فضائي",
   settings: "الإعدادات",
+  install: "تثبيت التطبيق",
+  store: "المتجر",
 };
 
 /** مجموعات التنقل المتاحة للمستخدم الحالي */
@@ -143,11 +149,11 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
   const setView = useUIStore((s) => s.setView);
   const groups = useNavGroups();
   return (
-    <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4 scrollbar-thin" aria-label="التنقل الرئيسي">
+    <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4 scrollbar-thin" aria-label={t("التنقل الرئيسي")}>
       {groups.map((g) => (
         <div key={g.group}>
           <p className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/45">
-            {g.group}
+            {t(g.group)}
           </p>
           <ul className="space-y-1">
             {g.items.map((item) => {
@@ -172,7 +178,7 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
                     ) : (
                       <item.icon className="size-4 shrink-0 opacity-70 group-hover:opacity-100" />
                     )}
-                    <span>{item.label}</span>
+                    <span>{t(item.label)}</span>
                   </button>
                 </li>
               );
@@ -193,16 +199,16 @@ function SidebarFooter() {
     <div className="border-t border-sidebar-border p-3">
       <div className="flex items-center gap-3 rounded-xl px-2 py-2">
         <span className="grid size-9 shrink-0 place-items-center rounded-full bg-terra-soft/20 font-display text-sm font-bold text-terra-soft">
-          {user?.fullName?.[0] ?? "م"}
+          {user?.fullName?.[0] ?? t("م")}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-sidebar-foreground">{user?.fullName ?? "المستخدم"}</p>
+          <p className="truncate text-sm font-semibold text-sidebar-foreground">{user?.fullName ?? t("المستخدم")}</p>
           <p className="truncate text-[11px] text-sidebar-foreground/60">
-            {user?.accountType ? `${ACCOUNT_TYPE_LABELS[user.accountType]} • ` : ""}
+            {user?.accountType ? `${t(ACCOUNT_TYPE_LABELS[user.accountType])} • ` : ""}
             {roleLabel}
           </p>
           {demoMode && (
-            <p className="truncate text-[10px] font-bold text-saffron">وضع العرض التجريبي</p>
+            <p className="truncate text-[10px] font-bold text-saffron">{t("وضع العرض التجريبي")}</p>
           )}
         </div>
         <Tooltip>
@@ -212,12 +218,12 @@ function SidebarFooter() {
               size="icon"
               className="text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
               onClick={() => setAuthed(null)}
-              aria-label="تسجيل الخروج"
+              aria-label={t("تسجيل الخروج")}
             >
               <LogOut className="size-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="top">تسجيل الخروج</TooltipContent>
+          <TooltipContent side="top">{t("تسجيل الخروج")}</TooltipContent>
         </Tooltip>
       </div>
     </div>
@@ -258,7 +264,7 @@ function CoopSelector({ compact = false }: { compact?: boolean }) {
   if (user?.role === "COADMIN") {
     return (
       <span className="hidden max-w-44 truncate rounded-xl border border-terra/25 bg-terra/10 px-3 py-2 text-xs font-bold text-terra md:inline-block">
-        {user.cooperativeName ?? current?.name ?? "تعاونيتي"}
+        {user.cooperativeName ?? current?.name ?? t("تعاونيتي")}
       </span>
     );
   }
@@ -270,9 +276,9 @@ function CoopSelector({ compact = false }: { compact?: boolean }) {
           "h-9 gap-1 border-border bg-card text-xs font-semibold md:text-sm",
           compact ? "w-40" : "w-56"
         )}
-        aria-label="التعاونية النشطة"
+        aria-label={t("التعاونية النشطة")}
       >
-        <SelectValue placeholder="اختر التعاونية" />
+        <SelectValue placeholder={t("اختر التعاونية")} />
       </SelectTrigger>
       <SelectContent className="max-h-72">
         {(coops ?? [])
@@ -297,7 +303,7 @@ function ThemeToggle() {
       size="icon"
       className="size-9 shrink-0"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-      aria-label="تبديل المظهر"
+      aria-label={t("تبديل المظهر")}
     >
       {mounted && resolvedTheme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
     </Button>
@@ -310,7 +316,7 @@ function DemoBadge() {
   return (
     <span className="hidden items-center gap-1.5 rounded-full border border-saffron/40 bg-saffron/15 px-3 py-1 text-[11px] font-bold text-[#8a6414] md:inline-flex">
       <FlaskConical className="size-3" />
-      وضع العرض التجريبي — بيانات غير محفوظة
+      {t("وضع العرض التجريبي — بيانات غير محفوظة")}
     </span>
   );
 }
@@ -324,7 +330,7 @@ function AppTopBar() {
       {/* زر القائمة — الهواتف */}
       <Sheet>
         <SheetTrigger asChild>
-          <Button variant="outline" size="icon" className="size-9 shrink-0 lg:hidden" aria-label="القائمة">
+          <Button variant="outline" size="icon" className="size-9 shrink-0 lg:hidden" aria-label={t("القائمة")}>
             <Menu className="size-4" />
           </Button>
         </SheetTrigger>
@@ -346,7 +352,7 @@ function AppTopBar() {
       <div className="flex min-w-0 items-center gap-2">
         <CmdpMark className="size-8 text-terra lg:hidden" />
         <h2 className="hidden font-display text-base font-extrabold text-foreground md:block">
-          {VIEW_TITLES[view]}
+          {t(VIEW_TITLES[view])}
         </h2>
       </div>
 
@@ -355,10 +361,11 @@ function AppTopBar() {
       <DemoBadge />
       <CoopSelector compact />
       <ThemeToggle />
+      <LanguageSwitcher />
       {user?.role === "SUPER_ADMIN" && (
         <span className="hidden items-center gap-1 rounded-full border border-terra/30 bg-terra/10 px-2.5 py-1 text-[10px] font-black text-terra lg:inline-flex">
           <BadgeCheck className="size-3" />
-          المالك
+          {t("المالك")}
         </span>
       )}
       <Button
@@ -367,7 +374,7 @@ function AppTopBar() {
         className="hidden text-muted-foreground hover:text-foreground md:inline-flex"
         onClick={() => setView("landing")}
       >
-        الرئيسية
+        {t("الرئيسية")}
       </Button>
     </header>
   );
@@ -378,13 +385,13 @@ function useQuickNav() {
   const user = useUIStore((s) => s.user);
   return React.useMemo(() => {
     const all: { view: View; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-      { view: "dashboard", label: "اللوحة", icon: LayoutDashboard },
-      { view: "myspace", label: "فضائي", icon: UserSquare2 },
-      { view: "cooperatives", label: "تعاونيات", icon: Building2 },
-      { view: "members", label: "أعضاء", icon: Users },
-      { view: "finance", label: "مالية", icon: Wallet },
-      { view: "opportunities", label: "الفرص", icon: Briefcase },
-      { view: "settings", label: "الإعدادات", icon: Settings },
+      { view: "dashboard", label: t("اللوحة"), icon: LayoutDashboard },
+      { view: "myspace", label: t("فضائي"), icon: UserSquare2 },
+      { view: "cooperatives", label: t("تعاونيات"), icon: Building2 },
+      { view: "members", label: t("أعضاء"), icon: Users },
+      { view: "finance", label: t("مالية"), icon: Wallet },
+      { view: "opportunities", label: t("الفرص"), icon: Briefcase },
+      { view: "settings", label: t("الإعدادات"), icon: Settings },
     ];
     const allowed = new Set(allowedViews(user));
     const priority: View[] =
@@ -406,7 +413,7 @@ function BottomNav({ onMore }: { onMore: () => void }) {
     <nav
       className="fixed inset-x-0 bottom-0 z-30 grid border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
       style={{ gridTemplateColumns: `repeat(${Math.min(quick.length + 1, 5)}, minmax(0, 1fr))` }}
-      aria-label="التنقل السريع"
+      aria-label={t("التنقل السريع")}
     >
       {quick.map((q) => {
         const active = view === q.view;
@@ -421,7 +428,7 @@ function BottomNav({ onMore }: { onMore: () => void }) {
             aria-current={active ? "page" : undefined}
           >
             <q.icon className="size-5" />
-            {q.label}
+            {t(q.label)}
           </button>
         );
       })}
@@ -430,7 +437,7 @@ function BottomNav({ onMore }: { onMore: () => void }) {
         className="flex min-h-[56px] flex-col items-center justify-center gap-1 py-2 text-[10px] font-semibold text-muted-foreground"
       >
         <MoreHorizontal className="size-5" />
-        المزيد
+        {t("المزيد")}
       </button>
     </nav>
   );
@@ -444,26 +451,26 @@ function AppFooter() {
       <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-2">
           <ZelligeStar className="size-3.5 text-terra" />
-          <span>© 2026 CMDP — المنصة الرقمية لإدارة التعاونيات بالمغرب</span>
+          <span>{t("© 2026 CMDP — المنصة الرقمية لإدارة التعاونيات بالمغرب")}</span>
         </div>
-        <nav className="flex flex-wrap items-center gap-4" aria-label="روابط سريعة">
+        <nav className="flex flex-wrap items-center gap-4" aria-label={t("روابط سريعة")}>
           <button onClick={() => setView("landing")} className="font-semibold transition-colors hover:text-terra">
-            الصفحة الرئيسية
+            {t("الصفحة الرئيسية")}
           </button>
           <button onClick={() => setView("opportunities")} className="font-semibold transition-colors hover:text-terra">
-            فرص العمل والتعاقد
+            {t("فرص العمل والتعاقد")}
           </button>
           <button onClick={() => setView("regulations")} className="font-semibold transition-colors hover:text-terra">
-            القوانين واللوائح
+            {t("القوانين واللوائح")}
           </button>
           <button onClick={() => setView("legal", { doc: "terms" })} className="font-semibold transition-colors hover:text-terra">
-            الشروط العامة
+            {t("الشروط العامة")}
           </button>
           <button onClick={() => setView("legal", { doc: "privacy" })} className="font-semibold transition-colors hover:text-terra">
-            سياسة الخصوصية
+            {t("سياسة الخصوصية")}
           </button>
         </nav>
-        <span className="text-[11px]">المرجع القانوني: القانون رقم 112.12</span>
+        <span className="text-[11px]">{t("المرجع القانوني: القانون رقم 112.12")}</span>
       </div>
     </footer>
   );
@@ -502,7 +509,7 @@ function ViewRouter() {
   }
 }
 
-export function AppShell() {
+function AppShellInner() {
   const view = useUIStore((s) => s.view);
   const authed = useUIStore((s) => s.authed);
   const [moreOpen, setMoreOpen] = React.useState(false);
@@ -531,6 +538,7 @@ export function AppShell() {
   if (view === "landing")
     return (
       <>
+        <CmdpWatermark />
         <LandingView />
         <ChatbotWidget page="landing" />
       </>
@@ -538,8 +546,23 @@ export function AppShell() {
   if (view === "legal")
     return (
       <>
+        <CmdpWatermark />
         <LegalView />
         <ChatbotWidget page="legal" />
+      </>
+    );
+  if (view === "install")
+    return (
+      <>
+        <CmdpWatermark />
+        <InstallView />
+      </>
+    );
+  if (view === "store")
+    return (
+      <>
+        <CmdpWatermark />
+        <StoreView />
       </>
     );
   if (view === "opportunities") {
@@ -547,6 +570,7 @@ export function AppShell() {
     if (authed) {
       return (
         <div className="flex min-h-screen bg-background">
+          <CmdpWatermark />
           <AppSidebar />
           <div className="flex min-w-0 flex-1 flex-col">
             <AppTopBar />
@@ -577,6 +601,7 @@ export function AppShell() {
     }
     return (
       <div className="flex min-h-screen flex-col bg-background">
+        <CmdpWatermark />
         <PublicTopBar />
         <main className="flex-1 px-4 pb-24 pt-5 md:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl">
@@ -588,11 +613,24 @@ export function AppShell() {
       </div>
     );
   }
-  if (view === "register") return <RegisterView />;
-  if (view === "login" || !authed) return <LoginView />;
+  if (view === "register")
+    return (
+      <>
+        <CmdpWatermark />
+        <RegisterView />
+      </>
+    );
+  if (view === "login" || !authed)
+    return (
+      <>
+        <CmdpWatermark />
+        <LoginView />
+      </>
+    );
 
   return (
     <div className="flex min-h-screen bg-background">
+      <CmdpWatermark />
       <AppSidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <AppTopBar />
@@ -636,10 +674,10 @@ function PublicTopBar() {
         <div className="me-auto" />
         <Button variant="ghost" size="sm" onClick={() => setView("legal")} className="hidden text-muted-foreground sm:inline-flex">
           <Scale className="me-1.5 size-3.5" />
-          المركز القانوني
+          {t("المركز القانوني")}
         </Button>
         <Button size="sm" onClick={() => setView(authed ? "dashboard" : "login")} className="gap-1.5 font-bold">
-          {authed ? "المنصة" : "تسجيل الدخول"}
+          {authed ? t("المنصة") : t("تسجيل الدخول")}
         </Button>
       </div>
     </header>
@@ -654,22 +692,28 @@ function FooterPublic() {
       <DividerZellige className="mx-auto mb-4 w-56 opacity-60" />
       <div className="flex flex-wrap items-center justify-center gap-4">
         <button onClick={() => setView("landing")} className="font-semibold transition-colors hover:text-terra">
-          الرئيسية
+          {t("الرئيسية")}
         </button>
         <button onClick={() => setView("opportunities")} className="font-semibold transition-colors hover:text-terra">
-          فرص العمل والتعاقد
+          {t("فرص العمل والتعاقد")}
         </button>
         <button onClick={() => setView("register")} className="font-semibold transition-colors hover:text-terra">
-          إنشاء حساب
+          {t("إنشاء حساب")}
+        </button>
+        <button onClick={() => setView("install")} className="font-semibold transition-colors hover:text-terra">
+          {t("تثبيت التطبيق")}
+        </button>
+        <button onClick={() => setView("store")} className="font-semibold transition-colors hover:text-terra">
+          {t("المتجر")}
         </button>
         <button onClick={() => setView("legal", { doc: "terms" })} className="font-semibold transition-colors hover:text-terra">
-          الشروط العامة
+          {t("الشروط العامة")}
         </button>
         <button onClick={() => setView("legal", { doc: "privacy" })} className="font-semibold transition-colors hover:text-terra">
-          الخصوصية
+          {t("الخصوصية")}
         </button>
       </div>
-      <p className="mt-4">© 2026 CMDP — المنصة الرقمية لإدارة التعاونيات بالمغرب</p>
+      <p className="mt-4">{t("© 2026 CMDP — المنصة الرقمية لإدارة التعاونيات بالمغرب")}</p>
     </footer>
   );
 }
@@ -696,5 +740,16 @@ export function ViewLink({
     >
       {children}
     </Link>
+  );
+}
+
+
+/** غلاف إعادة التركيب: تغيير اللغة يعيد بناء الشجرة لترجمة كل النصوص فوراً */
+export function AppShell() {
+  const { lang } = useI18n();
+  return (
+    <React.Fragment key={lang}>
+      <AppShellInner />
+    </React.Fragment>
   );
 }

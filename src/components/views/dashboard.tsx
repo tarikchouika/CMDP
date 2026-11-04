@@ -40,6 +40,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { t as i18n } from "@/lib/i18n";
+import { t } from "@/lib/i18n";
 
 const CHART_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
 
@@ -101,11 +103,11 @@ export function DashboardView() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="لوحة القيادة"
-        desc={`${coop?.name ?? "التعاونية"} — ${coop?.province ?? ""}، ${coop?.region ?? ""}`}
+        title={i18n("لوحة القيادة")}
+        desc={`${coop?.name ?? i18n("التعاونية")} — ${coop?.province ?? ""}، ${coop?.region ?? ""}`}
         actions={
           <Button variant="outline" className="gap-1.5" onClick={() => setView("cooperatives")}>
-            بطاقة التعاونية
+            {i18n("بطاقة التعاونية")}
             <ArrowLeft className="size-4" />
           </Button>
         }
@@ -114,30 +116,30 @@ export function DashboardView() {
       {/* المؤشرات */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
-          label="الأعضاء النشطون"
+          label={i18n("الأعضاء النشطون")}
           value={formatNumber(data.memberCount)}
-          hint={`${data.womenShare}% نساء — ${formatNumber(data.womenCount)} منخرطة`}
+          hint={i18n("{p}% نساء — {n} منخرطة", { p: data.womenShare, n: formatNumber(data.womenCount) })}
           icon={Users}
           tone="terra"
         />
         <StatCard
-          label="إجمالي الحصص الاجتماعية"
+          label={i18n("إجمالي الحصص الاجتماعية")}
           value={formatNumber(data.sharesTotal)}
-          hint="حصة واحدة على الأقل لكل عضو"
+          hint={i18n("حصة واحدة على الأقل لكل عضو")}
           icon={PieIcon}
           tone="zellij"
         />
         <StatCard
-          label={`إيرادات سنة ${new Date().getFullYear()}`}
+          label={i18n("إيرادات سنة {year}", { year: new Date().getFullYear() })}
           value={formatMAD(data.incomeYTD)}
-          hint={`مصاريف: ${formatMAD(data.expenseYTD)}`}
+          hint={i18n("مصاريف: {amount}", { amount: formatMAD(data.expenseYTD) })}
           icon={TrendingUp}
           tone="olive"
         />
         <StatCard
-          label="الرصيد الصافي (سيولة)"
+          label={i18n("الرصيد الصافي (سيولة)")}
           value={formatMAD(data.balance)}
-          hint="مداخيل ناقص مصاريف — كل الفترات"
+          hint={i18n("مداخيل ناقص مصاريف — كل الفترات")}
           icon={Wallet}
           tone={data.balance >= 0 ? "zellij" : "plum"}
         />
@@ -146,7 +148,7 @@ export function DashboardView() {
       {/* الرسوم */}
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <ChartCard title="الإيرادات والمصاريف — آخر 12 شهراً" hint="بالدرهم المغربي">
+          <ChartCard title={i18n("الإيرادات والمصاريف — آخر 12 شهراً")} hint={i18n("بالدرهم المغربي")}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data.monthlySeries} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
                 <defs>
@@ -172,7 +174,7 @@ export function DashboardView() {
                   contentStyle={tooltipStyle}
                   formatter={(value: number, name: string) => [
                     formatMAD(value),
-                    name === "income" ? "الإيرادات" : "المصاريف",
+                    name === "income" ? i18n("الإيرادات") : "المصاريف",
                   ]}
                 />
                 <Area type="monotone" dataKey="income" stroke="var(--chart-1)" strokeWidth={2.5} fill="url(#gIncome)" />
@@ -182,7 +184,7 @@ export function DashboardView() {
           </ChartCard>
         </div>
 
-        <ChartCard title="توزيع التعاونيات حسب القطاع" hint={`${formatNumber(data.coopCount)} تعاونية مسجلة بالمنصة`}>
+        <ChartCard title={i18n("توزيع التعاونيات حسب القطاع")} hint={`${formatNumber(data.coopCount)} تعاونية مسجلة بالمنصة`}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -199,7 +201,7 @@ export function DashboardView() {
                   <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                 ))}
               </Pie>
-              <ReTooltip contentStyle={tooltipStyle} formatter={(v: number, n: string) => [`${formatNumber(v)} تعاونية`, n]} />
+              <ReTooltip contentStyle={tooltipStyle} formatter={(v: number, n: string) => [i18n("{n} تعاونية", { n: formatNumber(v) }), n]} />
             </PieChart>
           </ResponsiveContainer>
           <div className="mt-1 flex flex-wrap justify-center gap-x-3 gap-y-1">
@@ -220,16 +222,16 @@ export function DashboardView() {
             <CardTitle className="flex items-center justify-between text-sm font-extrabold">
               <span className="flex items-center gap-2">
                 <ZelligeStar className="size-3 text-saffron" />
-                المواعيد النظامية القادمة
+                {i18n("المواعيد النظامية القادمة")}
               </span>
               <span className="text-[10px] font-medium text-muted-foreground">
-                {done} منجز / {data.tasksUpcoming.length}
+                {done} {i18n("منجز")} / {data.tasksUpcoming.length}
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="max-h-72 space-y-2.5 overflow-y-auto scrollbar-thin">
             {data.tasksUpcoming.length === 0 && (
-              <p className="py-8 text-center text-xs text-muted-foreground">لا توجد مواعيد قادمة</p>
+              <p className="py-8 text-center text-xs text-muted-foreground">{i18n("لا توجد مواعيد قادمة")}</p>
             )}
             {data.tasksUpcoming.map((t) => {
               const overdue = t.daysLeft < 0;
@@ -240,14 +242,14 @@ export function DashboardView() {
                   className="flex items-start gap-3 rounded-xl border border-border/70 bg-background p-3"
                 >
                   <button
-                    aria-label={t.status === "DONE" ? "إلغاء الإنجاز" : "تحديد كمنجز"}
+                    aria-label={t.status === "DONE" ? i18n("إلغاء الإنجاز") : i18n("تحديد كمنجز")}
                     onClick={() =>
                       saveTask.mutate(
                         { ...t, status: t.status === "DONE" ? "PENDING" : "DONE" },
                         {
                           onSuccess: () =>
-                            toast({ title: t.status === "DONE" ? "أُعيد فتح الالتزام" : "أُنجز الالتزام — أحسنت" }),
-                          onError: (e) => toast({ variant: "destructive", title: "تعذر الحفظ", description: e.message }),
+                            toast({ title: t.status === "DONE" ? i18n("أُعيد فتح الالتزام") : i18n("أُنجز الالتزام — أحسنت") }),
+                          onError: (e) => toast({ variant: "destructive", title: i18n("تعذر الحفظ"), description: e.message }),
                         }
                       )
                     }
@@ -271,7 +273,7 @@ export function DashboardView() {
                           overdue ? "text-destructive" : soon ? "text-[#8a6414]" : "text-zellij"
                         }`}
                       >
-                        {overdue ? `متأخر بـ ${Math.abs(t.daysLeft)} يوم` : `بعد ${t.daysLeft} يوم`}
+                        {overdue ? i18n("متأخر بـ {n} يوم", { n: Math.abs(t.daysLeft) }) : i18n("بعد {n} يوم", { n: t.daysLeft })}
                       </span>
                     </div>
                   </div>
@@ -282,13 +284,13 @@ export function DashboardView() {
         </Card>
 
         {/* تطور الأعضاء */}
-        <ChartCard title="تطور عدد الأعضاء" hint="تراكمي منذ التأسيس">
+        <ChartCard title={i18n("تطور عدد الأعضاء")} hint={i18n("تراكمي منذ التأسيس")}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data.membersByYear} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
               <XAxis dataKey="year" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
               <YAxis orientation="right" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} allowDecimals={false} />
-              <ReTooltip contentStyle={tooltipStyle} formatter={(v: number) => [`${formatNumber(v)} عضو`, "العدد الإجمالي"]} />
+              <ReTooltip contentStyle={tooltipStyle} formatter={(v: number) => [i18n("{n} عضو", { n: formatNumber(v) }), "العدد الإجمالي"]} />
               <Line type="monotone" dataKey="count" stroke="var(--chart-3)" strokeWidth={3} dot={{ r: 4, fill: "var(--chart-3)", strokeWidth: 0 }} />
             </LineChart>
           </ResponsiveContainer>
@@ -300,14 +302,14 @@ export function DashboardView() {
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm font-extrabold">
                 <FileWarning className="size-4 text-terra" />
-                صحة الوثائق
+                {i18n("صحة الوثائق")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {[
-                { label: "سارية", value: data.documentsHealth.valid, cls: "bg-zellij" },
-                { label: "قاربت الانتهاء", value: data.documentsHealth.expiring, cls: "bg-saffron" },
-                { label: "منتهية", value: data.documentsHealth.expired, cls: "bg-destructive" },
+                { label: i18n("سارية"), value: data.documentsHealth.valid, cls: "bg-zellij" },
+                { label: i18n("قاربت الانتهاء"), value: data.documentsHealth.expiring, cls: "bg-saffron" },
+                { label: i18n("منتهية"), value: data.documentsHealth.expired, cls: "bg-destructive" },
               ].map((r) => {
                 const total = Math.max(1, data.documentsHealth.valid + data.documentsHealth.expiring + data.documentsHealth.expired);
                 return (
@@ -323,7 +325,7 @@ export function DashboardView() {
                 );
               })}
               <Button variant="outline" size="sm" className="w-full gap-1.5" onClick={() => setView("documents")}>
-                فتح سجل الوثائق
+                {i18n("فتح سجل الوثائق")}
                 <ArrowLeft className="size-3.5" />
               </Button>
             </CardContent>
@@ -333,7 +335,7 @@ export function DashboardView() {
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm font-extrabold">
                 <Gavel className="size-4 text-terra" />
-                آخر الجمعات العامة
+                {i18n("آخر الجمعات العامة")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -345,11 +347,11 @@ export function DashboardView() {
                 >
                   <span className="min-w-0">
                     <span className="block truncate font-bold text-foreground">
-                      {a.type === "ORDINARY" ? "جمع عام عادي" : a.type === "EXTRAORDINARY" ? "جمع عام استثنائي" : "جمع تأسيسي"}
+                      {a.type === "ORDINARY" ? i18n("جمع عام عادي") : a.type === "EXTRAORDINARY" ? i18n("جمع عام استثنائي") : i18n("جمع تأسيسي")}
                     </span>
                     <span className="text-[10px] text-muted-foreground">{formatShortDate(a.date)}</span>
                   </span>
-                  <span className="shrink-0 text-[10px] font-bold text-zellij">{a.attendeesCount} حاضر</span>
+                  <span className="shrink-0 text-[10px] font-bold text-zellij">{a.attendeesCount} {i18n("حاضر")}</span>
                 </button>
               ))}
             </CardContent>
@@ -363,10 +365,10 @@ export function DashboardView() {
           <CardTitle className="flex items-center justify-between text-sm font-extrabold">
             <span className="flex items-center gap-2">
               <ZelligeStar className="size-3 text-saffron" />
-              آخر الحركات المالية
+              {i18n("آخر الحركات المالية")}
             </span>
             <Button variant="ghost" size="sm" className="h-7 gap-1 text-[11px] text-terra" onClick={() => setView("finance")}>
-              عرض الكل
+              {i18n("عرض الكل")}
               <ArrowLeft className="size-3" />
             </Button>
           </CardTitle>
