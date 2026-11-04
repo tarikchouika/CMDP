@@ -41,7 +41,10 @@ export async function rawFetch<T>(path: string, init?: RequestInit): Promise<T> 
     throw new ApiUnavailableError();
   }
   // استضافة ساكنة بلا باك إند → اعتبار الخدمة غير متاحة
-  if (res.status === 404) throw new ApiUnavailableError();
+  // (404: المسار غير موجود — 405/501: الاستضافة الساكنة لا تدعم الطريقة)
+  if (res.status === 404 || res.status === 405 || res.status === 501) {
+    throw new ApiUnavailableError();
+  }
   if (!res.ok) {
     let msg = `خطأ ${res.status}`;
     try {

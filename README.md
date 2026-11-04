@@ -11,6 +11,11 @@
 </p>
 
 <p align="center">
+  <a href="https://cmdp.pages.dev"><img src="https://img.shields.io/badge/%D8%A7%D9%84%D9%86%D8%B3%D8%AE%D8%A9%20%D8%A7%D9%84%D8%AD%D9%8A%D8%A9-cmdp.pages.dev-9C4526?logo=cloudflarepages" alt="النسخة الحية" /></a>
+  <a href="https://github.com/tarikchouika/CMDP"><img src="https://img.shields.io/badge/%D8%A7%D9%84%D9%85%D8%B3%D8%AA%D9%88%D8%AF%D8%B9-GitHub-181717?logo=github" alt="المستودع" /></a>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/Next.js-16-black" alt="Next.js 16" />
   <img src="https://img.shields.io/badge/TypeScript-5-3178C6" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4" alt="Tailwind CSS 4" />
