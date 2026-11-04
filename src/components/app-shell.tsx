@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // CMDP — الهيكل العام: الشريط الجانبي + الشريط العلوي + التنقل السفلي
+// التنقل والوحدات مفلترة حسب دور المستخدم وصلاحياته (نظام الأدوار 1.1.0)
 // ═══════════════════════════════════════════════════════════════════════════
 
 "use client";
@@ -8,6 +9,8 @@ import * as React from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import {
+  BadgeCheck,
+  Briefcase,
   Building2,
   FileText,
   Gavel,
@@ -19,15 +22,21 @@ import {
   ScrollText,
   Settings,
   Sun,
+  UserRound,
   Users,
+  UserSquare2,
   Wallet,
   MoreHorizontal,
   FlaskConical,
+  Scale,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ACCOUNT_TYPE_LABELS, ROLE_LABELS } from "@/lib/constants";
+import { allowedViews } from "@/lib/permissions";
 import { useUIStore, VIEWS, type View } from "@/store/ui";
 import { useCooperatives } from "@/hooks/use-cmdp";
 import { CmdpLogo, CmdpMark, DividerZellige, ZelligeStar } from "@/components/patterns";
+import { ChatbotWidget } from "@/components/chatbot";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -41,6 +50,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 import { LandingView } from "@/components/views/landing";
 import { LoginView } from "@/components/views/login";
+import { RegisterView } from "@/components/views/register";
+import { LegalView } from "@/components/views/legal";
 import { DashboardView } from "@/components/views/dashboard";
 import { CooperativesView } from "@/components/views/cooperatives";
 import { MembersView } from "@/components/views/members";
@@ -49,9 +60,12 @@ import { FinanceView } from "@/components/views/finance";
 import { DocumentsView } from "@/components/views/documents";
 import { EntitiesView } from "@/components/views/entities";
 import { RegulationsView } from "@/components/views/regulations";
+import { UsersView } from "@/components/views/users";
+import { OpportunitiesView } from "@/components/views/opportunities";
+import { MySpaceView } from "@/components/views/myspace";
 import { SettingsView } from "@/components/views/settings";
 
-// ─── عناصر التنقل ──────────────────────────────────────────────────────────
+// ─── عناصر التنقل الكاملة (تُفلتر حسب دور المستخدم) ────────────────────────
 const NAV_GROUPS: {
   group: string;
   items: { view: View; label: string; icon: React.ComponentType<{ className?: string }> }[];
@@ -59,6 +73,10 @@ const NAV_GROUPS: {
   {
     group: "القيادة",
     items: [{ view: "dashboard", label: "لوحة القيادة", icon: LayoutDashboard }],
+  },
+  {
+    group: "فضائي",
+    items: [{ view: "myspace", label: "فضاء العضو/المتعاقد", icon: UserSquare2 }],
   },
   {
     group: "التسيير",
@@ -70,12 +88,20 @@ const NAV_GROUPS: {
     ],
   },
   {
+    group: "الفرص",
+    items: [{ view: "opportunities", label: "فرص العمل والتعاقد", icon: Briefcase }],
+  },
+  {
     group: "الحوكمة والامتثال",
     items: [
       { view: "documents", label: "سجل الوثائق", icon: FileText },
       { view: "entities", label: "الجهات الوصية", icon: Landmark },
       { view: "regulations", label: "القوانين واللوائح", icon: ScrollText },
     ],
+  },
+  {
+    group: "الإدارة",
+    items: [{ view: "users", label: "المستخدمون والمصادقات", icon: UserRound }],
   },
   {
     group: "النظام",
@@ -86,6 +112,9 @@ const NAV_GROUPS: {
 const VIEW_TITLES: Record<View, string> = {
   landing: "الرئيسية",
   login: "الدخول",
+  register: "التسجيل",
+  opportunities: "فرص العمل والتعاقد",
+  legal: "المركز القانوني",
   dashboard: "لوحة القيادة",
   cooperatives: "التعاونيات",
   members: "الأعضاء",
@@ -94,15 +123,28 @@ const VIEW_TITLES: Record<View, string> = {
   documents: "سجل الوثائق",
   entities: "الجهات الوصية",
   regulations: "القوانين واللوائح",
+  users: "المستخدمون والمصادقات",
+  myspace: "فضائي",
   settings: "الإعدادات",
 };
+
+/** مجموعات التنقل المتاحة للمستخدم الحالي */
+function useNavGroups() {
+  const user = useUIStore((s) => s.user);
+  const allowed = React.useMemo(() => new Set(allowedViews(user)), [user]);
+  return NAV_GROUPS.map((g) => ({
+    ...g,
+    items: g.items.filter((i) => allowed.has(i.view)),
+  })).filter((g) => g.items.length > 0);
+}
 
 function NavList({ onNavigate }: { onNavigate?: () => void }) {
   const view = useUIStore((s) => s.view);
   const setView = useUIStore((s) => s.setView);
+  const groups = useNavGroups();
   return (
-    <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4 scrollbar-thin">
-      {NAV_GROUPS.map((g) => (
+    <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4 scrollbar-thin" aria-label="التنقل الرئيسي">
+      {groups.map((g) => (
         <div key={g.group}>
           <p className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/45">
             {g.group}
@@ -146,6 +188,7 @@ function SidebarFooter() {
   const user = useUIStore((s) => s.user);
   const setAuthed = useUIStore((s) => s.setAuthed);
   const demoMode = useUIStore((s) => s.demoMode);
+  const roleLabel = user ? ROLE_LABELS[user.role]?.label ?? user.role : "";
   return (
     <div className="border-t border-sidebar-border p-3">
       <div className="flex items-center gap-3 rounded-xl px-2 py-2">
@@ -154,7 +197,13 @@ function SidebarFooter() {
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-sidebar-foreground">{user?.fullName ?? "المستخدم"}</p>
-          <p className="truncate text-[11px] text-sidebar-foreground/60">{demoMode ? "وضع العرض التجريبي" : "متصل بالباك إند المحلي"}</p>
+          <p className="truncate text-[11px] text-sidebar-foreground/60">
+            {user?.accountType ? `${ACCOUNT_TYPE_LABELS[user.accountType]} • ` : ""}
+            {roleLabel}
+          </p>
+          {demoMode && (
+            <p className="truncate text-[10px] font-bold text-saffron">وضع العرض التجريبي</p>
+          )}
         </div>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -191,10 +240,29 @@ function AppSidebar() {
 }
 
 function CoopSelector({ compact = false }: { compact?: boolean }) {
+  const user = useUIStore((s) => s.user);
   const activeCoopId = useUIStore((s) => s.activeCoopId);
   const setActiveCoop = useUIStore((s) => s.setActiveCoop);
   const { data: coops } = useCooperatives();
-  const current = coops?.find((c) => c.id === activeCoopId);
+  const current = (coops ?? []).find((c) => c.id === activeCoopId);
+
+  // المستخدم العادي: تعاونيته ثابتة
+  if (user?.role === "USER") {
+    return (
+      <span className="hidden max-w-44 truncate rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground md:inline-block">
+        {user.cooperativeName ?? current?.name ?? "—"}
+      </span>
+    );
+  }
+  // الكوأدمن: تعاونيته حصراً
+  if (user?.role === "COADMIN") {
+    return (
+      <span className="hidden max-w-44 truncate rounded-xl border border-terra/25 bg-terra/10 px-3 py-2 text-xs font-bold text-terra md:inline-block">
+        {user.cooperativeName ?? current?.name ?? "تعاونيتي"}
+      </span>
+    );
+  }
+  // الأدمن والمالك: كل التعاونيات المسجلة
   return (
     <Select value={String(activeCoopId)} onValueChange={(v) => setActiveCoop(Number(v))}>
       <SelectTrigger
@@ -207,11 +275,13 @@ function CoopSelector({ compact = false }: { compact?: boolean }) {
         <SelectValue placeholder="اختر التعاونية" />
       </SelectTrigger>
       <SelectContent className="max-h-72">
-        {(coops ?? []).map((c) => (
-          <SelectItem key={c.id} value={String(c.id)} className="text-xs md:text-sm">
-            {c.name}
-          </SelectItem>
-        ))}
+        {(coops ?? [])
+          .filter((c) => c.approvalStatus === "APPROVED")
+          .map((c) => (
+            <SelectItem key={c.id} value={String(c.id)} className="text-xs md:text-sm">
+              {c.name}
+            </SelectItem>
+          ))}
       </SelectContent>
     </Select>
   );
@@ -248,6 +318,7 @@ function DemoBadge() {
 function AppTopBar() {
   const view = useUIStore((s) => s.view);
   const setView = useUIStore((s) => s.setView);
+  const user = useUIStore((s) => s.user);
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/85 px-4 backdrop-blur md:px-6">
       {/* زر القائمة — الهواتف */}
@@ -284,6 +355,12 @@ function AppTopBar() {
       <DemoBadge />
       <CoopSelector compact />
       <ThemeToggle />
+      {user?.role === "SUPER_ADMIN" && (
+        <span className="hidden items-center gap-1 rounded-full border border-terra/30 bg-terra/10 px-2.5 py-1 text-[10px] font-black text-terra lg:inline-flex">
+          <BadgeCheck className="size-3" />
+          المالك
+        </span>
+      )}
       <Button
         variant="ghost"
         size="sm"
@@ -296,22 +373,42 @@ function AppTopBar() {
   );
 }
 
-const QUICK_NAV: { view: View; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { view: "dashboard", label: "اللوحة", icon: LayoutDashboard },
-  { view: "cooperatives", label: "تعاونيات", icon: Building2 },
-  { view: "members", label: "أعضاء", icon: Users },
-  { view: "finance", label: "مالية", icon: Wallet },
-];
+/** التنقل السفلي حسب الدور */
+function useQuickNav() {
+  const user = useUIStore((s) => s.user);
+  return React.useMemo(() => {
+    const all: { view: View; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+      { view: "dashboard", label: "اللوحة", icon: LayoutDashboard },
+      { view: "myspace", label: "فضائي", icon: UserSquare2 },
+      { view: "cooperatives", label: "تعاونيات", icon: Building2 },
+      { view: "members", label: "أعضاء", icon: Users },
+      { view: "finance", label: "مالية", icon: Wallet },
+      { view: "opportunities", label: "الفرص", icon: Briefcase },
+      { view: "settings", label: "الإعدادات", icon: Settings },
+    ];
+    const allowed = new Set(allowedViews(user));
+    const priority: View[] =
+      user?.role === "USER"
+        ? ["myspace", "opportunities", "settings"]
+        : user?.role === "COADMIN"
+          ? ["dashboard", "members", "opportunities", "settings"]
+          : ["dashboard", "cooperatives", "opportunities", "settings"];
+    const picked = priority.filter((v) => allowed.has(v)).slice(0, 4);
+    return picked.map((v) => all.find((a) => a.view === v)!).filter(Boolean);
+  }, [user]);
+}
 
 function BottomNav({ onMore }: { onMore: () => void }) {
   const view = useUIStore((s) => s.view);
   const setView = useUIStore((s) => s.setView);
+  const quick = useQuickNav();
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-background/95 backdrop-blur lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 grid border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+      style={{ gridTemplateColumns: `repeat(${Math.min(quick.length + 1, 5)}, minmax(0, 1fr))` }}
       aria-label="التنقل السريع"
     >
-      {QUICK_NAV.map((q) => {
+      {quick.map((q) => {
         const active = view === q.view;
         return (
           <button
@@ -339,15 +436,34 @@ function BottomNav({ onMore }: { onMore: () => void }) {
   );
 }
 
+/** فوتر الهيكل الداخلي — روابط فعلية عاملة */
 function AppFooter() {
+  const setView = useUIStore((s) => s.setView);
   return (
     <footer className="mt-auto hidden border-t border-border bg-card/60 px-6 py-5 lg:block">
-      <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-2">
           <ZelligeStar className="size-3.5 text-terra" />
           <span>© 2026 CMDP — المنصة الرقمية لإدارة التعاونيات بالمغرب</span>
         </div>
-        <span>بيانات العرض لأغراض التوضيح — المرجع القانوني: القانون رقم 112.12</span>
+        <nav className="flex flex-wrap items-center gap-4" aria-label="روابط سريعة">
+          <button onClick={() => setView("landing")} className="font-semibold transition-colors hover:text-terra">
+            الصفحة الرئيسية
+          </button>
+          <button onClick={() => setView("opportunities")} className="font-semibold transition-colors hover:text-terra">
+            فرص العمل والتعاقد
+          </button>
+          <button onClick={() => setView("regulations")} className="font-semibold transition-colors hover:text-terra">
+            القوانين واللوائح
+          </button>
+          <button onClick={() => setView("legal", { doc: "terms" })} className="font-semibold transition-colors hover:text-terra">
+            الشروط العامة
+          </button>
+          <button onClick={() => setView("legal", { doc: "privacy" })} className="font-semibold transition-colors hover:text-terra">
+            سياسة الخصوصية
+          </button>
+        </nav>
+        <span className="text-[11px]">المرجع القانوني: القانون رقم 112.12</span>
       </div>
     </footer>
   );
@@ -373,6 +489,12 @@ function ViewRouter() {
       return <EntitiesView />;
     case "regulations":
       return <RegulationsView />;
+    case "users":
+      return <UsersView />;
+    case "opportunities":
+      return <OpportunitiesView />;
+    case "myspace":
+      return <MySpaceView />;
     case "settings":
       return <SettingsView />;
     default:
@@ -405,7 +527,68 @@ export function AppShell() {
     });
   }, []);
 
-  if (view === "landing") return <LandingView />;
+  // الوحدات العمومية المستقلة
+  if (view === "landing")
+    return (
+      <>
+        <LandingView />
+        <ChatbotWidget page="landing" />
+      </>
+    );
+  if (view === "legal")
+    return (
+      <>
+        <LegalView />
+        <ChatbotWidget page="legal" />
+      </>
+    );
+  if (view === "opportunities") {
+    // السوق متاح للعموم — بنفس الهيكل إن كان مسجلاً، وإلا فصفحة مستقلة
+    if (authed) {
+      return (
+        <div className="flex min-h-screen bg-background">
+          <AppSidebar />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <AppTopBar />
+            <main className="flex-1 px-4 pb-24 pt-5 md:px-6 md:pb-8 lg:px-8">
+              <OpportunitiesView />
+            </main>
+            <AppFooter />
+          </div>
+          <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+            <SheetContent side="right" className="w-72 p-0">
+              <SheetHeader className="border-b border-sidebar-border bg-sidebar px-4 py-3">
+                <SheetTitle asChild>
+                  <div>
+                    <CmdpLogo light />
+                  </div>
+                </SheetTitle>
+              </SheetHeader>
+              <div className="flex h-[calc(100%-76px)] flex-col bg-sidebar">
+                <NavList onNavigate={() => setMoreOpen(false)} />
+                <SidebarFooter />
+              </div>
+            </SheetContent>
+          </Sheet>
+          <BottomNav onMore={() => setMoreOpen(true)} />
+          <ChatbotWidget page="opportunities" />
+        </div>
+      );
+    }
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <PublicTopBar />
+        <main className="flex-1 px-4 pb-24 pt-5 md:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl">
+            <OpportunitiesView />
+          </div>
+        </main>
+        <FooterPublic />
+        <ChatbotWidget page="opportunities" />
+      </div>
+    );
+  }
+  if (view === "register") return <RegisterView />;
   if (view === "login" || !authed) return <LoginView />;
 
   return (
@@ -434,7 +617,60 @@ export function AppShell() {
         </SheetContent>
       </Sheet>
       <BottomNav onMore={() => setMoreOpen(true)} />
+      <ChatbotWidget page={view} />
     </div>
+  );
+}
+
+/** شريط علوي للصفحات العمومية المستقلة */
+function PublicTopBar() {
+  const setView = useUIStore((s) => s.setView);
+  const authed = useUIStore((s) => s.authed);
+  return (
+    <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 md:px-6">
+        <button onClick={() => setView("landing")} aria-label="CMDP">
+          <CmdpMark className="size-9 text-terra" />
+          <span className="ms-2 hidden font-display text-lg font-black text-foreground sm:inline">CMDP</span>
+        </button>
+        <div className="me-auto" />
+        <Button variant="ghost" size="sm" onClick={() => setView("legal")} className="hidden text-muted-foreground sm:inline-flex">
+          <Scale className="me-1.5 size-3.5" />
+          المركز القانوني
+        </Button>
+        <Button size="sm" onClick={() => setView(authed ? "dashboard" : "login")} className="gap-1.5 font-bold">
+          {authed ? "المنصة" : "تسجيل الدخول"}
+        </Button>
+      </div>
+    </header>
+  );
+}
+
+/** فوتر الصفحات العمومية المستقلة */
+function FooterPublic() {
+  const setView = useUIStore((s) => s.setView);
+  return (
+    <footer className="mt-auto border-t border-border bg-card/60 px-6 py-6 pb-24 text-center text-xs text-muted-foreground lg:pb-6">
+      <DividerZellige className="mx-auto mb-4 w-56 opacity-60" />
+      <div className="flex flex-wrap items-center justify-center gap-4">
+        <button onClick={() => setView("landing")} className="font-semibold transition-colors hover:text-terra">
+          الرئيسية
+        </button>
+        <button onClick={() => setView("opportunities")} className="font-semibold transition-colors hover:text-terra">
+          فرص العمل والتعاقد
+        </button>
+        <button onClick={() => setView("register")} className="font-semibold transition-colors hover:text-terra">
+          إنشاء حساب
+        </button>
+        <button onClick={() => setView("legal", { doc: "terms" })} className="font-semibold transition-colors hover:text-terra">
+          الشروط العامة
+        </button>
+        <button onClick={() => setView("legal", { doc: "privacy" })} className="font-semibold transition-colors hover:text-terra">
+          الخصوصية
+        </button>
+      </div>
+      <p className="mt-4">© 2026 CMDP — المنصة الرقمية لإدارة التعاونيات بالمغرب</p>
+    </footer>
   );
 }
 

@@ -13,13 +13,28 @@ datasource db {
 }
 
 // ─── مستخدمو المنصة ───────────────────────────────────────────────────────
+// الأدوار (role): SUPER_ADMIN مالك المنصة | ADMIN مدير | COADMIN كوأدمن
+//                 (رئيس تعاونية أو عضو مسير) | USER مستخدم عادي
+// نوع الحساب (accountType): PRESIDENT رئيس | MANAGER عضو مسير
+//                 MEMBER عضو غير مسير | CONTRACTOR متعاقد مع التعاونية
 model User {
-  id           Int      @id @default(autoincrement())
-  username     String   @unique
-  passwordHash String
-  fullName     String
-  role         String   @default("ADMIN") // ADMIN | SECRETARY | TREASURER | VIEWER
-  createdAt    DateTime @default(now())
+  id             Int           @id @default(autoincrement())
+  username       String        @unique
+  passwordHash   String
+  fullName       String
+  phone          String?
+  email          String?
+  cin            String? // رقم البطاقة الوطنية
+  role           String        @default("USER") // SUPER_ADMIN | ADMIN | COADMIN | USER
+  accountType    String? // PRESIDENT | MANAGER | MEMBER | CONTRACTOR
+  cooperativeId  Int? // التعاونية التابع لها (COADMIN / USER)
+  cooperative    Cooperative?  @relation(fields: [cooperativeId], references: [id], onDelete: SetNull)
+  status         String        @default("PENDING") // PENDING | ACTIVE | SUSPENDED | REJECTED
+  createdAt      DateTime      @default(now())
+  joinRequests   JoinRequest[]
+  applications   OpportunityApplication[]
+  votes          AssemblyVote[]
+  attendances    AssemblyAttendee[]
 }
 
 // ─── التعاونية ────────────────────────────────────────────────────────────
@@ -38,6 +53,8 @@ model Cooperative {
   address            String?
   foundingDate       DateTime // تاريخ الجمع التأسيسي
   status             String            @default("ACTIVE") // ACTIVE | DORMANT | DISSOLVED
+  approvalStatus     String            @default("APPROVED") // PENDING | APPROVED | REJECTED — حالة التسجيل لدى المنصة
+  approvalNote       String? // ملاحظة المصادقة أو الرفض
   notes              String?
   createdAt          DateTime          @default(now())
   members            Member[]
@@ -46,6 +63,9 @@ model Cooperative {
   transactions       Transaction[]
   documents          Document[]
   tasks              ComplianceTask[]
+  users              User[]
+  opportunities      Opportunity[]
+  joinRequests       JoinRequest[]
 }
 
 // ─── العضو ────────────────────────────────────────────────────────────────
@@ -79,6 +99,34 @@ model Assembly {
   attendeesCount Int          @default(0)
   status         String       @default("HELD") // SCHEDULED | HELD | CANCELLED
   createdAt      DateTime     @default(now())
+  votes          AssemblyVote[]
+  attendees      AssemblyAttendee[]
+}
+
+// ─── حضور الأعضاء للجموع العامة ───────────────────────────────────────────
+model AssemblyAttendee {
+  id          Int       @id @default(autoincrement())
+  assemblyId  Int
+  assembly    Assembly  @relation(fields: [assemblyId], references: [id], onDelete: Cascade)
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  confirmed   Boolean   @default(true) // تأكيد الحضور
+  createdAt   DateTime  @default(now())
+
+  @@unique([assemblyId, userId])
+}
+
+// ─── تصويت الأعضاء على قرارات الجموع العامة ────────────────────────────────
+model AssemblyVote {
+  id          Int       @id @default(autoincrement())
+  assemblyId  Int
+  assembly    Assembly  @relation(fields: [assemblyId], references: [id], onDelete: Cascade)
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  decision    String // FOR | AGAINST | ABSTAIN
+  createdAt   DateTime  @default(now())
+
+  @@unique([assemblyId, userId])
 }
 
 // ─── اجتماع مجلس الإدارة ─────────────────────────────────────────────────
@@ -119,6 +167,7 @@ model Document {
   issueDate      DateTime
   expiryDate     DateTime?
   status         String       @default("VALID") // VALID | EXPIRING | EXPIRED | ARCHIVED
+  isShared       Boolean      @default(false) // مشاركة مع المتعاقدين والمصادق عليهم
   notes          String?
   createdAt      DateTime     @default(now())
 }
@@ -149,7 +198,7 @@ model EntityInteraction {
   subject        String
   status         String      @default("DONE") // PENDING | IN_PROGRESS | DONE | REJECTED
   notes          String?
-  createdAt      DateTime    @default(now())
+  createdAt      DateTime     @default(now())
 }
 
 // ─── مكتبة القوانين واللوائح ──────────────────────────────────────────────
@@ -178,4 +227,62 @@ model ComplianceTask {
   dueDate       DateTime
   status        String       @default("PENDING") // PENDING | DONE
   createdAt     DateTime     @default(now())
+}
+
+// ─── طلبات الانخراط / التعاقد مع تعاونية ─────────────────────────────────
+model JoinRequest {
+  id             Int          @id @default(autoincrement())
+  cooperativeId  Int
+  cooperative    Cooperative  @relation(fields: [cooperativeId], references: [id], onDelete: Cascade)
+  userId         Int? // حساب المستخدم المرتبط (إن وجد)
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  fullName       String
+  cin            String?
+  phone          String?
+  email          String?
+  requestType    String       @default("MEMBERSHIP") // MEMBERSHIP انخراط | CONTRACT تعاقد
+  motivation     String?
+  shares         Int          @default(1) // الحصص المطلوبة (للانخراط)
+  status         String       @default("PENDING") // PENDING | APPROVED | REJECTED
+  decidedBy      String? // من صادق أو رفض
+  decisionNote   String?
+  createdAt      DateTime     @default(now())
+}
+
+// ─── فرص العمل والتعاقد والخدمات ──────────────────────────────────────────
+model Opportunity {
+  id             Int      @id @default(autoincrement())
+  cooperativeId  Int
+  cooperative    Cooperative @relation(fields: [cooperativeId], references: [id], onDelete: Cascade)
+  type           String // JOB منصب شاغر | CONTRACT فرصة تعاقد | SERVICE_NEEED حاجة خدمية | INTERNSHIP تدريب
+  title          String
+  description    String
+  sector         String
+  region         String
+  city           String?
+  positions      Int      @default(1) // عدد المناصب
+  contractType   String? // CDI | CDD | SEASONAL | MISSION | PARTNERSHIP
+  requirements   String? // المؤهلات والمتطلبات
+  deadline       DateTime? // آخر أجل للترشح
+  contactEmail   String?
+  contactPhone   String?
+  status         String   @default("OPEN") // OPEN | CLOSED
+  createdAt      DateTime @default(now())
+  applications   OpportunityApplication[]
+}
+
+// ─── ترشيحات على الفرص ────────────────────────────────────────────────────
+model OpportunityApplication {
+  id             Int          @id @default(autoincrement())
+  opportunityId  Int
+  opportunity    Opportunity  @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  userId         Int? // حساب المستخدم المرشح (إن وجد)
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  fullName       String
+  email          String?
+  phone          String?
+  motivation     String?
+  experience     String? // نبذة عن التجربة والمؤهلات
+  status         String       @default("PENDING") // PENDING | REVIEWED | ACCEPTED | REJECTED
+  createdAt      DateTime     @default(now())
 }

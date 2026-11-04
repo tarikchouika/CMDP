@@ -24,6 +24,11 @@ const D = (s: string) => new Date(s);
 
 export async function runSeed(db: PrismaClient, adminPassword = "cmdp2026") {
   // تفريغ الجداول (ترتيب يحترم العلاقات — مع Cascade يكفي حذف الآباء)
+  await db.opportunityApplication.deleteMany();
+  await db.opportunity.deleteMany();
+  await db.joinRequest.deleteMany();
+  await db.assemblyVote.deleteMany();
+  await db.assemblyAttendee.deleteMany();
   await db.entityInteraction.deleteMany();
   await db.regulation.deleteMany();
   await db.govEntity.deleteMany();
@@ -37,8 +42,15 @@ export async function runSeed(db: PrismaClient, adminPassword = "cmdp2026") {
   await db.user.deleteMany();
 
   for (const c of dataset.cooperatives) {
+    const { approvalStatus, approvalNote, ...rest } = c;
     await db.cooperative.create({
-      data: { ...c, foundingDate: D(c.foundingDate), createdAt: D(c.createdAt) },
+      data: {
+        ...rest,
+        foundingDate: D(rest.foundingDate),
+        createdAt: D(rest.createdAt),
+        approvalStatus,
+        approvalNote,
+      },
     });
   }
   for (const m of dataset.members) {
@@ -90,14 +102,45 @@ export async function runSeed(db: PrismaClient, adminPassword = "cmdp2026") {
     });
   }
 
-  await db.user.create({
-    data: {
-      username: "admin",
-      passwordHash: hashPassword(adminPassword),
-      fullName: "مدير المنصة",
-      role: "ADMIN",
-    },
-  });
+  // ─── المستخدمون: حساب لكل دور + حسابات بانتظار المصادقة ──────────────────
+  for (const u of dataset.users) {
+    const { cooperativeName: _cn, ...userData } = u;
+    await db.user.create({
+      data: {
+        ...userData,
+        passwordHash: hashPassword(adminPassword),
+        createdAt: D(u.createdAt),
+      },
+    });
+  }
+
+  // ─── طلبات الانخراط ──────────────────────────────────────────────────────
+  for (const r of dataset.joinRequests) {
+    const { cooperative: _c, ...reqData } = r;
+    await db.joinRequest.create({
+      data: { ...reqData, createdAt: D(r.createdAt) },
+    });
+  }
+
+  // ─── فرص العمل والتعاقد ──────────────────────────────────────────────────
+  for (const o of dataset.opportunities) {
+    const { cooperative: _c, applicationsCount: _a, ...opData } = o;
+    await db.opportunity.create({
+      data: {
+        ...opData,
+        deadline: opData.deadline ? D(opData.deadline) : null,
+        createdAt: D(opData.createdAt),
+      },
+    });
+  }
+
+  // ─── الترشيحات ────────────────────────────────────────────────────────────
+  for (const a of dataset.applications) {
+    const { opportunity: _o, ...appData } = a;
+    await db.opportunityApplication.create({
+      data: { ...appData, createdAt: D(a.createdAt) },
+    });
+  }
 
   return {
     cooperatives: dataset.cooperatives.length,
@@ -110,5 +153,9 @@ export async function runSeed(db: PrismaClient, adminPassword = "cmdp2026") {
     interactions: dataset.interactions.length,
     regulations: dataset.regulations.length,
     tasks: dataset.tasks.length,
+    users: dataset.users.length,
+    joinRequests: dataset.joinRequests.length,
+    opportunities: dataset.opportunities.length,
+    applications: dataset.applications.length,
   };
 }

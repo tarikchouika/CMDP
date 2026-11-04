@@ -42,6 +42,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 
 type DocForm = Omit<DocumentItem, "id" | "createdAt"> & { id?: number | null };
@@ -68,6 +69,7 @@ export function DocumentsView() {
     issueDate: new Date().toISOString(),
     expiryDate: "",
     status: "VALID",
+    isShared: false,
     notes: "",
   });
   const [form, setForm] = React.useState<DocForm>(emptyForm());
@@ -238,6 +240,19 @@ export function DocumentsView() {
             <div className="space-y-1.5 sm:col-span-2">
               <Label className="text-xs">ملاحظات</Label>
               <Textarea value={form.notes ?? ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="min-h-16 bg-background" />
+            </div>
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 p-3 sm:col-span-2">
+              <div>
+                <Label htmlFor="doc-shared" className="text-xs font-bold">المشاركة مع المتعاقدين والمصرح لهم</Label>
+                <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
+                  تُظهر الوثيقة في فضاء المتعاقدين والأعضاء ضمن «الوثائق المصرح بها»
+                </p>
+              </div>
+              <Switch
+                id="doc-shared"
+                checked={form.isShared === true}
+                onCheckedChange={(v) => setForm({ ...form, isShared: v })}
+              />
             </div>
             <DialogFooter className="sm:col-span-2">
               <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>إلغاء</Button>

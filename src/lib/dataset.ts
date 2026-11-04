@@ -4,14 +4,18 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import type {
+  AppUser,
   Assembly,
   ComplianceTask,
   Cooperative,
   DocumentItem,
   EntityInteraction,
   GovEntity,
+  JoinRequest,
   Member,
   Meeting,
+  Opportunity,
+  OpportunityApplication,
   Regulation,
   Transaction,
 } from "./types";
@@ -24,7 +28,7 @@ const at = (y: number, m: number, d = 1) =>
   new Date(Date.UTC(y, m - 1, d, 12)).toISOString();
 
 // ─────────────────────────── التعاونيات (9) ───────────────────────────────
-export const cooperatives: Cooperative[] = [
+const cooperativesBase: Omit<Cooperative, "approvalStatus" | "approvalNote">[] = [
   {
     id: 1,
     name: "تعاونية تافوكت لإنتاج زيت أركان",
@@ -188,6 +192,34 @@ export const cooperatives: Cooperative[] = [
     createdAt: at(2021, 9, 2),
   },
 ];
+
+/** حالة المصادقة: كلها مسجلة باستثناء طلب واحد قيد الدراسة (للعرض التفاعلي) */
+export const cooperatives: Cooperative[] = cooperativesBase.map((c) => ({
+  ...c,
+  approvalStatus: "APPROVED",
+  approvalNote: null,
+}));
+// طلب تسجيل تعاونية جديدة بانتظار مصادقة الأدمن
+cooperatives.push({
+  id: 10,
+  name: "تعاونية أمل الأطلس للصناعة التقليدية",
+  registrationNumber: "طلب-register10",
+  odcCardNumber: null,
+  sector: "الصناعة التقليدية",
+  region: "بني ملال-خنيفرة",
+  province: "بني ملال",
+  commune: "أكادير",
+  presidentName: "رشيد أمزيل",
+  phone: "06 78 11 22 33",
+  email: "amelatlas@contact.ma",
+  address: "دوار أكادير، إقليم بني ملال",
+  foundingDate: rel(-12),
+  status: "ACTIVE",
+  approvalStatus: "PENDING",
+  approvalNote: null,
+  notes: "طلب تسجيل مقدم من الواجهة العمومية — بانتظار مراجعة الوثائق",
+  createdAt: rel(-12),
+});
 
 // ─────────────────────────── الأعضاء (90) ─────────────────────────────────
 let _mid = 1;
@@ -512,7 +544,7 @@ function genTransactions(): Transaction[] {
 export const transactions: Transaction[] = genTransactions();
 
 // ─────────────────────────── سجل الوثائق (التعاونية 1) ────────────────────
-export const documents: DocumentItem[] = [
+const documentsBase: Omit<DocumentItem, "isShared">[] = [
   { id: 1, cooperativeId: 1, title: "القانون الأساسي المصادق عليه", type: "STATUTE", reference: "ن.أ/2016/01", issueDate: at(2016, 3, 12), expiryDate: null, status: "VALID", notes: "النسخة المحدثة بعد تعديل 2025", createdAt: at(2016, 3, 12) },
   { id: 2, cooperativeId: 1, title: "محضر الجمع العام التأسيسي", type: "MINUTE", reference: "م.ت/2016/01", issueDate: at(2016, 3, 12), expiryDate: null, status: "ARCHIVED", notes: null, createdAt: at(2016, 3, 12) },
   { id: 3, cooperativeId: 1, title: "محضر الجمع العام العادي 2024", type: "MINUTE", reference: "م.ع/2024/06", issueDate: at(2024, 6, 14), expiryDate: null, status: "ARCHIVED", notes: null, createdAt: at(2024, 6, 14) },
@@ -862,6 +894,56 @@ export const tasks: ComplianceTask[] = [
   { id: 8, cooperativeId: 1, title: "التصريح بالضريبة المهنية 2026", description: "تم الإيداع في الأجل.", type: "TAX", dueDate: at(2026, 4, 30), status: "DONE", createdAt: at(2026, 1, 10) },
 ];
 
+/** الوثائق: القانون الأساسي والمحاضر تُشارك مع المتعاقدين */
+export const documents: DocumentItem[] = documentsBase.map((d) => ({
+  ...d,
+  isShared: d.type === "STATUTE" || d.type === "MINUTE",
+}));
+
+// ─────────────────────────── مستخدمو العرض حسب الأدوار ─────────────────────
+// كلمة المرور الموحدة للعرض والبذر: cmdp2026
+export const users: AppUser[] = [
+  { id: 1, username: "superadmin", fullName: "طاريق الشويكة", role: "SUPER_ADMIN", accountType: null, cooperativeId: null, cooperativeName: null, status: "ACTIVE", phone: "06 00 00 00 01", email: "owner@cmdp.ma", cin: null, createdAt: at(2026, 1, 5) },
+  { id: 2, username: "admin", fullName: "مدير المنصة", role: "ADMIN", accountType: null, cooperativeId: null, cooperativeName: null, status: "ACTIVE", phone: "06 00 00 00 02", email: "admin@cmdp.ma", cin: null, createdAt: at(2026, 1, 6) },
+  { id: 3, username: "president", fullName: "فاطمة أيت الحاج", role: "COADMIN", accountType: "PRESIDENT", cooperativeId: 1, cooperativeName: "تعاونية تافوكت لإنتاج زيت أركان", status: "ACTIVE", phone: "06 61 23 45 67", email: "contact@tafoukt.ma", cin: "AB123456", createdAt: at(2016, 3, 12) },
+  { id: 4, username: "manager", fullName: "خديجة بن عمر", role: "COADMIN", accountType: "MANAGER", cooperativeId: 2, cooperativeName: "تعاونية نسج الأطلس للنسيج التقليدي", status: "ACTIVE", phone: "06 62 34 56 78", email: null, cin: "CD234567", createdAt: at(2018, 5, 20) },
+  { id: 5, username: "member", fullName: "مليكة أوعلي", role: "USER", accountType: "MEMBER", cooperativeId: 1, cooperativeName: "تعاونية تافوكت لإنتاج زيت أركان", status: "ACTIVE", phone: "06 70 45 67 89", email: null, cin: "EE345678", createdAt: at(2019, 4, 2) },
+  { id: 6, username: "contractor", fullName: "شركة وافي للتغليف", role: "USER", accountType: "CONTRACTOR", cooperativeId: 3, cooperativeName: "تعاونية دار الزليج للصناعة التقليدية", status: "ACTIVE", phone: "05 22 33 44 55", email: "contact@wafi.ma", cin: null, createdAt: at(2025, 2, 10) },
+  { id: 7, username: "candidate1", fullName: "يوسف المرابط", role: "USER", accountType: "MEMBER", cooperativeId: 1, cooperativeName: "تعاونية تافوكت لإنتاج زيت أركان", status: "PENDING", phone: "06 11 22 33 44", email: "youssef@mail.ma", cin: "FG456789", createdAt: rel(-3) },
+  { id: 8, username: "partner1", fullName: "مؤسسة النخيل للتسويق", role: "USER", accountType: "CONTRACTOR", cooperativeId: 4, cooperativeName: "تعاونية واحة النخيل لتحويل التمور", status: "PENDING", phone: "05 35 66 77 88", email: "contact@nakhil.ma", cin: null, createdAt: rel(-5) },
+  { id: 9, username: "amelatlas", fullName: "رشيد أمزيل", role: "COADMIN", accountType: "PRESIDENT", cooperativeId: 10, cooperativeName: "تعاونية أمل الأطلس للصناعة التقليدية", status: "PENDING", phone: "06 78 11 22 33", email: "amelatlas@contact.ma", cin: "HI567890", createdAt: rel(-12) },
+];
+
+// ─────────────────────────── طلبات الانخراط ────────────────────────────────
+export const joinRequests: JoinRequest[] = [
+  { id: 1, cooperativeId: 1, userId: 7, fullName: "يوسف المرابط", cin: "FG456789", phone: "06 11 22 33 44", email: "youssef@mail.ma", requestType: "MEMBERSHIP", motivation: "خبرة 5 سنوات في التسويق الرقمي للمنتجات المجالية، ورغبة في المساهمة في تطوير مبيعات التعاونية إلكترونياً.", shares: 2, status: "PENDING", decidedBy: null, decisionNote: null, createdAt: rel(-3), cooperative: { id: 1, name: "تعاونية تافوكت لإنتاج زيت أركان", sector: "الفلاحة والمنتجات المجالية", region: "سوس-ماسة" } },
+  { id: 2, cooperativeId: 4, userId: 8, fullName: "مؤسسة النخيل للتسويق", cin: null, phone: "05 35 66 77 88", email: "contact@nakhil.ma", requestType: "CONTRACT", motivation: "شراكة لتوزيع التمور الموضبة داخل المراكز التجارية الكبرى بالدار البيضاء والرباط.", shares: 0, status: "PENDING", decidedBy: null, decisionNote: null, createdAt: rel(-5), cooperative: { id: 4, name: "تعاونية واحة النخيل لتحويل التمور", sector: "الفلاحة والمنتجات المجالية", region: "درعة-تافيلالت" } },
+  { id: 3, cooperativeId: 2, userId: null, fullName: "نعيمة الصنهاجي", cin: "IJ678901", phone: "06 44 55 66 77", email: "naima@mail.ma", requestType: "MEMBERSHIP", motivation: "حرفية في النسج الأمازيغي، أرغب في الانخراط لنقل مهاراتي للعنصر النسائية الجدد.", shares: 1, status: "APPROVED", decidedBy: "خديجة بن عمر", decisionNote: "تمت المصادقة في اجتماع المجلس.", createdAt: rel(-30), cooperative: { id: 2, name: "تعاونية نسج الأطلس للنسيج التقليدي", sector: "الصناعة التقليدية", region: "مراكش-آسفي" } },
+  { id: 4, cooperativeId: 3, userId: null, fullName: "مكتب الدراسات أفق", cin: null, phone: "05 55 11 22 33", email: "etudehorizon@mail.ma", requestType: "CONTRACT", motivation: "مواكبة في إعداد دفتر التكاليف وملفات الصفقات العمومية.", shares: 0, status: "REJECTED", decidedBy: "محمد الشرقاوي", decisionNote: "سبق التعاقد مع مكتب آخر لهذه المهمة.", createdAt: rel(-45), cooperative: { id: 3, name: "تعاونية دار الزليج للصناعة التقليدية", sector: "الصناعة التقليدية", region: "فاس-مكناس" } },
+];
+
+// ─────────────────────────── فرص العمل والتعاقد ────────────────────────────
+export const opportunities: Opportunity[] = [
+  { id: 1, cooperativeId: 1, type: "JOB", title: "مسؤول(ة) التسويق الرقمي", description: "تدبير الحضور الرقمي للتعاونية: متاجر إلكترونية، شبكات التواصل، وتتبع الطلبات الوطنية والدولية لزيت أركان البيولوجي المعتمد.", sector: "الفلاحة والمنتجات المجالية", region: "سوس-ماسة", city: "أولاد برحيل", positions: 1, contractType: "CDD", requirements: "شهادة في التسويق أو التجارة • خبرة سنة على الأقل في التجارة الإلكترونية • إتقان الفرنسية والعربية", deadline: rel(21), contactEmail: "contact@tafoukt.ma", contactPhone: "06 61 23 45 67", status: "OPEN", createdAt: rel(-6), cooperative: { id: 1, name: "تعاونية تافوكت لإنتاج زيت أركان", sector: "الفلاحة والمنتجات المجالية", region: "سوس-ماسة", phone: "06 61 23 45 67", email: "contact@tafoukt.ma" }, applicationsCount: 4 },
+  { id: 2, cooperativeId: 1, type: "SERVICE_NEED", title: "طلب خدمة: مراجعة محاسبية للحسابات السنوية", description: "التعاونية تبحث عن مكتب محاسبة معتمد لمراجعة الحسابات السنوية 2026 وإعداد التصريحات الجبائية.", sector: "الخدمات", region: "سوس-ماسة", city: "تارودانت", positions: 1, contractType: "MISSION", requirements: "محاسب قانوني معتمد • تجربة مع التعاونيات أو منظمات الاقتصاد الاجتماعي", deadline: rel(35), contactEmail: "contact@tafoukt.ma", contactPhone: "06 61 23 45 67", status: "OPEN", createdAt: rel(-10), cooperative: { id: 1, name: "تعاونية تافوكت لإنتاج زيت أركان", sector: "الفلاحة والمنتجات المجالية", region: "سوس-ماسة", phone: "06 61 23 45 67", email: "contact@tafoukt.ma" }, applicationsCount: 2 },
+  { id: 3, cooperativeId: 2, type: "JOB", title: "حرفي(ة) نسيج أمازيغي — 3 مناصب", description: "تشغيل حرفيين متمكنين من النسج التقليدي بالأصواف الطبيعية للعمل بورشة التعاونية بأسني، مع إمكانية التكوين المستمر.", sector: "الصناعة التقليدية", region: "مراكش-آسفي", city: "أسني", positions: 3, contractType: "CDI", requirements: "إتقان techniques النسج اليدوي • الانضباط والقدرة على العمل الجماعي", deadline: rel(15), contactEmail: null, contactPhone: "06 62 34 56 78", status: "OPEN", createdAt: rel(-8), cooperative: { id: 2, name: "تعاونية نسج الأطلس للنسيج التقليدي", sector: "الصناعة التقليدية", region: "مراكش-آسفي", phone: "06 62 34 56 78", email: null }, applicationsCount: 7 },
+  { id: 4, cooperativeId: 3, type: "CONTRACT", title: "فرصة تعاقد: أشغال زليج لترميم RIAD تاريخي", description: "تعاونية دار الزليج تبحث عن مقاول منفذ لأشغال الزليج والجبس ضمن مشروع ترميم رياض تاريخي بالمدينة العتيقة لفاس — 400 متر مربع.", sector: "الصناعة التقليدية", region: "فاس-مكناس", city: "فاس", positions: 1, contractType: "MISSION", requirements: "تجربة في الترميم المعماري التقليدي • فريق عمل مؤهل • جهاز تقني", deadline: rel(28), contactEmail: "darzellij@contact.ma", contactPhone: "06 63 45 67 89", status: "OPEN", createdAt: rel(-4), cooperative: { id: 3, name: "تعاونية دار الزليج للصناعة التقليدية", sector: "الصناعة التقليدية", region: "فاس-مكناس", phone: "06 63 45 67 89", email: "darzellij@contact.ma" }, applicationsCount: 3 },
+  { id: 5, cooperativeId: 4, type: "CONTRACT", title: "شراكة توزيع: تمور المجول والدقلة النور", description: "بحث عن موزعين وشركاء تجاريين لتسويق منتوجات التعاونية الموضبة داخل المدن الكبرى، مع عقود تزويد موسمية.", sector: "الفلاحة والمنتجات المجالية", region: "درعة-تافيلالت", city: "أرفود", positions: 4, contractType: "PARTNERSHIP", requirements: "سجل تجاري ساري • شبكة توزيع نشيطة • القدرة اللوجستية على النقل المبرد", deadline: null, contactEmail: null, contactPhone: "06 64 56 78 90", status: "OPEN", createdAt: rel(-14), cooperative: { id: 4, name: "تعاونية واحة النخيل لتحويل التمور", sector: "الفلاحة والمنتجات المجالية", region: "درعة-تافيلالت", phone: "06 64 56 78 90", email: null }, applicationsCount: 5 },
+  { id: 6, cooperativeId: 5, type: "JOB", title: "تقني(ة) وحدة التبريد والتلفيف", description: "تشغيل تقني لتدبير وحدة التبريد والتلفيف بميناء الصويرة: صيانة المعدات، احترام معايير HACCP، وتتبع المخزون.", sector: "الصيد البحري", region: "مراكش-آسفي", city: "الصويرة", positions: 2, contractType: "CDD", requirements: "دبلوم تقني في التبريد أو الصناعات الغذائية • خبرة سنتين • عمل بنظام الحصص", deadline: rel(12), contactEmail: null, contactPhone: "06 65 67 89 01", status: "OPEN", createdAt: rel(-2), cooperative: { id: 5, name: "تعاونية موجة الصويرة للصيد البحري", sector: "الصيد البحري", region: "مراكش-آسفي", phone: "06 65 67 89 01", email: null }, applicationsCount: 1 },
+  { id: 7, cooperativeId: 6, type: "SERVICE_NEED", title: "طلب خدمة: تصميم هوية بصرية وشعار", description: "التعاونية بصدد تحديث هويتها البصرية وتحتاج مصمماً محترفاً لإنجاز شعار جديد ودليل الهوية البصرية.", sector: "الخدمات", region: "الدار البيضاء-سطات", city: "سطات", positions: 1, contractType: "MISSION", requirements: "ملف أعمال (Portfolio) في الهوية البصرية • قدرة على العمل عن بعد", deadline: rel(40), contactEmail: null, contactPhone: "06 66 78 90 12", status: "OPEN", createdAt: rel(-1), cooperative: { id: 6, name: "تعاونية أطلس للتوريد الفلاحي", sector: "الخدمات", region: "الدار البيضاء-سطات", phone: "06 66 78 90 12", email: null }, applicationsCount: 0 },
+  { id: 8, cooperativeId: 7, type: "INTERNSHIP", title: "تدريب محاسبي — PFE", description: "استقبال طالب(ة) في مرحلة تكوين لإنجاز مشروع نهاية الدراس في المحاسبة والمالية داخل تعاونية سياحية بخميسات.", sector: "الخدمات", region: "الرباط-سلا-القنيطرة", city: "خميسات", positions: 2, contractType: null, requirements: "مستوى السلك الثالث محاسبة/مالية • إتقان أدوات المعلوماتية المكتبية", deadline: rel(50), contactEmail: null, contactPhone: "06 67 89 01 23", status: "OPEN", createdAt: rel(-7), cooperative: { id: 7, name: "تعاونية سياحة أطلس المتوسط", sector: "الخدمات", region: "الرباط-سلا-القنيطرة", phone: "06 67 89 01 23", email: null }, applicationsCount: 2 },
+  { id: 9, cooperativeId: 8, type: "CONTRACT", title: "فرصة تعاقد: مواكبة في الترقيم الرقمي", description: "تعاونية الأصيلة للصناعة الغذائية تبحث عن مصفن رقمي لمواكبتها في رقمنة التسيير: فاتورة إلكترونية، مخزون، وتتبع الإنتاج.", sector: "الصناعة", region: "طنجة-تطوان-الحسيمة", city: "الأصيلة", positions: 1, contractType: "MISSION", requirements: "تجربة في رقمنة المقاولات الصغيرة • معرفة بمنظومات ERP", deadline: rel(25), contactEmail: null, contactPhone: "06 68 90 12 34", status: "OPEN", createdAt: rel(-3), cooperative: { id: 8, name: "تعاونية الأصيلة للصناعة الغذائية", sector: "الصناعة", region: "طنجة-تطوان-الحسيمة", phone: "06 68 90 12 34", email: null }, applicationsCount: 1 },
+  { id: 10, cooperativeId: 9, type: "SERVICE_NEED", title: "طلب خدمة: تكوين في التقنيات المتقدمة للتوضيب", description: "التعاونية تروم تكوين 12 منخرطة على التقنيات المتقدمة في توضيب وتلفيف المنتجات التجميلية الطبيعية.", sector: "الصناعة التقليدية", region: "سوس-ماسة", city: "تارودانت", positions: 1, contractType: "MISSION", requirements: "مكوِّن(ة) معتمد(ة) في التوضيب التجميلي • منهجية عملية", deadline: rel(30), contactEmail: null, contactPhone: "06 69 01 23 45", status: "OPEN", createdAt: rel(-9), cooperative: { id: 9, name: "تعاونية خبير صوامة للتوضيب التجميلي", sector: "الصناعة التقليدية", region: "سوس-ماسة", phone: "06 69 01 23 45", email: null }, applicationsCount: 0 },
+];
+
+// ─────────────────────────── ترشيحات على الفرص ────────────────────────────
+export const applications: OpportunityApplication[] = [
+  { id: 1, opportunityId: 1, userId: 7, fullName: "يوسف المرابط", email: "youssef@mail.ma", phone: "06 11 22 33 44", motivation: "خبرة 5 سنوات في التسويق الرقمي للمنتجات المجالية، وأنجزت حملات ناجحة لعلامات أركان.", experience: "مسؤول تسويق رقمي سابق بشركة توزيع بأكادير", status: "PENDING", createdAt: rel(-2), opportunity: { id: 1, title: "مسؤول(ة) التسويق الرقمي", type: "JOB" } },
+  { id: 2, opportunityId: 3, userId: null, fullName: "حفيظة الإدريسي", email: "hafida@mail.ma", phone: "06 77 88 99 00", motivation: "حرفية نسج منذ 12 سنة، أتقن النسج المسطح واليدوي.", experience: "ورشة منزلية للنسيج بمراكش", status: "REVIEWED", createdAt: rel(-4), opportunity: { id: 3, title: "حرفي(ة) نسيج أمازيغي — 3 مناصب", type: "JOB" } },
+  { id: 3, opportunityId: 4, userId: 6, fullName: "شركة وافي للتغليف", email: "contact@wafi.ma", phone: "05 22 33 44 55", motivation: "فريق مؤهل في أشغال الترميم التقليدي وتعامل سابق مع معالم مصنفة.", experience: "ترميم زليج بقصر الباهية جزئياً", status: "ACCEPTED", createdAt: rel(-3), opportunity: { id: 4, title: "فرصة تعاقد: أشغال زليج لترميم RIAD تاريخي", type: "CONTRACT" } },
+  { id: 4, opportunityId: 5, userId: 8, fullName: "مؤسسة النخيل للتسويق", email: "contact@nakhil.ma", phone: "05 35 66 77 88", motivation: "شبكة توزيع تغطي الدار البيضاء والرباط مع أسطول مبرد.", experience: "توزيع تمور لثلاث علامات جهوية", status: "PENDING", createdAt: rel(-5), opportunity: { id: 5, title: "شراكة توزيع: تمور المجول والدقلة النور", type: "CONTRACT" } },
+];
+
 export const dataset = {
   cooperatives,
   members,
@@ -873,4 +955,8 @@ export const dataset = {
   interactions,
   regulations,
   tasks,
+  users,
+  joinRequests,
+  opportunities,
+  applications,
 };

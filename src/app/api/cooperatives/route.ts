@@ -1,5 +1,12 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// CMDP — سجل التعاونيات
+// GET: فلترة حسب حالة المصادقة (تُستعمل عمومياً لقائمة الانخراط)
+// POST: إنشاء مباشر — حصري للأدمن فأعلى (تصادق عليه المنصة تلقائياً)
+// ═══════════════════════════════════════════════════════════════════════════
+
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
+import { requirePermission } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -7,12 +14,20 @@ export function OPTIONS() {
   return preflight();
 }
 
-export async function GET() {
-  const rows = await db.cooperative.findMany({ orderBy: { id: "asc" } });
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const approvalStatus = url.searchParams.get("approvalStatus");
+  const rows = await db.cooperative.findMany({
+    where: approvalStatus ? { approvalStatus } : undefined,
+    orderBy: { id: "asc" },
+  });
   return ok(rows);
 }
 
 export async function POST(req: Request) {
+  const auth = await requirePermission(req, "create:cooperatives");
+  if ("response" in auth) return auth.response;
+
   const b = await readJson(req);
   if (!b.name || !b.registrationNumber) return fail("الاسم ورقم التسجيل إلزاميان");
   try {
@@ -31,6 +46,7 @@ export async function POST(req: Request) {
         address: b.address ? String(b.address) : null,
         foundingDate: toDate(b.foundingDate),
         status: String(b.status ?? "ACTIVE"),
+        approvalStatus: "APPROVED", // الإنشاء من الإدارة = مسجلة
         notes: b.notes ? String(b.notes) : null,
       },
     });

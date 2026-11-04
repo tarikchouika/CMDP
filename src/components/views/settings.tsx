@@ -8,10 +8,12 @@ import * as React from "react";
 import { CheckCircle2, Database, FlaskConical, Link2, Loader2, LogOut, Moon, Plug, RotateCcw, Server, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { getApiBase, pingApi, setApiBase } from "@/lib/api";
+import { ACCOUNT_TYPE_LABELS, ROLE_LABELS } from "@/lib/constants";
 import { useUIStore } from "@/store/ui";
 import { useResetSeed } from "@/hooks/use-cmdp";
-import { PageHeader } from "@/components/shared";
+import { LBadge, PageHeader } from "@/components/shared";
 import { CmdpLogo, DividerZellige } from "@/components/patterns";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -76,11 +78,22 @@ export function SettingsView() {
               <span className="grid size-12 place-items-center rounded-full bg-terra/10 font-display text-lg font-black text-terra">
                 {user?.fullName?.[0] ?? "م"}
               </span>
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-extrabold text-foreground">{user?.fullName ?? "المستخدم"}</p>
-                <p className="text-xs text-muted-foreground">
-                  {user?.username} — {user?.role === "ADMIN" ? "مدير" : user?.role}
+                <p className="text-xs text-muted-foreground" dir="ltr">
+                  @{user?.username}
                 </p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  <LBadge map={ROLE_LABELS} value={user?.role ?? "USER"} />
+                  {user?.accountType && (
+                    <Badge variant="outline" className="border-saffron/30 bg-saffron/10 text-[10px] font-bold text-[#8a6414]">
+                      {ACCOUNT_TYPE_LABELS[user.accountType]}
+                    </Badge>
+                  )}
+                </div>
+                {user?.cooperativeName && (
+                  <p className="mt-1 text-[11px] text-muted-foreground">{user.cooperativeName}</p>
+                )}
               </div>
             </div>
             <Button variant="outline" className="w-full gap-2 text-destructive hover:bg-destructive/10" onClick={() => setAuthed(null)}>

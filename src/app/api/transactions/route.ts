@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
+import { coopAccessDenied, denied, requirePermission } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +18,12 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const auth = await requirePermission(req, "manage:finance");
+  if ("response" in auth) return auth.response;
+
   const b = await readJson(req);
   if (!b.cooperativeId || b.amount === undefined || !b.category) {
+  if (coopAccessDenied(auth.user, Number(b.cooperativeId))) return denied("هذه التعاونية خارج نطاق صلاحياتكم");
     return fail("التعاونية والمبلغ والفئة إلزاميون");
   }
   const row = await db.transaction.create({

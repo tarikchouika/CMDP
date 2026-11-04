@@ -9,6 +9,7 @@ import { useTheme } from "next-themes";
 import {
   ArrowLeft,
   BarChart3,
+  Briefcase,
   Building2,
   CalendarClock,
   FileCheck2,
@@ -20,6 +21,7 @@ import {
   Scale,
   ScrollText,
   Sun,
+  UserPlus,
   Users,
   Wallet,
 } from "lucide-react";
@@ -82,7 +84,8 @@ function Header() {
         <nav className="me-auto hidden items-center gap-6 text-sm text-cream/75 md:flex">
           <a href="#features" className="transition-colors hover:text-cream">المزايا</a>
           <a href="#modules" className="transition-colors hover:text-cream">الوحدات</a>
-          <a href="#legal" className="transition-colors hover:text-cream">الإطار القانوني</a>
+          <button onClick={() => setView("opportunities")} className="transition-colors hover:text-cream">فرص العمل</button>
+          <button onClick={() => setView("legal", { doc: "terms" })} className="transition-colors hover:text-cream">المركز القانوني</button>
         </nav>
         <Button
           variant="ghost"
@@ -92,6 +95,15 @@ function Header() {
           aria-label="تبديل المظهر"
         >
           {mounted && resolvedTheme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="hidden text-cream/80 hover:bg-cream/10 hover:text-cream sm:inline-flex"
+          onClick={() => setView("register")}
+        >
+          <UserPlus className="me-1 size-4" />
+          حساب جديد
         </Button>
         <Button
           onClick={() => setView(authed ? "dashboard" : "login")}
@@ -140,11 +152,20 @@ function Hero() {
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Button
               size="lg"
-              onClick={() => setView(authed ? "dashboard" : "login")}
+              onClick={() => setView(authed ? "dashboard" : "register")}
               className="gap-2 bg-terra-soft px-7 text-sm font-black text-ink hover:bg-terra-soft/85"
             >
-              {authed ? "الدخول إلى المنصة" : "ابدأ الرقمنة الآن"}
+              {authed ? "الدخول إلى المنصة" : "أنشئ حسابك أو انخرط الآن"}
               <ArrowLeft className="size-4" />
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => setView("opportunities")}
+              className="gap-2 border-cream/25 bg-transparent px-6 text-sm font-bold text-cream hover:bg-cream/10 hover:text-cream"
+            >
+              <Briefcase className="size-4" />
+              فرص العمل والتعاقد
             </Button>
             <a href="#modules">
               <Button
@@ -201,9 +222,10 @@ function Hero() {
                     />
                     <XAxis
                       dataKey="m"
-                      tick={{ fontSize: 9, fill: "rgba(250,246,238,0.45)" }}
+                      tick={{ fontSize: 10, fill: "rgba(250,246,238,0.6)" }}
                       axisLine={false}
                       tickLine={false}
+                      interval="preserveStartEnd"
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -340,33 +362,168 @@ function LegalSection() {
   );
 }
 
+/** روابط الوحدات في الفوتر — تعمل فعلياً وتوجه للدخول عند الحاجة */
+function FooterModuleLinks() {
+  const authed = useUIStore((s) => s.authed);
+  const setView = useUIStore((s) => s.setView);
+  const user = useUIStore((s) => s.user);
+  // وحدات متاحة لكل دور
+  const visible = MODULES.filter((m) =>
+    !user
+      ? true
+      : user.role === "SUPER_ADMIN" || user.role === "ADMIN"
+        ? true
+        : user.role === "COADMIN"
+          ? m.view !== "cooperatives"
+          : false
+  );
+  return (
+    <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+      <li>
+        <button
+          onClick={() => setView("opportunities")}
+          className="text-cream/60 transition-colors hover:text-terra-soft"
+        >
+          فرص العمل والتعاقد
+        </button>
+      </li>
+      {visible.map((m) => (
+        <li key={m.view}>
+          <button
+            onClick={() => setView(authed ? m.view : "login")}
+            className="text-cream/60 transition-colors hover:text-terra-soft"
+          >
+            {m.title}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function LandingFooter() {
+  const setView = useUIStore((s) => s.setView);
+  const authed = useUIStore((s) => s.authed);
   return (
     <footer className="relative overflow-hidden bg-ink text-cream/70">
       <div className="pattern-zellige-cream absolute inset-0 opacity-50" aria-hidden="true" />
-      <div className="relative mx-auto grid max-w-6xl gap-10 px-4 py-14 md:grid-cols-3 md:px-6">
-        <div>
+      <div className="relative mx-auto grid max-w-6xl gap-10 px-4 py-14 md:grid-cols-4 md:px-6">
+        <div className="md:col-span-1">
           <CmdpLogo light />
           <p className="mt-4 max-w-xs text-xs leading-6">
             منصة مفتوحة لرقمنة التعاونيات المغربية، من فكرة إلى منظومة متكاملة تحترم
             الخصوصية وتعمل محلياً.
           </p>
+          <div className="mt-4 flex flex-col gap-2">
+            <button
+              onClick={() => setView("register")}
+              className="w-fit rounded-full bg-terra-soft px-4 py-1.5 text-[11px] font-black text-ink transition-opacity hover:opacity-85"
+            >
+              {authed ? "تسجيل تعاونية جديدة" : "إنشاء حساب / انخراط"}
+            </button>
+            <button
+              onClick={() => setView("opportunities")}
+              className="w-fit rounded-full border border-cream/25 px-4 py-1.5 text-[11px] font-bold text-cream/85 transition-colors hover:bg-cream/10"
+            >
+              البحث عن فرصة عمل
+            </button>
+          </div>
         </div>
+
         <div>
           <h4 className="mb-3 text-sm font-bold text-cream">وحدات المنصة</h4>
-          <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-            {MODULES.map((m) => (
-              <li key={m.view}>{m.title}</li>
-            ))}
+          <FooterModuleLinks />
+        </div>
+
+        <div>
+          <h4 className="mb-3 text-sm font-bold text-cream">المراجع الرسمية</h4>
+          <ul className="space-y-2 text-xs">
+            <li>
+              <button
+                onClick={() => setView("regulations")}
+                className="text-start text-cream/60 transition-colors hover:text-terra-soft"
+              >
+                مكتبة القوانين واللوائح — داخل المنصة
+              </button>
+            </li>
+            <li>
+              <a
+                href="https://www.odco.gov.ma"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors hover:text-terra-soft"
+              >
+                مكتب تنمية التعاون (ODCO) — الموقع الرسمي
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://mtaess.gov.ma/ar"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors hover:text-terra-soft"
+              >
+                وزارة السياحة والصناعة التقليدية والاقتصاد الاجتماعي والتضامني
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://www.tax.gov.ma"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors hover:text-terra-soft"
+              >
+                المديرية العامة للضرائب
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://www.cnss.ma"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors hover:text-terra-soft"
+              >
+                الصندوق الوطني للضمان الاجتماعي (CNSS)
+              </a>
+            </li>
           </ul>
         </div>
+
         <div>
-          <h4 className="mb-3 text-sm font-bold text-cream">مراجع</h4>
+          <h4 className="mb-3 text-sm font-bold text-cream">الإطار القانوني للمنصة</h4>
           <ul className="space-y-2 text-xs">
-            <li>القانون رقم 112.12 المتعلق بالتعاونيات</li>
-            <li>المرسوم رقم 2.15.617 — سجل التعاونيات</li>
-            <li>مكتب تنمية التعاون (ODCO)</li>
-            <li>وزارة السياحة والصناعة التقليدية والاقتصاد الاجتماعي والتضامني</li>
+            <li>
+              <button
+                onClick={() => setView("legal", { doc: "terms" })}
+                className="text-start text-cream/60 transition-colors hover:text-terra-soft"
+              >
+                الشروط العامة للاستخدام
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => setView("legal", { doc: "privacy" })}
+                className="text-start text-cream/60 transition-colors hover:text-terra-soft"
+              >
+                سياسة الخصوصية وحماية المعطيات (ق.09.08)
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => setView("legal", { doc: "notice" })}
+                className="text-start text-cream/60 transition-colors hover:text-terra-soft"
+              >
+                الإشعار القانوني (ق.53.05)
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => setView("legal", { doc: "cookies" })}
+                className="text-start text-cream/60 transition-colors hover:text-terra-soft"
+              >
+                سياسة ملفات تعريف الارتباط
+              </button>
+            </li>
           </ul>
         </div>
       </div>
@@ -440,16 +597,30 @@ export function LandingView() {
                 تعاونيتكم تستحق رقمنة بمستوى طموحها
               </h2>
               <p className="mt-4 text-sm leading-8 text-cream/75">
-                ابدأوا اليوم ببيانات عرض واقعية، وانتقلوا إلى التسيير الفعلي عبر الباك إند المحلي.
+                أنشئوا حسابكم أو قدّموا طلب انخراط اليوم — وابدأوا التسيير الرقمي عبر الباك إند المحلي.
               </p>
-              <Button
-                size="lg"
-                onClick={() => setView(authed ? "dashboard" : "login")}
-                className="mt-8 gap-2 bg-terra-soft px-8 font-black text-ink hover:bg-terra-soft/85"
-              >
-                {authed ? "الذهاب إلى لوحة القيادة" : "دخول المنصة (admin / cmdp2026)"}
-                <ArrowLeft className="size-4" />
-              </Button>
+              <div className="mt-8 flex flex-wrap justify-center gap-3">
+                <Button
+                  size="lg"
+                  onClick={() => setView(authed ? "dashboard" : "register")}
+                  className="gap-2 bg-terra-soft px-8 font-black text-ink hover:bg-terra-soft/85"
+                >
+                  {authed ? "الذهاب إلى لوحة القيادة" : "إنشاء حساب أو انخراط"}
+                  <ArrowLeft className="size-4" />
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setView("opportunities")}
+                  className="gap-2 border-cream/25 bg-transparent font-bold text-cream hover:bg-cream/10 hover:text-cream"
+                >
+                  <Briefcase className="size-4" />
+                  فرص العمل والتعاقد
+                </Button>
+              </div>
+              <p className="mt-4 text-[11px] text-cream/50">
+                للتجربة السريعة: admin / cmdp2026 — أو من حسابات العرض حسب الأدوار
+              </p>
             </div>
           </div>
         </div>

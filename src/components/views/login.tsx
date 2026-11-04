@@ -1,18 +1,30 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// CMDP — وحدة الدخول
+// CMDP — وحدة الدخول (مع حسابات العرض حسب الأدوار ورابط التسجيل)
 // ═══════════════════════════════════════════════════════════════════════════
 
 "use client";
 
 import * as React from "react";
-import { ArrowRight, KeyRound, Loader2, Lock, User } from "lucide-react";
-import { ApiUnavailableError, rawFetch } from "@/lib/api";
-import { useUIStore, type SessionUser } from "@/store/ui";
+import { ArrowRight, KeyRound, Loader2, Lock, User, UserPlus, Users2 } from "lucide-react";
+import { ApiUnavailableError, rawFetch, setAuthToken } from "@/lib/api";
+import type { SessionUser } from "@/lib/types";
+import { useUIStore } from "@/store/ui";
 import { CmdpMark, ZelligeStar, DividerZellige } from "@/components/patterns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+
+/** حسابات العرض التجريبي — كلمة المرور الموحدة cmdp2026 */
+const DEMO_ACCOUNTS: { username: string; label: string }[] = [
+  { username: "superadmin", label: "مالك المنصة" },
+  { username: "admin", label: "أدمن المنصة" },
+  { username: "president", label: "رئيسة تعاونية" },
+  { username: "manager", label: "عضو مسير" },
+  { username: "member", label: "عضو غير مسير" },
+  { username: "contractor", label: "متعاقد" },
+];
 
 export function LoginView() {
   const setAuthed = useUIStore((s) => s.setAuthed);
@@ -28,18 +40,63 @@ export function LoginView() {
     e.preventDefault();
     setLoading(true);
     try {
-      const user = await rawFetch<SessionUser>("/api/auth/login", {
+      const res = await rawFetch<{ token: string; user: SessionUser }>("/api/auth/login", {
         method: "POST",
         body: JSON.stringify({ username, password }),
       });
-      setAuthed(user);
-      toast({ title: `مرحباً، ${user.fullName}`, description: "تم تسجيل الدخول بنجاح" });
+      setAuthToken(res.token);
+      setAuthed(res.user);
+      toast({
+        title: `مرحباً، ${res.user.fullName}`,
+        description: "تم تسجيل الدخول بنجاح",
+      });
     } catch (err) {
       if (err instanceof ApiUnavailableError) {
-        // نسخة العرض الساكنة: قبول بيانات العرض محلياً
-        if (username.trim() === "admin" && password === "cmdp2026") {
+        // نسخة العرض الساكنة: قبول بيانات العرض محلياً حسب الدور
+        const account = DEMO_ACCOUNTS.find((a) => a.username === username.trim());
+        if (account && password === "cmdp2026") {
           setDemoMode(true);
-          setAuthed({ username: "admin", fullName: "مدير المنصة (عرض)", role: "ADMIN" });
+          setAuthToken(null);
+          setAuthed({
+            id: 0,
+            username: account.username,
+            fullName: `${account.label} (عرض)`,
+            role:
+              account.username === "superadmin"
+                ? "SUPER_ADMIN"
+                : account.username === "admin"
+                  ? "ADMIN"
+                  : account.username === "president" || account.username === "manager"
+                    ? "COADMIN"
+                    : "USER",
+            accountType:
+              account.username === "president"
+                ? "PRESIDENT"
+                : account.username === "manager"
+                  ? "MANAGER"
+                  : account.username === "member"
+                    ? "MEMBER"
+                    : account.username === "contractor"
+                      ? "CONTRACTOR"
+                      : null,
+            cooperativeId:
+              account.username === "president" || account.username === "member"
+                ? 1
+                : account.username === "manager"
+                  ? 2
+                  : account.username === "contractor"
+                    ? 3
+                    : null,
+            cooperativeName:
+              account.username === "president" || account.username === "member"
+                ? "تعاونية تافوكت لإنتاج زيت أركان"
+                : account.username === "manager"
+                  ? "تعاونية نسج الأطلس للنسيج التقليدي"
+                  : account.username === "contractor"
+                    ? "تعاونية دار الزليج للصناعة التقليدية"
+                    : null,
+            status: "ACTIVE",
+          });
           toast({
             title: "دخول في وضع العرض التجريبي",
             description: "الباك إند غير متاح حالياً — البيانات للعرض فقط",
@@ -48,7 +105,7 @@ export function LoginView() {
           toast({
             variant: "destructive",
             title: "لا يمكن الوصول إلى الخادم",
-            description: "في وضع العرض استعمل: admin / cmdp2026",
+            description: "في وضع العرض: اختر حساباً من القائمة وكلمة المرور cmdp2026",
           });
         }
       } else {
@@ -117,10 +174,51 @@ export function LoginView() {
               {loading ? "جارٍ التحقق..." : "الدخول إلى المنصة"}
             </Button>
 
-            <div className="rounded-xl border border-saffron/30 bg-saffron/10 p-3 text-[11px] leading-6 text-[#8a6414]">
-              <span className="font-bold">بيانات العرض التجريبي:</span> admin / cmdp2026
-              <br />
-              تعمل المنصة محلياً بقاعدة SQLite، أو في وضع عرض ساكن دون باك إند.
+            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+              <span className="h-px flex-1 bg-border" />
+              أو
+              <span className="h-px flex-1 bg-border" />
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 w-full gap-2 text-sm font-bold"
+              onClick={() => setView("register")}
+            >
+              <UserPlus className="size-4 text-terra" />
+              حساب جديد أو انخراط في تعاونية
+            </Button>
+
+            {/* حسابات العرض حسب الأدوار */}
+            <div className="rounded-xl border border-saffron/30 bg-saffron/10 p-3">
+              <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold text-[#8a6414]">
+                <Users2 className="size-3.5" />
+                حسابات العرض حسب الأدوار (كلمة المرور: cmdp2026)
+              </p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {DEMO_ACCOUNTS.map((a) => (
+                  <button
+                    key={a.username}
+                    type="button"
+                    onClick={() => {
+                      setUsername(a.username);
+                      setPassword("cmdp2026");
+                    }}
+                    className={cn(
+                      "rounded-lg border px-2 py-1.5 text-[10px] font-bold transition-colors",
+                      username === a.username
+                        ? "border-saffron/60 bg-saffron/25 text-[#6b4e0e]"
+                        : "border-saffron/25 bg-card text-[#8a6414] hover:bg-saffron/20"
+                    )}
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-[10px] leading-4 text-[#8a6414]/80">
+                تعمل المنصة محلياً بقاعدة SQLite، أو في وضع عرض ساكن دون باك إند.
+              </p>
             </div>
           </form>
         </div>

@@ -1,0 +1,10 @@
+name = "cmdp-assistant"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+account_id = "16e5367232096a5912f4ebf5ee62acf2"
+
+[ai]
+binding = "AI"
+
+[observability]
+enabled = false

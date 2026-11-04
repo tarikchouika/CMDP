@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
+import { coopAccessDenied, denied, requirePermission } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const auth = await requirePermission(req, "manage:members");
+  if ("response" in auth) return auth.response;
+
   const b = await readJson(req);
   if (!b.fullName || !b.cooperativeId) return fail("الاسم والتعاونية إلزاميان");
   const row = await db.member.create({

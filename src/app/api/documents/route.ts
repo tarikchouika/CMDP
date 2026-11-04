@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
+import { coopAccessDenied, denied, requirePermission } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +18,12 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const auth = await requirePermission(req, "manage:documents");
+  if ("response" in auth) return auth.response;
+
   const b = await readJson(req);
   if (!b.cooperativeId || !b.title) return fail("التعاونية والعنوان إلزاميان");
+  if (coopAccessDenied(auth.user, Number(b.cooperativeId))) return denied("هذه التعاونية خارج نطاق صلاحياتكم");
   const row = await db.document.create({
     data: {
       cooperativeId: Number(b.cooperativeId),
@@ -28,6 +33,7 @@ export async function POST(req: Request) {
       issueDate: toDate(b.issueDate),
       expiryDate: b.expiryDate ? toDate(b.expiryDate) : null,
       status: String(b.status ?? "VALID"),
+      isShared: b.isShared === true, // مشاركة مع المتعاقدين والمصرح لهم
       notes: b.notes ? String(b.notes) : null,
     },
   });

@@ -73,6 +73,8 @@ const emptyForm = (): CoopForm => ({
   address: "",
   foundingDate: new Date().toISOString(),
   status: "ACTIVE",
+  approvalStatus: "APPROVED",
+  approvalNote: null,
   notes: "",
 });
 

@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
+import { coopAccessDenied, denied, requirePermission } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const auth = await requirePermission(req, "manage:entities");
+  if ("response" in auth) return auth.response;
+
   const b = await readJson(req);
   if (!b.entityId || !b.subject) return fail("الجهة والموضوع إلزاميان");
   const row = await db.entityInteraction.create({

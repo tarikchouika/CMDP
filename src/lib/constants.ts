@@ -36,6 +36,34 @@ export const SECTORS = [
 // ─── خرائط الحالات والألقاب ───────────────────────────────────────────────
 type Labeled = { label: string; className: string };
 
+// ─── نظام الأدوار والحسابات ────────────────────────────────────────────────
+export const ROLE_LABELS: Record<string, Labeled> = {
+  SUPER_ADMIN: { label: "سوبر أدمين — مالك المنصة", className: "bg-terra/10 text-terra border-terra/25" },
+  ADMIN: { label: "أدمن منصة", className: "bg-zellij/10 text-zellij border-zellij/25" },
+  COADMIN: { label: "كوأدمن تعاونية", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  USER: { label: "مستخدم", className: "bg-muted text-muted-foreground border-border" },
+};
+
+export const ACCOUNT_TYPE_LABELS: Record<string, string> = {
+  PRESIDENT: "رئيس(ة) التعاونية",
+  MANAGER: "عضو مسير",
+  MEMBER: "عضو غير مسير",
+  CONTRACTOR: "متعاقد مع التعاونية",
+};
+
+export const USER_STATUS: Record<string, Labeled> = {
+  PENDING: { label: "بانتظار المصادقة", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  ACTIVE: { label: "نشط", className: "bg-zellij/10 text-zellij border-zellij/25" },
+  SUSPENDED: { label: "موقوف", className: "bg-destructive/10 text-destructive border-destructive/25" },
+  REJECTED: { label: "مرفوض", className: "bg-muted text-muted-foreground border-border" },
+};
+
+export const APPROVAL_STATUS: Record<string, Labeled> = {
+  PENDING: { label: "بانتظار المصادقة", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  APPROVED: { label: "مسجلة", className: "bg-zellij/10 text-zellij border-zellij/25" },
+  REJECTED: { label: "مرفوضة", className: "bg-destructive/10 text-destructive border-destructive/25" },
+};
+
 export const COOP_STATUS: Record<string, Labeled> = {
   ACTIVE: { label: "نشطة", className: "bg-zellij/10 text-zellij border-zellij/25" },
   DORMANT: { label: "خاملة", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
@@ -140,6 +168,46 @@ export const TX_METHODS: Record<string, string> = {
   BANK: "تحويل بنكي",
   CHEQUE: "شيك",
   MOBILE: "الدفع عن بعد",
+};
+
+// ─── طلبات الانخراط ───────────────────────────────────────────────────────
+export const JOIN_REQUEST_TYPES: Record<string, Labeled> = {
+  MEMBERSHIP: { label: "انخراط كعضو", className: "bg-zellij/10 text-zellij border-zellij/25" },
+  CONTRACT: { label: "تعاقد/شراكة", className: "bg-terra/10 text-terra border-terra/25" },
+};
+
+export const REQUEST_STATUS: Record<string, Labeled> = {
+  PENDING: { label: "قيد الدراسة", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  APPROVED: { label: "مقبول", className: "bg-zellij/10 text-zellij border-zellij/25" },
+  REJECTED: { label: "مرفوض", className: "bg-destructive/10 text-destructive border-destructive/25" },
+};
+
+// ─── فرص العمل والتعاقد ───────────────────────────────────────────────────
+export const OPPORTUNITY_TYPES: Record<string, Labeled> = {
+  JOB: { label: "منصب شاغر", className: "bg-terra/10 text-terra border-terra/25" },
+  CONTRACT: { label: "فرصة تعاقد", className: "bg-zellij/10 text-zellij border-zellij/25" },
+  SERVICE_NEED: { label: "حاجة خدمية", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  INTERNSHIP: { label: "تدريب", className: "bg-chart-4/10 text-chart-4 border-chart-4/25" },
+};
+
+export const CONTRACT_TYPES: Record<string, string> = {
+  CDI: "عقد دائم (CDI)",
+  CDD: "عقد محدد المدة (CDD)",
+  SEASONAL: "موسمي",
+  MISSION: "مهمة محددة",
+  PARTNERSHIP: "شراكة",
+};
+
+export const OPPORTUNITY_STATUS: Record<string, Labeled> = {
+  OPEN: { label: "مفتوحة", className: "bg-zellij/10 text-zellij border-zellij/25" },
+  CLOSED: { label: "مغلقة", className: "bg-muted text-muted-foreground border-border" },
+};
+
+export const APPLICATION_STATUS: Record<string, Labeled> = {
+  PENDING: { label: "بانتظار الدراسة", className: "bg-saffron/15 text-[#8a6414] border-saffron/30" },
+  REVIEWED: { label: "تمت الدراسة", className: "bg-terra/10 text-terra border-terra/25" },
+  ACCEPTED: { label: "مقبول", className: "bg-zellij/10 text-zellij border-zellij/25" },
+  REJECTED: { label: "غير مقبول", className: "bg-destructive/10 text-destructive border-destructive/25" },
 };
 
 export const INCOME_CATEGORIES = [

@@ -10,6 +10,7 @@ export class ApiUnavailableError extends Error {
 }
 
 const API_BASE_KEY = "cmdp_api_base";
+const TOKEN_KEY = "cmdp_token";
 
 export function getApiBase(): string {
   if (typeof window !== "undefined") {
@@ -26,14 +27,29 @@ export function setApiBase(v: string) {
   }
 }
 
+/** حفظ/قراءة رمز المصادقة (يُلحق تلقائياً بكل طلب) */
+export function setAuthToken(token: string | null) {
+  if (typeof window !== "undefined") {
+    if (token) window.localStorage.setItem(TOKEN_KEY, token);
+    else window.localStorage.removeItem(TOKEN_KEY);
+  }
+}
+
+export function getAuthToken(): string | null {
+  if (typeof window !== "undefined") return window.localStorage.getItem(TOKEN_KEY);
+  return null;
+}
+
 export async function rawFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const base = getApiBase();
+  const token = getAuthToken();
   let res: Response;
   try {
     res = await fetch(`${base}${path}`, {
       ...init,
       headers: {
         "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...((init?.headers as Record<string, string>) ?? {}),
       },
     });

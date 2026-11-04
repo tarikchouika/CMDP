@@ -2,6 +2,31 @@
 // CMDP — الأنواع المشتركة (التواريخ بصيغة ISO بعد التسلسل عبر JSON)
 // ═══════════════════════════════════════════════════════════════════════════
 
+// ─── الأدوار وأنواع الحسابات ───────────────────────────────────────────────
+export type Role = "SUPER_ADMIN" | "ADMIN" | "COADMIN" | "USER";
+export type AccountType = "PRESIDENT" | "MANAGER" | "MEMBER" | "CONTRACTOR";
+export type UserStatus = "PENDING" | "ACTIVE" | "SUSPENDED" | "REJECTED";
+
+/** هوية الجلسة — يعيدها مسار الدخول مع الرمز */
+export interface SessionUser {
+  id: number;
+  username: string;
+  fullName: string;
+  role: Role;
+  accountType: AccountType | null;
+  cooperativeId: number | null;
+  cooperativeName?: string | null;
+  status: UserStatus;
+}
+
+/** حساب مستخدم كامل (إدارة) */
+export interface AppUser extends SessionUser {
+  phone: string | null;
+  email: string | null;
+  cin: string | null;
+  createdAt: string;
+}
+
 export interface Cooperative {
   id: number;
   name: string;
@@ -17,6 +42,8 @@ export interface Cooperative {
   address: string | null;
   foundingDate: string;
   status: string; // ACTIVE | DORMANT | DISSOLVED
+  approvalStatus: string; // PENDING | APPROVED | REJECTED — حالة التسجيل بالمنصة
+  approvalNote: string | null;
   notes: string | null;
   createdAt: string;
 }
@@ -48,6 +75,8 @@ export interface Assembly {
   attendeesCount: number;
   status: string; // SCHEDULED | HELD | CANCELLED
   createdAt: string;
+  myVote?: string | null; // FOR | AGAINST | ABSTAIN — صوت المستخدم الحالي
+  myAttendance?: boolean; // تأكيد الحضور من المستخدم الحالي
 }
 
 export interface Meeting {
@@ -82,6 +111,7 @@ export interface DocumentItem {
   issueDate: string;
   expiryDate: string | null;
   status: string; // VALID | EXPIRING | EXPIRED | ARCHIVED
+  isShared: boolean; // مشاركة مع المتعاقدين
   notes: string | null;
   createdAt: string;
 }
@@ -136,6 +166,61 @@ export interface ComplianceTask {
   dueDate: string;
   status: string; // PENDING | DONE
   createdAt: string;
+}
+
+// ─── طلبات الانخراط ───────────────────────────────────────────────────────
+export interface JoinRequest {
+  id: number;
+  cooperativeId: number;
+  userId: number | null;
+  fullName: string;
+  cin: string | null;
+  phone: string | null;
+  email: string | null;
+  requestType: string; // MEMBERSHIP | CONTRACT
+  motivation: string | null;
+  shares: number;
+  status: string; // PENDING | APPROVED | REJECTED
+  decidedBy: string | null;
+  decisionNote: string | null;
+  createdAt: string;
+  cooperative?: Pick<Cooperative, "id" | "name" | "sector" | "region">;
+}
+
+// ─── فرص العمل والتعاقد ───────────────────────────────────────────────────
+export interface Opportunity {
+  id: number;
+  cooperativeId: number;
+  type: string; // JOB | CONTRACT | SERVICE_NEED | INTERNSHIP
+  title: string;
+  description: string;
+  sector: string;
+  region: string;
+  city: string | null;
+  positions: number;
+  contractType: string | null; // CDI | CDD | SEASONAL | MISSION | PARTNERSHIP
+  requirements: string | null;
+  deadline: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  status: string; // OPEN | CLOSED
+  createdAt: string;
+  cooperative?: Pick<Cooperative, "id" | "name" | "sector" | "region" | "phone" | "email">;
+  applicationsCount?: number;
+}
+
+export interface OpportunityApplication {
+  id: number;
+  opportunityId: number;
+  userId: number | null;
+  fullName: string;
+  email: string | null;
+  phone: string | null;
+  motivation: string | null;
+  experience: string | null;
+  status: string; // PENDING | REVIEWED | ACCEPTED | REJECTED
+  createdAt: string;
+  opportunity?: Pick<Opportunity, "id" | "title" | "type">;
 }
 
 // ─── لوحة القيادة: بنية الإحصائيات المجمَّعة ────────────────────────────────

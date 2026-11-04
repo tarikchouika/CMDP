@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
+import { coopAccessDenied, denied, requirePermission } from "@/lib/auth";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +10,15 @@ export function OPTIONS() {
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requirePermission(req, "manage:finance");
+  if ("response" in auth) return auth.response;
+
   const { id } = await params;
+  const existing = await db.transaction.findUnique({ where: { id: Number(id) } });
+  if (!existing) return fail("السجل غير موجود", 404);
+  if (auth.user.role === "COADMIN" && existing.cooperativeId !== auth.user.cooperativeId) {
+    return denied("هذا السجل خارج نطاق تعاونيتكم");
+  }
   const b = await readJson(req);
   const data: Record<string, unknown> = {};
   for (const k of ["type", "category", "description", "method", "reference"]) {
@@ -29,8 +38,16 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   }
 }
 
-export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requirePermission(req, "manage:finance");
+  if ("response" in auth) return auth.response;
+
   const { id } = await params;
+  const existing = await db.transaction.findUnique({ where: { id: Number(id) } });
+  if (!existing) return fail("السجل غير موجود", 404);
+  if (auth.user.role === "COADMIN" && existing.cooperativeId !== auth.user.cooperativeId) {
+    return denied("هذا السجل خارج نطاق تعاونيتكم");
+  }
   try {
     await db.transaction.delete({ where: { id: Number(id) } });
     return ok({ deleted: true });

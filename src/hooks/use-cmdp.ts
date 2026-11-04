@@ -10,6 +10,7 @@ import { dataset } from "@/lib/dataset";
 import { buildDashboardData } from "@/lib/analytics";
 import { useUIStore } from "@/store/ui";
 import type {
+  AppUser,
   Assembly,
   ComplianceTask,
   Cooperative,
@@ -17,8 +18,11 @@ import type {
   DocumentItem,
   EntityInteraction,
   GovEntity,
+  JoinRequest,
   Member,
   Meeting,
+  Opportunity,
+  OpportunityApplication,
   Regulation,
   Transaction,
 } from "@/lib/types";
@@ -250,5 +254,207 @@ export function useResetSeed() {
       return rawFetch<unknown>("/api/seed", { method: "POST" });
     },
     onSuccess: () => qc.invalidateQueries(),
+  });
+}
+
+// ═══════════════════ وحدات الإصدار 1.1.0 ═══════════════════════════════════
+
+// ─── المستخدمون (ضمن النطاق) ──────────────────────────────────────────────
+export const useUsers = () => {
+  const user = useUIStore((s) => s.user);
+  return useCmdpQuery<AppUser[]>(["users"], "/api/users", () =>
+    dataset.users.filter(
+      (u) =>
+        (user?.role === "SUPER_ADMIN"
+          ? true
+          : user?.role === "ADMIN"
+            ? u.role !== "SUPER_ADMIN"
+            : u.cooperativeId === user?.cooperativeId) && u.username !== user?.username
+    ).map((u) => ({
+      ...u,
+      cooperativeName: dataset.cooperatives.find((c) => c.id === u.cooperativeId)?.name ?? null,
+    }))
+  );
+};
+
+export type UserInput = {
+  id?: number | null;
+  username?: string;
+  password?: string;
+  fullName: string;
+  phone?: string | null;
+  email?: string | null;
+  cin?: string | null;
+  role: string;
+  accountType: string | null;
+  cooperativeId: number | null;
+  status?: string;
+};
+
+export const useSaveUser = () =>
+  useCmdpSave<UserInput>(
+    (p) => (p.id != null ? `/api/users/${p.id}` : "/api/users"),
+    [["users"]]
+  );
+
+export const useDeleteUser = () =>
+  useCmdpDelete((id) => `/api/users/${id}`, [["users"]]);
+
+// ─── طلبات الانخراط ────────────────────────────────────────────────────────
+export const useJoinRequests = () => {
+  const user = useUIStore((s) => s.user);
+  return useCmdpQuery<JoinRequest[]>(["join-requests"], "/api/join-requests", () =>
+    dataset.joinRequests
+      .filter((r) => user?.role === "COADMIN" ? r.cooperativeId === user.cooperativeId : true)
+      .map((r) => ({
+        ...r,
+        cooperative:
+          r.cooperative ??
+          (dataset.cooperatives.find((c) => c.id === r.cooperativeId)
+            ? {
+                id: r.cooperativeId,
+                name: dataset.cooperatives.find((c) => c.id === r.cooperativeId)!.name,
+                sector: dataset.cooperatives.find((c) => c.id === r.cooperativeId)!.sector,
+                region: dataset.cooperatives.find((c) => c.id === r.cooperativeId)!.region,
+              }
+            : undefined),
+      }))
+  );
+};
+
+export const useDecideJoinRequest = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { id: number; action: "APPROVED" | "REJECTED"; note?: string }) => {
+      const demoMode = useUIStore.getState().demoMode;
+      if (demoMode) throw new Error(DEMO_MSG);
+      return rawFetch<unknown>(`/api/join-requests/${payload.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ action: payload.action, note: payload.note }),
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["join-requests"] });
+      qc.invalidateQueries({ queryKey: ["users"] });
+      qc.invalidateQueries({ queryKey: ["members"] });
+      qc.invalidateQueries({ queryKey: ["stats"] });
+    },
+  });
+};
+
+// ─── الفرص (سوق عمومي + إدارة) ────────────────────────────────────────────
+export const useOpportunities = (filters?: { type?: string; sector?: string; region?: string; q?: string }) => {
+  const params = new URLSearchParams();
+  if (filters?.type) params.set("type", filters.type);
+  if (filters?.sector) params.set("sector", filters.sector);
+  if (filters?.region) params.set("region", filters.region);
+  if (filters?.q) params.set("q", filters.q);
+  const qs = params.toString();
+  return useCmdpQuery<Opportunity[]>(
+    ["opportunities", qs],
+    `/api/opportunities${qs ? `?${qs}` : ""}`,
+    () =>
+      dataset.opportunities
+        .filter((o) => o.status === "OPEN")
+        .filter((o) => (filters?.type ? o.type === filters.type : true))
+        .filter((o) => (filters?.sector ? o.sector === filters.sector : true))
+        .filter((o) => (filters?.region ? o.region === filters.region : true))
+        .filter((o) =>
+          filters?.q
+            ? o.title.includes(filters.q) || o.description.includes(filters.q)
+            : true
+        )
+  );
+};
+
+/** فرص تعاونيتي (إدارة) */
+export const useMyOpportunities = () => {
+  const user = useUIStore((s) => s.user);
+  return useCmdpQuery<Opportunity[]>(["opportunities", "mine"], "/api/opportunities?mine=1", () =>
+    dataset.opportunities.filter((o) =>
+      user?.role === "COADMIN" ? o.cooperativeId === user.cooperativeId : true
+    )
+  );
+};
+
+export type OpportunityInput = Omit<Opportunity, "id" | "createdAt" | "cooperative" | "applicationsCount"> & {
+  id?: number | null;
+};
+
+export const useSaveOpportunity = () =>
+  useCmdpSave<OpportunityInput>(
+    (p) => (p.id != null ? `/api/opportunities/${p.id}` : "/api/opportunities"),
+    [["opportunities"], ["opportunities", "mine"]]
+  );
+
+export const useDeleteOpportunity = () =>
+  useCmdpDelete((id) => `/api/opportunities/${id}`, [["opportunities"], ["opportunities", "mine"]]);
+
+/** الترشح لفرصة (عمومي) */
+export function useApplyToOpportunity() {
+  return useMutation({
+    mutationFn: async (payload: {
+      id: number;
+      fullName: string;
+      email?: string;
+      phone?: string;
+      motivation?: string;
+      experience?: string;
+    }) => {
+      const demoMode = useUIStore.getState().demoMode;
+      if (demoMode) throw new Error(DEMO_MSG);
+      const { id, ...body } = payload;
+      return rawFetch<unknown>(`/api/opportunities/${id}/apply`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+    },
+  });
+}
+
+/** ترشيحات تعاونيتي (دراسة) */
+export const useApplications = () => {
+  const user = useUIStore((s) => s.user);
+  return useCmdpQuery<OpportunityApplication[]>(["applications"], "/api/applications", () =>
+    dataset.applications.filter((a) => {
+      if (user?.role !== "COADMIN") return true;
+      const opp = dataset.opportunities.find((o) => o.id === a.opportunityId);
+      return opp?.cooperativeId === user.cooperativeId;
+    })
+  );
+};
+
+export const useDecideApplication = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { id: number; status: string }) => {
+      const demoMode = useUIStore.getState().demoMode;
+      if (demoMode) throw new Error(DEMO_MSG);
+      return rawFetch<unknown>(`/api/applications/${payload.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ status: payload.status }),
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["applications"] });
+      qc.invalidateQueries({ queryKey: ["opportunities"] });
+    },
+  });
+};
+
+// ─── التصويت والحضور في الجموع العامة ──────────────────────────────────────
+export function useAssemblyAction() {
+  const qc = useQueryClient();
+  const user = useUIStore((s) => s.user);
+  return useMutation({
+    mutationFn: async (payload: { assemblyId: number; action: "vote" | "attend"; decision?: string }) => {
+      const demoMode = useUIStore.getState().demoMode;
+      if (demoMode) throw new Error(DEMO_MSG);
+      return rawFetch<unknown>(`/api/assemblies/${payload.assemblyId}/${payload.action}`, {
+        method: "POST",
+        body: JSON.stringify({ decision: payload.decision }),
+      });
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["assemblies", String(user?.cooperativeId)] }),
   });
 }
