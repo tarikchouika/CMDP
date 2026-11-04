@@ -123,6 +123,15 @@ const worker = {
     }
 
     const incoming = Array.isArray(body?.messages) ? body.messages : [];
+    // لغة الواجهة المطلوبة للرد (ar الافتراضية)
+    const lang = typeof body?.lang === "string" ? body.lang : "ar";
+    const LANG_DIRECTIVE = {
+      ar: "أجب دائماً بالعربية الفصحى الواضحة.",
+      fr: "Réponds toujours en français professionnel et clair.",
+      en: "Always answer in clear professional English.",
+      it: "Rispondi sempre in italiano professionale e chiaro.",
+      es: "Responde siempre en español profesional y claro.",
+    }[lang] || "أجب دائماً بالعربية الفصحى الواضحة.";
     // آخر 10 رسائل فقط + حدود طول
     const history = incoming
       .slice(-10)
@@ -142,7 +151,7 @@ const worker = {
 
     try {
       const result = await env.AI.run("@cf/openai/gpt-oss-120b", {
-        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...history],
+        messages: [{ role: "system", content: SYSTEM_PROMPT + "\n\n" + LANG_DIRECTIVE }, ...history],
         max_tokens: 700,
         temperature: 0.3,
       });
