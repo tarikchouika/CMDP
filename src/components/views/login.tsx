@@ -61,7 +61,7 @@ export function LoginView() {
           setAuthed({
             id: 0,
             username: account.username,
-            fullName: t("{name} (عرض)", { name: account.label }),
+            fullName: t("{name} (عرض)", { name: t(account.label) }),
             role:
               account.username === "superadmin"
                 ? "SUPER_ADMIN"

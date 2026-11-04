@@ -121,7 +121,7 @@ function Header() {
           className="min-w-0 gap-1 bg-terra-soft px-3 text-sm font-bold text-ink hover:bg-terra-soft/85 sm:gap-1.5 sm:px-4"
         >
           <span className="truncate">{authed ? t("المنصة") : t("الدخول")}</span>
-          <ArrowLeft className="size-4 shrink-0" />
+          <ArrowLeft className="size-4 shrink-0 rotate-180 rtl:rotate-0" />
         </Button>
       </div>
     </header>
@@ -165,7 +165,7 @@ function Hero() {
               className="gap-2 bg-terra-soft px-7 text-sm font-black text-ink hover:bg-terra-soft/85"
             >
               {authed ? t("الدخول إلى المنصة") : t("أنشئ حسابك أو انخرط الآن")}
-              <ArrowLeft className="size-4" />
+              <ArrowLeft className="size-4 rotate-180 rtl:rotate-0" />
             </Button>
             <Button
               size="lg"
@@ -297,7 +297,7 @@ function StatsStrip() {
           </div>
         ))}
       </div>
-      <p className="pb-4 text-center text-[10px] text-muted-foreground/70">{SECTOR_STATS.source}</p>
+      <p className="pb-4 text-center text-[10px] text-muted-foreground/70">{t(SECTOR_STATS.source)}</p>
     </section>
   );
 }
@@ -364,7 +364,7 @@ function LegalSection() {
                 className="mt-7 gap-2 border-cream/25 bg-transparent text-cream hover:bg-cream/10 hover:text-cream"
               >
                 {t("مكتبة القوانين واللوائح")}
-                <ArrowLeft className="size-4" />
+                <ArrowLeft className="size-4 rotate-180 rtl:rotate-0" />
               </Button>
             </div>
           </div>
@@ -378,8 +378,8 @@ function LegalSection() {
                   <span className="absolute -start-[37px] grid size-7 place-items-center rounded-full border border-terra/30 bg-terra/10 text-xs font-black text-terra">
                     {i + 1}
                   </span>
-                  <p className="text-sm font-bold text-foreground">{s.title}</p>
-                  <p className="mt-1 text-xs leading-6 text-muted-foreground">{s.desc}</p>
+                  <p className="text-sm font-bold text-foreground">{t(s.title)}</p>
+                  <p className="mt-1 text-xs leading-6 text-muted-foreground">{t(s.desc)}</p>
                 </li>
               ))}
             </ol>
@@ -633,7 +633,7 @@ export function LandingView() {
                   className="gap-2 bg-terra-soft px-8 font-black text-ink hover:bg-terra-soft/85"
                 >
                   {authed ? t("الذهاب إلى لوحة القيادة") : t("إنشاء حساب أو انخراط")}
-                  <ArrowLeft className="size-4" />
+                  <ArrowLeft className="size-4 rotate-180 rtl:rotate-0" />
                 </Button>
                 <Button
                   size="lg"

@@ -231,21 +231,21 @@ export function RegisterView() {
 
         {/* اختيار المسار */}
         <div className="mt-6 grid grid-cols-3 gap-2" role="tablist" aria-label={t("نوع الطلب")}>
-          {INTENTS.map((t) => (
+          {INTENTS.map((opt) => (
             <button
-              key={t.key}
+              key={opt.key}
               role="tab"
-              aria-selected={intent === t.key}
-              onClick={() => setIntent(t.key)}
+              aria-selected={intent === opt.key}
+              onClick={() => setIntent(opt.key)}
               className={cn(
                 "flex flex-col items-center gap-1.5 rounded-2xl border px-2 py-3.5 text-[11px] font-bold transition-all md:text-xs",
-                intent === t.key
+                intent === opt.key
                   ? "border-saffron/50 bg-saffron/15 text-saffron shadow-lg"
                   : "border-cream/15 bg-cream/5 text-cream/70 hover:bg-cream/10"
               )}
             >
-              <t.icon className="size-5" />
-              {t.label}
+              <opt.icon className="size-5" />
+              {t(opt.label)}
             </button>
           ))}
         </div>

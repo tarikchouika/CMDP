@@ -64,11 +64,12 @@ export function CmdpLogo({ compact = false, light = false }: { compact?: boolean
     <div className="flex items-center gap-3 select-none">
       <CmdpMark className={cn("shrink-0 text-terra", compact ? "size-9" : "size-11")} />
       <div className="leading-tight">
-        <div className={cn("font-display font-extrabold tracking-wide", compact ? "text-lg" : "text-xl", light ? "text-sidebar-foreground" : "text-foreground")}>
+        {/* light = على لوح حبري داكن → قشدة فاتحة ثابتة تضمن القراءة في الوضعين */}
+        <div className={cn("font-display font-extrabold tracking-wide", compact ? "text-lg" : "text-xl", light ? "text-cream" : "text-foreground")}>
           CMDP
         </div>
         {!compact && (
-          <div className={cn("max-w-52 text-[11px] leading-4", light ? "text-sidebar-foreground/70" : "text-muted-foreground")}>
+          <div className={cn("max-w-52 text-[11px] leading-4", light ? "text-cream/70" : "text-muted-foreground")}>
             {t("المنصة الرقمية لإدارة التعاونيات")}
           </div>
         )}

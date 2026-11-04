@@ -41,18 +41,47 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { t as i18n } from "@/lib/i18n";
-import { t, tError } from "@/lib/i18n";
+import { t, tError, getLang, LANGS } from "@/lib/i18n";
 
 const CHART_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
 
+// الأشهر المغربية كما تولّدها Intl ar-MA (المصدر المشترك للبيانات)
+const AR_MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "ماي", "يونيو", "يوليوز", "غشت", "شتنبر", "أكتوبر", "نونبر", "دجنبر"];
+
+/** تسمية شهر مختصرة حسب لغة الواجهة — تتسق مع محور الرسم في كل اللغات.
+ *  تعالج الحالتين: تسمية عربية خام (مسار API) أو مترجَمة مسبقاً (مسار العرض التجريبي) */
+function monthShort(label: string): string {
+  const l = label.trim();
+  let idx = AR_MONTHS.indexOf(l);
+  if (idx < 0) {
+    // البيانات مترجَمة مسبقاً عبر localizeDemo — نطابقها مع ترجمات معجم الأشهر
+    idx = AR_MONTHS.findIndex((m) => i18n(m) === l);
+  }
+  if (idx >= 0) {
+    const meta = LANGS.find((lg) => lg.code === getLang())!;
+    try {
+      return new Intl.DateTimeFormat(meta.locale, { month: "short" }).format(new Date(2026, idx, 1));
+    } catch {
+      /* سقوط آمن */
+    }
+  }
+  return l;
+}
+
+// صندوق تلميح الرسوم: ألوان صريحة متوافقة مع الوضعين فاتح/داكن
+// (سابقاً كان النص يرث ألواناً داكنة على خلفية داكنة فيختفي)
 const tooltipStyle = {
   direction: "rtl" as const,
   borderRadius: 12,
-  border: "1px solid var(--border)",
-  backgroundColor: "var(--card)",
+  border: "1px solid color-mix(in srgb, var(--popover-foreground) 22%, transparent)",
+  backgroundColor: "var(--popover)",
+  color: "var(--popover-foreground)",
   fontSize: 12,
   fontFamily: "inherit",
+  boxShadow: "0 10px 30px rgba(0, 0, 0, 0.28)",
 };
+const tooltipLabelStyle = { color: "var(--popover-foreground)", fontWeight: 700, marginBottom: 2, padding: 0 };
+const tooltipItemStyle = { color: "var(--popover-foreground)", padding: 0 };
 
 function ChartCard({ title, children, hint }: { title: string; children: React.ReactNode; hint?: string }) {
   return (
@@ -162,7 +191,13 @@ export function DashboardView() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+                <XAxis
+                  dataKey="month"
+                  tickFormatter={(m: string) => monthShort(m)}
+                  tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
                 <YAxis
                   orientation="right"
                   tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
@@ -172,9 +207,12 @@ export function DashboardView() {
                 />
                 <ReTooltip
                   contentStyle={tooltipStyle}
+                  labelStyle={tooltipLabelStyle}
+                  itemStyle={tooltipItemStyle}
+                  labelFormatter={(m: string) => monthShort(m)}
                   formatter={(value: number, name: string) => [
                     formatMAD(value),
-                    name === "income" ? i18n("الإيرادات") : "المصاريف",
+                    name === "income" ? i18n("الإيرادات") : i18n("المصاريف"),
                   ]}
                 />
                 <Area type="monotone" dataKey="income" stroke="var(--chart-1)" strokeWidth={2.5} fill="url(#gIncome)" />
@@ -201,14 +239,19 @@ export function DashboardView() {
                   <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                 ))}
               </Pie>
-              <ReTooltip contentStyle={tooltipStyle} formatter={(v: number, n: string) => [i18n("{n} تعاونية", { n: formatNumber(v) }), n]} />
+              <ReTooltip
+                contentStyle={tooltipStyle}
+                labelStyle={tooltipLabelStyle}
+                itemStyle={tooltipItemStyle}
+                formatter={(v: number, n: string) => [i18n("{n} تعاونية", { n: formatNumber(v) }), i18n(n)]}
+              />
             </PieChart>
           </ResponsiveContainer>
           <div className="mt-1 flex flex-wrap justify-center gap-x-3 gap-y-1">
             {data.sectorDistribution.slice(0, 5).map((s, i) => (
               <span key={s.sector} className="flex items-center gap-1 text-[10px] text-muted-foreground">
                 <span className="size-2 rounded-full" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
-                {s.sector}
+                {i18n(s.sector)}
               </span>
             ))}
           </div>
@@ -263,7 +306,7 @@ export function DashboardView() {
                   </button>
                   <div className="min-w-0 flex-1">
                     <p className={`text-xs font-bold leading-5 ${t.status === "DONE" ? "text-muted-foreground line-through" : "text-foreground"}`}>
-                      {t.title}
+                      {i18n(t.title)}
                     </p>
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                       <LBadge map={TASK_TYPES} value={t.type} className="px-1.5 py-0 text-[9px]" />
@@ -290,7 +333,7 @@ export function DashboardView() {
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
               <XAxis dataKey="year" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
               <YAxis orientation="right" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} allowDecimals={false} />
-              <ReTooltip contentStyle={tooltipStyle} formatter={(v: number) => [i18n("{n} عضو", { n: formatNumber(v) }), i18n("العدد الإجمالي")]} />
+              <ReTooltip contentStyle={tooltipStyle} labelStyle={tooltipLabelStyle} itemStyle={tooltipItemStyle} formatter={(v: number) => [i18n("{n} عضو", { n: formatNumber(v) }), i18n("العدد الإجمالي")]} />
               <Line type="monotone" dataKey="count" stroke="var(--chart-3)" strokeWidth={3} dot={{ r: 4, fill: "var(--chart-3)", strokeWidth: 0 }} />
             </LineChart>
           </ResponsiveContainer>
@@ -378,9 +421,9 @@ export function DashboardView() {
             {data.recentTransactions.map((t) => (
               <div key={t.id} className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-background px-4 py-2.5">
                 <div className="min-w-0">
-                  <p className="truncate text-xs font-bold text-foreground">{t.description ?? t.category}</p>
+                  <p className="truncate text-xs font-bold text-foreground">{i18n(t.description ?? "") || i18n(t.category)}</p>
                   <p className="text-[10px] text-muted-foreground">
-                    {t.category} — {formatShortDate(t.date)}
+                    {i18n(t.category)} — {formatShortDate(t.date)}
                   </p>
                 </div>
                 <span className={`shrink-0 text-sm font-extrabold tabular-nums ${t.type === "INCOME" ? "text-zellij" : "text-terra"}`}>

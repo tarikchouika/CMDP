@@ -55,8 +55,8 @@ export function RegulationsView() {
                   {i + 1}
                 </span>
                 <div>
-                  <p className="text-xs font-extrabold text-foreground">{s.title}</p>
-                  <p className="mt-1 text-[11px] leading-5 text-muted-foreground">{s.desc}</p>
+                  <p className="text-xs font-extrabold text-foreground">{t(s.title)}</p>
+                  <p className="mt-1 text-[11px] leading-5 text-muted-foreground">{t(s.desc)}</p>
                 </div>
               </div>
             ))}
