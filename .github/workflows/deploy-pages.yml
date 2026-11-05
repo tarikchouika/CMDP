@@ -1,0 +1,70 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# CMDP — سير عمل النشر التلقائي على Cloudflare Pages
+#
+# • يبني النسخة الساكنة (build:static) وينشرها آلياً مع كل دفع إلى main
+# • الموقع الحي: https://cmdp.pages.dev  (مشروع Pages: cmdp — نمط الرفع المباشر)
+# • تشغيل يدوي متاح أيضاً (workflow_dispatch) من تبويب Actions
+# • يتطلب أسرار GitHub (حساب الاستضافة المخصص للواجهة):
+#   - CLOUDFLARE_API_TOKEN   — رمز API بصلاحيات Cloudflare Pages: Edit
+#   - CLOUDFLARE_ACCOUNT_ID  — معرّف حساب الاستضافة
+# • تعمل خطوات التحقق بعد النشر لضمان سلامة الموقع الحي قبل إغلاق السير
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: "Cloudflare Pages — CMDP"
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-pages:
+    name: بناء النسخة الساكنة ونشرها
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: استنساخ المستودع
+        uses: actions/checkout@v4
+
+      - name: تهيئة Bun (تثبيت حتمي عبر bun.lock)
+        uses: oven-sh/setup-bun@v2
+
+      - name: تهيئة Node.js (تشغيل سكربت البناء)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: تثبيت الاعتماديات
+        run: bun install --frozen-lockfile
+
+      - name: بناء النسخة الساكنة
+        run: npm run build:static
+
+      - name: النشر إلى Cloudflare Pages (فرع الإنتاج main)
+        run: npx wrangler@4.157.0 pages deploy out --project-name=cmdp --branch=main
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: التحقق من الموقع الحي
+        run: |
+          code=000
+          for i in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" https://cmdp.pages.dev || echo 000)
+            [ "$code" = "200" ] && break
+            echo "محاولة $i: HTTP $code — انتظار 15 ثانية قبل إعادة المحاولة..."
+            sleep 15
+          done
+          echo "النتيجة النهائية: HTTP $code"
+          [ "$code" = "200" ] || { echo "✗ فشل التحقق من الموقع الحي"; exit 1; }
+          echo "✓ الموقع الحي يستجيب بنجاح"

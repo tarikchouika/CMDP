@@ -6,6 +6,19 @@
 [Keep a Changelog](https://keepachangelog.com/ar/1.1.0/) وترقيم
 [Semantic Versioning](https://semver.org/lang/ar/).
 
+## [1.2.3] — 2026-11-05
+
+أتمتة النشر المستمر (CI/CD) — بطلب المستخدم.
+
+### مُضاف
+- **سير عمل النشر التلقائي على Cloudflare Pages** (`.github/workflows/deploy-pages.yml`): مع كل دفع إلى `main` يتضمن تغييرات خارج التوثيق — تثبيت حتمي عبر `bun.lock` + Node 24 ← `build:static` ← `wrangler pages deploy` إلى مشروع `cmdp` ← تحقق الموقع الحي HTTP 200 (يفشل السير تلقائياً عند تعذّره)؛ ويعمل يدوياً من تبويب Actions.
+- **سير عمل نشر عامل الشاتبوت** (`.github/workflows/deploy-chatbot.yml`): تشغيل يدوي (workflow_dispatch) ينشر `chatbot-worker/` إلى الحساب المستقل ويتحقق من العنوان الحي — يدوياً عمداً حفاظاً على استقرار الخدمة.
+- **أسرار GitHub** ضُبطت عبر API (لا رمز واحد في المستودع): `CLOUDFLARE_API_TOKEN` و`CLOUDFLARE_ACCOUNT_ID` لحساب الاستضافة، و`CHATBOT_CLOUDFLARE_API_TOKEN` و`CHATBOT_CLOUDFLARE_ACCOUNT_ID` لحساب الشاتبوت المستقل.
+- تحديث `docs/DEPLOYMENT.md`: سير Actions صار الطريقة الأولى للنشر (Pages والشاتبوت)، وWrangler CLI يدوياً طريقة احتياطية؛ حُذفت وصفة ربط Git من لوحة Cloudflare (لا تنطبق على مشروع الرفع المباشر).
+
+### التحقق
+اختبار فعلي قبل الالتزام بالأمرين نفسيهما: نشر Pages من البيئة المحلية ✓ (deployment `87c3324d` — 81 ملفاً) · نشر العامل `cmdp-assistant` ✓ · صحة YAML للسير الثلاثة ✓ · الموقع الحي 200 ✓
+
 ## [1.2.2] — 2026-11-05
 
 إصلاحات الترجمة المتبقية والتباين — بناءً على تقرير المستخدم بالسكرين شوتس المعلمة بالدوائر الحمراء.

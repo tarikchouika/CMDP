@@ -1,0 +1,52 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# CMDP — سير عمل نشر عامل الشاتبوت (Cloudflare Workers AI)
+#
+# • ينشر chatbot-worker/ إلى الحساب المستقل المخصص للشاتبوت
+# • العنوان الحي: https://cmdp-assistant.tkchouika-cmdp.workers.dev
+# • تشغيل يدوي فقط (workflow_dispatch) — لا ينطلق آلياً مع الدفع حفاظاً على
+#   استقرار الخدمة؛ يُشغَّل عند تعديل العامل عمداً من تبويب Actions
+# • يتطلب أسرار GitHub (حساب الشاتبوت المستقل):
+#   - CHATBOT_CLOUDFLARE_API_TOKEN  — رمز API بصلاحيات Workers Scripts: Edit
+#   - CHATBOT_CLOUDFLARE_ACCOUNT_ID — معرّف حساب الشاتبوت
+# ═══════════════════════════════════════════════════════════════════════════
+
+name: "Chatbot Worker — CMDP"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-chatbot
+  cancel-in-progress: false
+
+jobs:
+  deploy-chatbot:
+    name: نشر عامل المساعد الألي
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: استنساخ المستودع
+        uses: actions/checkout@v4
+
+      - name: النشر إلى Cloudflare Workers (الحساب المستقل)
+        run: npx wrangler@4.157.0 deploy
+        working-directory: chatbot-worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CHATBOT_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CHATBOT_CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: التحقق من العامل الحي
+        run: |
+          code=000
+          for i in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" https://cmdp-assistant.tkchouika-cmdp.workers.dev || echo 000)
+            [ "$code" = "200" ] && break
+            echo "محاولة $i: HTTP $code — انتظار 15 ثانية قبل إعادة المحاولة..."
+            sleep 15
+          done
+          echo "النتيجة النهائية: HTTP $code"
+          [ "$code" = "200" ] || { echo "✗ فشل التحقق من العامل الحي"; exit 1; }
+          echo "✓ العامل الحي يستجيب بنجاح"

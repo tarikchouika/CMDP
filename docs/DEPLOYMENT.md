@@ -77,6 +77,13 @@ chatbot-worker/
 
 ### نشر العامل أو تحديثه
 
+**آلياً (المُعتمدة):** تبويب **Actions** في المستودع ← سير
+«Chatbot Worker — CMDP» ← **Run workflow** — ينشر `chatbot-worker/`
+بالأسرار `CHATBOT_CLOUDFLARE_API_TOKEN` و`CHATBOT_CLOUDFLARE_ACCOUNT_ID`
+ثم يتحقق من العنوان الحي. تشغيل يدوي عمداً حفاظاً على استقرار الخدمة.
+
+**يدوياً (احتياطية):**
+
 ```bash
 cd chatbot-worker
 export CLOUDFLARE_API_TOKEN=<رمز-حساب-الشاتبوت>
@@ -123,28 +130,46 @@ NEXT_PUBLIC_CHATBOT_URL=https://<عامل-بديل>.workers.dev npm run build:st
 
 ## 6) النشر على Cloudflare Pages
 
-### الطريقة الأولى — Wrangler CLI (مباشرة)
+### الطريقة الأولى — سير GitHub Actions (تلقائية — المُعتمدة)
+
+كل دفع إلى `main` يتضمن تغييرات خارج التوثيق ينشر النسخة الساكنة تلقائياً
+عبر سير العمل `.github/workflows/deploy-pages.yml`:
+
+```
+الدفع إلى main ← GitHub Actions:
+  ① استنساخ المستودع
+  ② Bun (تثبيت حتمي عبر bun.lock) + Node.js 24
+  ③ بناء الساكن npm run build:static
+  ④ npx wrangler pages deploy out --project-name=cmdp --branch=main
+  ⑤ تحقق الموقع الحي HTTP 200 — يفشل السير تلقائياً عند تعذّره
+```
+
+- **الأسرار المطلوبة** (مضبوطة في إعدادات المستودع ←
+  Settings ← Secrets and variables ← Actions):
+  - `CLOUDFLARE_API_TOKEN` — رمز حساب الاستضافة (صلاحيات Pages: Edit)
+  - `CLOUDFLARE_ACCOUNT_ID` — معرّف حساب الاستضافة
+- **تشغيل يدوي:** تبويب Actions ← «Cloudflare Pages — CMDP» ← Run workflow.
+- تغييرات التوثيق وحدها (`docs/**` و`**.md`) لا تُطلق نشراً — لا انتظار
+  لسير النشر عند تحرير المستندات فقط.
+
+### الطريقة الثانية — Wrangler CLI يدوياً (احتياطية)
+
+تُستعمل للنشر من بيئة محلية دون المرور بـ GitHub:
 
 ```bash
-npm install -g wrangler
 # ضبط المتغيرات (مرة واحدة) — حساب الاستضافة الرئيسي
 export CLOUDFLARE_API_TOKEN=<رمز-API-من-لوحة-Cloudflare>
 export CLOUDFLARE_ACCOUNT_ID=f52dfb7ec8fc9a148c30f567a8f50332
 
 npm run build:static
-npx wrangler pages deploy out --project-name cmdp
+npx wrangler pages deploy out --project-name cmdp --branch main
 # النتيجة: https://cmdp.pages.dev
 ```
 
-### الطريقة الثانية — ربط مستودع Git (تكامل مستمر)
-
-1. من لوحة Cloudflare: **Workers & Pages ← Create ← Pages ← Connect to Git**
-2. اختر مستودع `tarikchouika/CMDP` والفرع `main`
-3. إعدادات البناء:
-   - **Build command:** `npm run build:static`
-   - **Build output directory:** `out`
-   - **Node version** (متغير بيئة): `NODE_VERSION = 20`
-4. احفظ — كل دفع إلى `main` ينشر نسخة محدثة تلقائياً.
+> **ملاحظة معمارية:** مشروع Pages «cmdp» بنمط **الرفع المباشر** (Direct Upload)
+> ولا يُربط بمستودع Git من لوحة Cloudflare — التكامل المستمر يمر حصرياً عبر
+> GitHub Actions بالأسرار أعلاه، ما يعزل الرموز عن المستودع ويضمن حتمية
+> التثبيت عبر `bun.lock`.
 
 ### ملاحظات
 
