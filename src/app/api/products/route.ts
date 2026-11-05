@@ -1,5 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// CMDP — المتجر: المنتجات (عمومي للقراءة، إداري للنشر)
+// CMDP — المتجر: المنتجات
+// • عمومي (بدون mine): المنتجات النشطة المعروضة في المتجر
+// • إداري (mine=1): كل منتجات التعاونية (نشطة ومخفية) لإدارتها
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { db } from "@/lib/db";
@@ -14,6 +16,31 @@ export function OPTIONS() {
 
 export async function GET(req: Request) {
   const sp = new URL(req.url).searchParams;
+
+  // ─── قائمة الإدارة: كل منتجات التعاونية (نشطة + مخفية) ───────────────────
+  if (sp.get("mine") === "1") {
+    const auth = await requirePermission(req, "manage:store");
+    if ("response" in auth) return auth.response;
+    const { user } = auth;
+    const where: Record<string, unknown> =
+      user.role === "COADMIN"
+        ? { cooperativeId: user.cooperativeId ?? -1 }
+        : sp.get("cooperativeId")
+          ? { cooperativeId: Number(sp.get("cooperativeId")) }
+          : {};
+    const rows = await db.product.findMany({
+      where,
+      include: {
+        cooperative: { select: { id: true, name: true, region: true, sector: true } },
+        _count: { select: { orders: true } },
+      },
+      orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
+      take: 500,
+    });
+    return ok(rows);
+  }
+
+  // ─── القائمة العمومية: المنتجات النشطة فقط ───────────────────────────────
   const category = sp.get("category");
   const q = sp.get("q");
   const where: Record<string, unknown> = { status: "ACTIVE" };
@@ -29,7 +56,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const auth = await requirePermission(req, "post:opportunities");
+  const auth = await requirePermission(req, "manage:store");
   if ("response" in auth) return auth.response;
 
   const b = await readJson(req);
@@ -39,6 +66,8 @@ export async function POST(req: Request) {
   if (auth.user.role === "COADMIN" && Number(b.cooperativeId) !== auth.user.cooperativeId) {
     return denied("هذه التعاونية خارج نطاق صلاحياتكم");
   }
+  const price = Number(b.price);
+  if (!Number.isFinite(price) || price < 0) return fail("السعر غير صالح");
   const row = await db.product.create({
     data: {
       cooperativeId: Number(b.cooperativeId),
@@ -46,10 +75,11 @@ export async function POST(req: Request) {
       description: b.description ? String(b.description).slice(0, 1500) : null,
       category: String(b.category),
       unit: b.unit ? String(b.unit) : null,
-      price: Number(b.price),
+      price,
       imageUrl: b.imageUrl ? String(b.imageUrl) : null,
       featured: Boolean(b.featured),
       inStock: b.inStock === undefined ? true : Boolean(b.inStock),
+      status: b.status === "HIDDEN" ? "HIDDEN" : "ACTIVE",
     },
   });
   return ok(row, 201);

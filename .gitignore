@@ -67,3 +67,5 @@ tool-results/
 # شهادة التوقيع وخصائصها — تُدار محلياً وفي GitHub Secrets فقط
 android/cmdp-release.keystore
 android/cmdp-release.keystore.properties
+# مرفوعات المستخدم (لقطات وتوثيق التقارير) — لا تُرفع للمستودع العمومي
+upload/

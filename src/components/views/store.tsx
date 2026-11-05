@@ -55,7 +55,7 @@ interface StoreProduct {
   cooperative: { id: number; name: string; region: string; sector: string };
 }
 
-const CATEGORIES = ["الكل", "منتجات غذائية", "صناعة تقليدية", "نسيج وملابس", "خدمات", "أخرى"];
+const CATEGORIES = ["الكل", "منتجات غذائية", "صناعة تقليدية", "نسيج وملابس", "تجميل وعناية", "خدمات", "أخرى"];
 
 // ─── بيانات العرض التجريبي (تُستبدل ببيانات الباك إند عند الاتصال) ──────────
 const DEMO_PRODUCTS: StoreProduct[] = [

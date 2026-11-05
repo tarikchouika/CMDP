@@ -475,3 +475,161 @@ export function useAssemblyAction() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["assemblies", String(user?.cooperativeId)] }),
   });
 }
+
+// ═══════════════════ وحدة إدارة المتجر (الإصدار 1.3.0) ═════════════════════
+
+/** منتجات العرض التجريبي لوحدة الإدارة (النسخة الساكنة) — تعاونية تافوكت */
+const DEMO_STORE_PRODUCTS: import("@/lib/types").Product[] = [
+  { id: -1, cooperativeId: 1, name: "زيت أركان غذائي معصور على البارد", description: "زيت أركان صافي 100% من تعاونية نسائية بسوس", category: "منتجات غذائية", unit: "250 مل", price: 180, imageUrl: "/store/argan-oil.png", inStock: true, featured: true, status: "ACTIVE", createdAt: "2026-09-02", _count: { orders: 14 } },
+  { id: -2, cooperativeId: 1, name: "عسل جبلي مغربي متعدد الأزهار", description: "عسل خام غير مصفى من مرتفعات الأطلس", category: "منتجات غذائية", unit: "500 غ", price: 95, imageUrl: "/store/mountain-honey.png", inStock: true, featured: false, status: "ACTIVE", createdAt: "2026-09-10", _count: { orders: 9 } },
+  { id: -3, cooperativeId: 1, name: "زعفران تالوين الأصيل", description: "زعفران مغربي من درجة أولى", category: "منتجات غذائية", unit: "1 غ", price: 35, imageUrl: "/store/taldaout-saffron.png", inStock: false, featured: true, status: "ACTIVE", createdAt: "2026-09-15", _count: { orders: 5 } },
+  { id: -4, cooperativeId: 1, name: "أملو تقليدي باللوز والعسل", description: "خليط الأركان التقليدي — غير معروض مؤقتاً", category: "منتجات غذائية", unit: "مرطبان 250 غ", price: 85, imageUrl: null, inStock: true, featured: false, status: "HIDDEN", createdAt: "2026-10-01", _count: { orders: 2 } },
+];
+
+/** طلبات العرض التجريبي لوحدة الإدارة */
+const DEMO_STORE_ORDERS: import("@/lib/types").Order[] = [
+  { id: -1, productId: -1, quantity: 2, customerName: "يوسف العلوي", phone: "0661234567", city: "الدار البيضاء", note: "التوصيل بعد الخامسة مساءً", status: "NEW", createdAt: new Date(Date.now() - 2 * 86400000).toISOString(), product: { id: -1, name: "زيت أركان غذائي معصور على البارد", cooperativeId: 1, price: 180, unit: "250 مل" } },
+  { id: -2, productId: -2, quantity: 3, customerName: "فاطمة الزهراء بناني", phone: "0677889900", city: "الرباط", note: null, status: "CONTACTED", createdAt: new Date(Date.now() - 5 * 86400000).toISOString(), product: { id: -2, name: "عسل جبلي مغربي متعدد الأزهار", cooperativeId: 1, price: 95, unit: "500 غ" } },
+  { id: -3, productId: -1, quantity: 1, customerName: "محمد الإدريسي", phone: "0655443322", city: "مراكش", note: null, status: "DONE", createdAt: new Date(Date.now() - 12 * 86400000).toISOString(), product: { id: -1, name: "زيت أركان غذائي معصور على البارد", cooperativeId: 1, price: 180, unit: "250 مل" } },
+  { id: -4, productId: -3, quantity: 4, customerName: "خديجة أمزيل", phone: "0699112233", city: "أكادير", note: "هدية — تغليف خاص", status: "DONE", createdAt: new Date(Date.now() - 18 * 86400000).toISOString(), product: { id: -3, name: "زعفران تالوين الأصيل", cooperativeId: 1, price: 35, unit: "1 غ" } },
+  { id: -5, productId: -2, quantity: 2, customerName: "عبد الرحيم تازي", phone: "0644556677", city: "فاس", note: null, status: "CANCELLED", createdAt: new Date(Date.now() - 25 * 86400000).toISOString(), product: { id: -2, name: "عسل جبلي مغربي متعدد الأزهار", cooperativeId: 1, price: 95, unit: "500 غ" } },
+];
+
+/** إحصائيات العرض التجريبي للمتجر */
+function demoStoreStats(days: number): import("@/lib/types").StoreStats {
+  const orders = DEMO_STORE_ORDERS.filter((o) => Date.now() - new Date(o.createdAt).getTime() <= days * 86400000);
+  const byStatus: Record<string, number> = { NEW: 0, CONTACTED: 0, DONE: 0, CANCELLED: 0 };
+  let doneRevenue = 0;
+  let pipelineValue = 0;
+  const prodAgg = new Map<number, { id: number; name: string; quantity: number; orders: number; revenue: number }>();
+  for (const o of orders) {
+    byStatus[o.status] = (byStatus[o.status] ?? 0) + 1;
+    const value = (o.product?.price ?? 0) * o.quantity;
+    if (o.status === "DONE") doneRevenue += value;
+    else if (o.status === "NEW" || o.status === "CONTACTED") pipelineValue += value;
+    if (o.product) {
+      const cur = prodAgg.get(o.product.id) ?? { id: o.product.id, name: o.product.name, quantity: 0, orders: 0, revenue: 0 };
+      cur.quantity += o.quantity;
+      cur.orders++;
+      if (o.status === "DONE") cur.revenue += value;
+      prodAgg.set(o.product.id, cur);
+    }
+  }
+  const doneCount = byStatus.DONE;
+  return {
+    scope: { cooperativeId: 1, days },
+    totals: {
+      totalOrders: orders.length,
+      byStatus,
+      doneRevenue,
+      pipelineValue,
+      avgOrderValue: doneCount ? Math.round(doneRevenue / doneCount) : 0,
+      completionRate: orders.length ? Math.round((doneCount / orders.length) * 100) : 0,
+    },
+    weeklySeries: [],
+    topProducts: [...prodAgg.values()].sort((a, b) => b.quantity - a.quantity).slice(0, 8),
+    catalog: { total: 4, active: 3, hidden: 1, outOfStock: 1, featured: 2 },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+/** منتجات التعاونية للإدارة (نشطة + مخفية) */
+export const useStoreProducts = (coopId: number | null) => {
+  const user = useUIStore((s) => s.user);
+  const mine = user && user.role !== "USER" ? "?mine=1" : "";
+  return useCmdpQuery<import("@/lib/types").Product[]>(
+    ["store-products", String(coopId)],
+    `/api/products${mine}`,
+    () => localizeDemo(DEMO_STORE_PRODUCTS.filter((p) => !coopId || p.cooperativeId === coopId))
+  );
+};
+
+/** طلبات متجر التعاونية */
+export const useStoreOrders = () =>
+  useCmdpQuery<import("@/lib/types").Order[]>(["store-orders"], "/api/orders", () =>
+    localizeDemo(DEMO_STORE_ORDERS)
+  );
+
+/** إحصائيات المتجر (فترة قابلة للضبط) */
+export const useStoreStats = (days: number) =>
+  useCmdpQuery<import("@/lib/types").StoreStats>(
+    ["store-stats", String(days)],
+    `/api/store/stats?days=${days}`,
+    () => localizeDemo(demoStoreStats(days))
+  );
+
+export type ProductInput = Omit<import("@/lib/types").Product, "id" | "createdAt" | "cooperative" | "_count"> & {
+  id?: number | null;
+};
+
+/** حفظ منتج (إنشاء/تعديل) */
+export const useSaveProduct = () =>
+  useCmdpSave<ProductInput>(
+    (p) => (p.id != null ? `/api/products/${p.id}` : "/api/products"),
+    [["store-products"], ["store-stats"], ["store-products-all"]]
+  );
+
+/** حذف منتج */
+export const useDeleteProduct = () =>
+  useCmdpDelete((id) => `/api/products/${id}`, [["store-products"], ["store-stats"]]);
+
+/** تحديث حالة طلب */
+export const useUpdateOrderStatus = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { id: number; status: string }) => {
+      const demoMode = useUIStore.getState().demoMode;
+      if (demoMode) throw new Error(DEMO_MSG);
+      return rawFetch<unknown>(`/api/orders/${payload.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: payload.status }),
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["store-orders"] });
+      qc.invalidateQueries({ queryKey: ["store-stats"] });
+    },
+  });
+};
+
+/** حذف طلب */
+export const useDeleteOrder = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const demoMode = useUIStore.getState().demoMode;
+      if (demoMode) throw new Error(DEMO_MSG);
+      return rawFetch<unknown>(`/api/orders/${id}`, { method: "DELETE" });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["store-orders"] });
+      qc.invalidateQueries({ queryKey: ["store-stats"] });
+    },
+  });
+};
+
+/** تسجيل طلب يدوي (هاتف/حضوري) على منتجات التعاونية */
+export const useCreateOrder = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      productId: number;
+      quantity: number;
+      customerName: string;
+      phone: string;
+      city?: string | null;
+      note?: string | null;
+    }) => {
+      const demoMode = useUIStore.getState().demoMode;
+      if (demoMode) throw new Error(DEMO_MSG);
+      return rawFetch<unknown>("/api/orders", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["store-orders"] });
+      qc.invalidateQueries({ queryKey: ["store-stats"] });
+    },
+  });
+};

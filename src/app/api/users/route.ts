@@ -68,7 +68,7 @@ export async function POST(req: Request) {
   const cooperativeId = b.cooperativeId != null ? Number(b.cooperativeId) : null;
 
   // ─── ضوابط التعيين حسب صلاحية الموظِّف ──────────────────────────────────
-  const allowed = assignableRoles(actor.role).some(
+  const allowed = assignableRoles(actor.role, actor.accountType).some(
     (r) => r.role === role && r.accountType === accountType
   );
   if (!allowed) return denied("لا يمكنك تعيين هذا الدور — تحقق من نطاق صلاحياتك");

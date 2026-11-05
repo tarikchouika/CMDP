@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // CMDP — المتجر: طلبات الشراء (عمومية للإرسال، إدارية للقراءة/التحديث)
+// النطاق: الكوأدمن يرى طلبات منتجات تعاونيته حصراً؛ الإدارة ترى الكل
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { db } from "@/lib/db";
@@ -13,12 +14,25 @@ export function OPTIONS() {
 }
 
 export async function GET(req: Request) {
-  const auth = await requirePermission(req, "post:opportunities");
+  const auth = await requirePermission(req, "manage:store");
   if ("response" in auth) return auth.response;
+  const { user } = auth;
+
+  // الكوأدمن: طلبات منتجات تعاونيته فقط (عبر علاقة المنتج)
+  const where =
+    user.role === "COADMIN"
+      ? { product: { cooperativeId: user.cooperativeId ?? -1 } }
+      : {};
+
   const rows = await db.order.findMany({
-    include: { product: { select: { id: true, name: true, cooperativeId: true, price: true } } },
+    where,
+    include: {
+      product: {
+        select: { id: true, name: true, cooperativeId: true, price: true, unit: true },
+      },
+    },
     orderBy: { createdAt: "desc" },
-    take: 300,
+    take: 500,
   });
   return ok(rows);
 }

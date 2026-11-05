@@ -29,6 +29,7 @@ import {
   MoreHorizontal,
   FlaskConical,
   Scale,
+  ShoppingBag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ACCOUNT_TYPE_LABELS, ROLE_LABELS } from "@/lib/constants";
@@ -67,6 +68,7 @@ import { MySpaceView } from "@/components/views/myspace";
 import { SettingsView } from "@/components/views/settings";
 import { InstallView } from "@/components/views/install";
 import { StoreView } from "@/components/views/store";
+import { StoreManageView } from "@/components/views/storemanage";
 import { t, useI18n } from "@/lib/i18n";
 
 // ─── عناصر التنقل الكاملة (تُفلتر حسب دور المستخدم) ────────────────────────
@@ -89,6 +91,7 @@ const NAV_GROUPS: {
       { view: "members", label: "الأعضاء", icon: Users },
       { view: "assembly", label: "الجمع العام والمجلس", icon: Gavel },
       { view: "finance", label: "المالية والصندوق", icon: Wallet },
+      { view: "storemanage", label: "إدارة المتجر", icon: ShoppingBag },
     ],
   },
   {
@@ -132,6 +135,7 @@ const VIEW_TITLES: Record<View, string> = {
   settings: "الإعدادات",
   install: "تثبيت التطبيق",
   store: "المتجر",
+  storemanage: "إدارة المتجر",
 };
 
 /** مجموعات التنقل المتاحة للمستخدم الحالي */
@@ -392,6 +396,7 @@ function useQuickNav() {
       { view: "cooperatives", label: t("تعاونيات"), icon: Building2 },
       { view: "members", label: t("أعضاء"), icon: Users },
       { view: "finance", label: t("مالية"), icon: Wallet },
+      { view: "storemanage", label: t("المتجر"), icon: ShoppingBag },
       { view: "opportunities", label: t("الفرص"), icon: Briefcase },
       { view: "settings", label: t("الإعدادات"), icon: Settings },
     ];
@@ -400,7 +405,7 @@ function useQuickNav() {
       user?.role === "USER"
         ? ["myspace", "opportunities", "settings"]
         : user?.role === "COADMIN"
-          ? ["dashboard", "members", "opportunities", "settings"]
+          ? ["dashboard", "storemanage", "members", "opportunities"]
           : ["dashboard", "cooperatives", "opportunities", "settings"];
     const picked = priority.filter((v) => allowed.has(v)).slice(0, 4);
     return picked.map((v) => all.find((a) => a.view === v)!).filter(Boolean);
@@ -500,6 +505,8 @@ function ViewRouter() {
       return <RegulationsView />;
     case "users":
       return <UsersView />;
+    case "storemanage":
+      return <StoreManageView />;
     case "opportunities":
       return <OpportunitiesView />;
     case "myspace":

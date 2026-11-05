@@ -25,7 +25,8 @@ export type View =
   | "myspace"
   | "settings"
   | "install"
-  | "store";
+  | "store"
+  | "storemanage";
 
 export const VIEWS: View[] = [
   "landing",
@@ -46,6 +47,7 @@ export const VIEWS: View[] = [
   "settings",
   "install",
   "store",
+  "storemanage",
 ];
 
 /** الوحدات العمومية المتاحة دائماً */

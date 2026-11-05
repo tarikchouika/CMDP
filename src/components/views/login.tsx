@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// CMDP — وحدة الدخول (مع حسابات العرض حسب الأدوار ورابط التسجيل)
+// CMDP — وحدة الدخول (حسابات حقيقية عبر الباك إند + استكشاف العرض عند تعذّره)
 // ═══════════════════════════════════════════════════════════════════════════
 
 "use client";
 
 import * as React from "react";
-import { ArrowRight, KeyRound, Loader2, Lock, User, UserPlus, Users2 } from "lucide-react";
+import { ArrowRight, FlaskConical, KeyRound, Loader2, Lock, User, UserPlus } from "lucide-react";
 import { ApiUnavailableError, rawFetch, setAuthToken } from "@/lib/api";
 import type { SessionUser } from "@/lib/types";
 import { useUIStore } from "@/store/ui";
@@ -14,18 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
 import { t, tError } from "@/lib/i18n";
-
-/** حسابات العرض التجريبي — كلمة المرور الموحدة cmdp2026 */
-const DEMO_ACCOUNTS: { username: string; label: string }[] = [
-  { username: "superadmin", label: "مالك المنصة" },
-  { username: "admin", label: "أدمن المنصة" },
-  { username: "president", label: "رئيسة تعاونية" },
-  { username: "manager", label: "عضو مسير" },
-  { username: "member", label: "عضو غير مسير" },
-  { username: "contractor", label: "متعاقد" },
-];
 
 export function LoginView() {
   const setAuthed = useUIStore((s) => s.setAuthed);
@@ -33,9 +22,30 @@ export function LoginView() {
   const setDemoMode = useUIStore((s) => s.setDemoMode);
   const { toast } = useToast();
 
-  const [username, setUsername] = React.useState("admin");
+  const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
+  const [demoAvailable, setDemoAvailable] = React.useState(false);
+
+  /** الدخول في وضع العرض التجريبي — بيانات عرض فقط، بلا حسابات ولا كلمات مرور */
+  function enterDemoMode() {
+    setDemoMode(true);
+    setAuthToken(null);
+    setAuthed({
+      id: 0,
+      username: "demo",
+      fullName: t("زائر (وضع العرض)"),
+      role: "COADMIN",
+      accountType: "PRESIDENT",
+      cooperativeId: 1,
+      cooperativeName: t("تعاونية تافوكت لإنتاج زيت أركان"),
+      status: "ACTIVE",
+    });
+    toast({
+      title: t("دخول في وضع العرض التجريبي"),
+      description: t("بيانات للعرض فقط — شغّل الباك إند المحلي للبيانات الحقيقية"),
+    });
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -53,62 +63,14 @@ export function LoginView() {
       });
     } catch (err) {
       if (err instanceof ApiUnavailableError) {
-        // نسخة العرض الساكنة: قبول بيانات العرض محلياً حسب الدور
-        const account = DEMO_ACCOUNTS.find((a) => a.username === username.trim());
-        if (account && password === "cmdp2026") {
-          setDemoMode(true);
-          setAuthToken(null);
-          setAuthed({
-            id: 0,
-            username: account.username,
-            fullName: t("{name} (عرض)", { name: t(account.label) }),
-            role:
-              account.username === "superadmin"
-                ? "SUPER_ADMIN"
-                : account.username === "admin"
-                  ? "ADMIN"
-                  : account.username === "president" || account.username === "manager"
-                    ? "COADMIN"
-                    : "USER",
-            accountType:
-              account.username === "president"
-                ? "PRESIDENT"
-                : account.username === "manager"
-                  ? "MANAGER"
-                  : account.username === "member"
-                    ? "MEMBER"
-                    : account.username === "contractor"
-                      ? "CONTRACTOR"
-                      : null,
-            cooperativeId:
-              account.username === "president" || account.username === "member"
-                ? 1
-                : account.username === "manager"
-                  ? 2
-                  : account.username === "contractor"
-                    ? 3
-                    : null,
-            cooperativeName:
-              account.username === "president" || account.username === "member"
-                ? t("تعاونية تافوكت لإنتاج زيت أركان")
-                : account.username === "manager"
-                  ? t("تعاونية نسج الأطلس للنسيج التقليدي")
-                  : account.username === "contractor"
-                    ? t("تعاونية دار الزليج للصناعة التقليدية")
-                    : null,
-            status: "ACTIVE",
-          });
-          toast({
-            title: t("دخول في وضع العرض التجريبي"),
-            description: t("الباك إند غير متاح حالياً — البيانات للعرض فقط"),
-          });
-        } else {
-          toast({
-            variant: "destructive",
-            title: t("لا يمكن الوصول إلى الخادم"),
-            description: t("في وضع العرض: اختر حساباً من القائمة وكلمة المرور cmdp2026"),
-          });
-        }
+        // الباك إند غير متاح: بيانات الدخول الحقيقية لا تُقبل محلياً —
+        // يُعرض زر استكشاف العرض بدل أي حسابات تجريبية معروضة
+        setDemoAvailable(true);
+        toast({
+          variant: "destructive",
+          title: t("لا يمكن الوصول إلى الخادم"),
+          description: t("تحقق من تشغيل الباك إند أو اضبط عنوانه من الإعدادات"),
+        });
       } else {
         toast({ variant: "destructive", title: t("فشل تسجيل الدخول"), description: tError(err) });
       }
@@ -147,7 +109,7 @@ export function LoginView() {
                 id="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="admin"
+                placeholder={t("اسم المستخدم الخاص بك")}
                 autoComplete="username"
                 className="h-11 bg-background"
                 required
@@ -191,36 +153,23 @@ export function LoginView() {
               {t("حساب جديد أو انخراط في تعاونية")}
             </Button>
 
-            {/* حسابات العرض حسب الأدوار */}
-            <div className="rounded-xl border border-saffron/30 bg-saffron/10 p-3">
-              <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold text-saffron-ink">
-                <Users2 className="size-3.5" />
-                {t("حسابات العرض حسب الأدوار (كلمة المرور: cmdp2026)")}
-              </p>
-              <div className="grid grid-cols-2 gap-1.5">
-                {DEMO_ACCOUNTS.map((a) => (
-                  <button
-                    key={a.username}
-                    type="button"
-                    onClick={() => {
-                      setUsername(a.username);
-                      setPassword("cmdp2026");
-                    }}
-                    className={cn(
-                      "rounded-lg border px-2 py-1.5 text-[10px] font-bold transition-colors",
-                      username === a.username
-                        ? "border-saffron/60 bg-saffron/25 text-saffron-ink"
-                        : "border-saffron/25 bg-card text-saffron-ink hover:bg-saffron/20"
-                    )}
-                  >
-                    {t(a.label)}
-                  </button>
-                ))}
+            {/* استكشاف العرض — يظهر فقط عند تعذر الباك إند (بلا حسابات ولا كلمات مرور معروضة) */}
+            {demoAvailable && (
+              <div className="rounded-xl border border-saffron/30 bg-saffron/10 p-3">
+                <p className="mb-2 text-[11px] leading-5 text-saffron-ink">
+                  {t("الباك إند غير متصل حالياً — يمكنك استكشاف واجهة المنصة ببيانات عرض تجريبية")}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 w-full gap-2 border-saffron/40 bg-card text-xs font-bold text-saffron-ink hover:bg-saffron/20"
+                  onClick={enterDemoMode}
+                >
+                  <FlaskConical className="size-4" />
+                  {t("استكشاف المنصة في وضع العرض")}
+                </Button>
               </div>
-              <p className="mt-2 text-[10px] leading-4 text-saffron-ink/80">
-                {t("تعمل المنصة محلياً بقاعدة SQLite، أو في وضع عرض ساكن دون باك إند.")}
-              </p>
-            </div>
+            )}
           </form>
         </div>
 

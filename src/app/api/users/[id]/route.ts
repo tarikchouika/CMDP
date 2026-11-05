@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson } from "@/lib/api-server";
 import { denied, requirePermission } from "@/lib/auth";
 import { hashPassword } from "@/lib/seed-run";
-import { assignableRoles } from "@/lib/permissions";
+import { assignableRoles, canManageUser, manageDenialReason } from "@/lib/permissions";
 import type { AccountType, Role } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -36,6 +36,14 @@ async function targetGuard(
   // الكوأدمن: داخل تعاونيته فقط
   if (actor.role === "COADMIN" && target.cooperativeId !== actor.cooperativeId) {
     return { response: denied("هذا الحساب خارج نطاق تعاونيتك") };
+  }
+  // تراتبية الحماية (إصلاح 1.3.0): لا يمكن للمسير إيقاف/تعديل حساب الرئيس
+  // أو نظرائه المسيرين أو أي حساب أعلى منه — قاعدة صارمة على الخادم
+  if (actor.id === target.id) {
+    return { response: denied("لا يمكن تنفيذ إجراء على حسابك الشخصي") };
+  }
+  if (!canManageUser(actor, target)) {
+    return { response: denied(manageDenialReason(actor, target) || "تراتبية الصلاحيات تمنع إدارة هذا الحساب") };
   }
   return { target };
 }
@@ -69,7 +77,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const accountType = (b.accountType ?? target.accountType) as AccountType | null;
   if (b.role !== undefined || b.accountType !== undefined) {
     if (target.role === "SUPER_ADMIN") return denied("لا يمكن تغيير دور مالك المنصة");
-    const allowed = assignableRoles(actor.role).some(
+    const allowed = assignableRoles(actor.role, actor.accountType).some(
       (r) => r.role === role && r.accountType === accountType
     );
     if (!allowed) return denied("لا يمكنك تعيين هذا الدور — تحقق من نطاق صلاحياتك");
@@ -130,6 +138,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   if ("response" in auth) return auth.response;
   const { user: actor } = auth;
   if (actor.role === "COADMIN") return denied("الحذف النهائي من اختصاص إدارة المنصة — استعمل الإيقاف");
+  if (actor.id === target.id) return denied("لا يمكنك حذف حسابك الشخصي");
   if (target.role === "SUPER_ADMIN") return denied("لا يمكن حذف حساب المالك");
 
   await db.user.delete({ where: { id: Number(id) } });

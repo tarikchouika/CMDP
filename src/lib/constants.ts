@@ -268,3 +268,25 @@ export const SECTOR_STATS = {
   handicraft: 12744,
   source: "المصدر: مكتب تنمية التعاون (ODCO) — حصيلة سنة 2025",
 };
+
+export const ORDER_STATUS: Record<string, Labeled> = {
+  NEW: { label: "طلب جديد", className: "bg-saffron/15 text-saffron-ink border-saffron/30" },
+  CONTACTED: { label: "تم التواصل", className: "bg-terra/10 text-terra border-terra/25" },
+  DONE: { label: "مكتمل", className: "bg-zellij/10 text-zellij border-zellij/25" },
+  CANCELLED: { label: "ملغى", className: "bg-destructive/10 text-destructive border-destructive/25" },
+};
+
+export const PRODUCT_STATUS: Record<string, Labeled> = {
+  ACTIVE: { label: "معروض", className: "bg-zellij/10 text-zellij border-zellij/25" },
+  HIDDEN: { label: "مخفي", className: "bg-muted text-muted-foreground border-border" },
+};
+
+// فئات المتجر — قيم نصية حرة متوافقة مع المتجر العمومي وفلترته
+export const PRODUCT_CATEGORIES: string[] = [
+  "منتجات غذائية",
+  "صناعة تقليدية",
+  "نسيج وملابس",
+  "تجميل وعناية",
+  "خدمات",
+  "أخرى",
+];

@@ -242,3 +242,50 @@ export interface DashboardData {
   assembliesRecent: Assembly[];
   womenCount: number;
 }
+
+// ─── المتجر: المنتجات والطلبات والإحصائيات (الإصدار 1.3.0) ─────────────────
+export interface Product {
+  id: number;
+  cooperativeId: number;
+  name: string;
+  description: string | null;
+  category: string;
+  unit: string | null;
+  price: number;
+  imageUrl: string | null;
+  inStock: boolean;
+  featured: boolean;
+  status: string; // ACTIVE | HIDDEN
+  createdAt: string;
+  cooperative?: Pick<Cooperative, "id" | "name" | "region" | "sector">;
+  _count?: { orders: number };
+}
+
+export interface Order {
+  id: number;
+  productId: number;
+  quantity: number;
+  customerName: string;
+  phone: string;
+  city: string | null;
+  note: string | null;
+  status: string; // NEW | CONTACTED | DONE | CANCELLED
+  createdAt: string;
+  product?: { id: number; name: string; cooperativeId: number; price: number; unit: string | null };
+}
+
+export interface StoreStats {
+  scope: { cooperativeId: number | null; days: number };
+  totals: {
+    totalOrders: number;
+    byStatus: Record<string, number>;
+    doneRevenue: number;
+    pipelineValue: number;
+    avgOrderValue: number;
+    completionRate: number;
+  };
+  weeklySeries: { week: string; orders: number; done: number; revenue: number }[];
+  topProducts: { id: number; name: string; quantity: number; orders: number; revenue: number }[];
+  catalog: { total: number; active: number; hidden: number; outOfStock: number; featured: number };
+  generatedAt: string;
+}

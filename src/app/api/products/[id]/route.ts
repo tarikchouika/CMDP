@@ -9,7 +9,7 @@ export function OPTIONS() {
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requirePermission(req, "post:opportunities");
+  const auth = await requirePermission(req, "manage:store");
   if ("response" in auth) return auth.response;
   const { id } = await params;
   const existing = await db.product.findUnique({ where: { id: Number(id) } });
@@ -22,7 +22,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   for (const k of ["name", "description", "category", "unit", "imageUrl"]) {
     if (k in b) data[k] = b[k] === null ? null : String(b[k]);
   }
-  if (b.price !== undefined) data.price = Number(b.price);
+  if (b.price !== undefined) {
+    const price = Number(b.price);
+    if (!Number.isFinite(price) || price < 0) return fail("السعر غير صالح");
+    data.price = price;
+  }
   if (b.inStock !== undefined) data.inStock = Boolean(b.inStock);
   if (b.featured !== undefined) data.featured = Boolean(b.featured);
   if (b.status !== undefined) data.status = String(b.status);
@@ -31,7 +35,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requirePermission(req, "post:opportunities");
+  const auth = await requirePermission(req, "manage:store");
   if ("response" in auth) return auth.response;
   const { id } = await params;
   const existing = await db.product.findUnique({ where: { id: Number(id) } });

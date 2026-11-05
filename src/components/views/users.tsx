@@ -20,7 +20,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { ACCOUNT_TYPE_LABELS, APPROVAL_STATUS, ROLE_LABELS, USER_STATUS } from "@/lib/constants";
-import { assignableRoles } from "@/lib/permissions";
+import { assignableRoles, canManageUser, manageDenialReason } from "@/lib/permissions";
 import { useUIStore } from "@/store/ui";
 import {
   useCooperatives,
@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { t, tError } from "@/lib/i18n";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 // ─── بطاقة طلب انخراط ──────────────────────────────────────────────────────
 function JoinRequestCard({ req, onDecide }: { req: JoinRequest; onDecide: (action: "APPROVED" | "REJECTED") => void }) {
@@ -147,7 +148,7 @@ function UserDialog({
     }
   }, [open, editing, user?.cooperativeId]);
 
-  const roles = assignableRoles(user?.role);
+  const roles = assignableRoles(user?.role, user?.accountType);
   // كوأدمن: إنشاء/تعيين داخل تعاونيته فقط
   const availableCoops =
     user?.role === "COADMIN"
@@ -606,34 +607,50 @@ export function UsersView() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex gap-1.5">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 gap-1 px-2 text-xs"
-                              onClick={() => { setEditing(u); setDialogOpen(true); }}
-                            >
-                              <KeyRound className="size-3.5" /> {t("تعديل")}
-                            </Button>
-                            {u.status === "ACTIVE" ? (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-8 gap-1 px-2 text-xs text-saffron hover:text-saffron"
-                                onClick={() => setUserStatus(u, "SUSPENDED")}
-                              >
-                                <Ban className="size-3.5" /> {t("إيقاف")}
-                              </Button>
-                            ) : (
-                              u.status !== "REJECTED" && (
+                            {canManageUser(user, u) ? (
+                              <>
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="h-8 gap-1 px-2 text-xs text-zellij hover:text-zellij"
-                                  onClick={() => setUserStatus(u, "ACTIVE")}
+                                  className="h-8 gap-1 px-2 text-xs"
+                                  onClick={() => { setEditing(u); setDialogOpen(true); }}
                                 >
-                                  <BadgeCheck className="size-3.5" /> {t("تفعيل")}
+                                  <KeyRound className="size-3.5" /> {t("تعديل")}
                                 </Button>
-                              )
+                                {u.status === "ACTIVE" ? (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-8 gap-1 px-2 text-xs text-saffron hover:text-saffron"
+                                    onClick={() => setUserStatus(u, "SUSPENDED")}
+                                  >
+                                    <Ban className="size-3.5" /> {t("إيقاف")}
+                                  </Button>
+                                ) : (
+                                  u.status !== "REJECTED" && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-8 gap-1 px-2 text-xs text-zellij hover:text-zellij"
+                                      onClick={() => setUserStatus(u, "ACTIVE")}
+                                    >
+                                      <BadgeCheck className="size-3.5" /> {t("تفعيل")}
+                                    </Button>
+                                  )
+                                )}
+                              </>
+                            ) : (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted/50 px-2 py-1 text-[10px] font-bold text-muted-foreground">
+                                    <ShieldCheck className="size-3.5 text-zellij" />
+                                    {t("حساب محمي")}
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-56 text-center">
+                                  {t(manageDenialReason(user, u))}
+                                </TooltipContent>
+                              </Tooltip>
                             )}
                           </div>
                         </td>
@@ -658,19 +675,31 @@ export function UsersView() {
                       )}
                     </div>
                     <div className="flex shrink-0 flex-col gap-1.5">
-                      <Button size="sm" variant="outline" className="h-8 gap-1 px-2 text-xs" onClick={() => { setEditing(u); setDialogOpen(true); }}>
-                        <KeyRound className="size-3.5" /> {t("تعديل")}
-                      </Button>
-                      {u.status === "ACTIVE" ? (
-                        <Button size="sm" variant="outline" className="h-8 gap-1 px-2 text-xs text-saffron" onClick={() => setUserStatus(u, "SUSPENDED")}>
-                          <Ban className="size-3.5" /> {t("إيقاف")}
-                        </Button>
-                      ) : (
-                        u.status !== "REJECTED" && (
-                          <Button size="sm" variant="outline" className="h-8 gap-1 px-2 text-xs text-zellij" onClick={() => setUserStatus(u, "ACTIVE")}>
-                            <BadgeCheck className="size-3.5" /> {t("تفعيل")}
+                      {canManageUser(user, u) ? (
+                        <>
+                          <Button size="sm" variant="outline" className="h-8 gap-1 px-2 text-xs" onClick={() => { setEditing(u); setDialogOpen(true); }}>
+                            <KeyRound className="size-3.5" /> {t("تعديل")}
                           </Button>
-                        )
+                          {u.status === "ACTIVE" ? (
+                            <Button size="sm" variant="outline" className="h-8 gap-1 px-2 text-xs text-saffron" onClick={() => setUserStatus(u, "SUSPENDED")}>
+                              <Ban className="size-3.5" /> {t("إيقاف")}
+                            </Button>
+                          ) : (
+                            u.status !== "REJECTED" && (
+                              <Button size="sm" variant="outline" className="h-8 gap-1 px-2 text-xs text-zellij" onClick={() => setUserStatus(u, "ACTIVE")}>
+                                <BadgeCheck className="size-3.5" /> {t("تفعيل")}
+                              </Button>
+                            )
+                          )}
+                        </>
+                      ) : (
+                        <span
+                          className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted/50 px-2 py-1 text-[10px] font-bold text-muted-foreground"
+                          title={t(manageDenialReason(user, u))}
+                        >
+                          <ShieldCheck className="size-3.5 text-zellij" />
+                          {t("حساب محمي")}
+                        </span>
                       )}
                     </div>
                   </div>
