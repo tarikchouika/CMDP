@@ -7,6 +7,7 @@ import { fail, ok, preflight, readJson } from "@/lib/api-server";
 import { denied, requirePermission } from "@/lib/auth";
 import { hashPassword } from "@/lib/seed-run";
 import { assignableRoles, canManageUser, manageDenialReason } from "@/lib/permissions";
+import { sanitizeFiles, sanitizePhoto } from "@/lib/attachments";
 import type { AccountType, Role } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -97,6 +98,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     if (b[k] !== undefined) data[k] = b[k] == null || b[k] === "" ? null : String(b[k]);
   }
 
+  // ── مرفقات الهوية (صورة المستخدم / وثائق الهوية) — تحديث اختياري ────────
+  if (b.photo !== undefined) data.photo = sanitizePhoto(b.photo);
+  if (b.idDocuments !== undefined)
+    data.idDocuments = JSON.stringify(sanitizeFiles(b.idDocuments));
+
   // ─── تصفير كلمة المرور ───────────────────────────────────────────────────
   if (b.password) {
     const pwd = String(b.password);
@@ -116,6 +122,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       phone: true,
       email: true,
       cin: true,
+      photo: true,
+      idDocuments: true,
       role: true,
       accountType: true,
       cooperativeId: true,

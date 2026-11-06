@@ -9,6 +9,7 @@ import {
   BadgeCheck,
   Building2,
   CalendarDays,
+  FileText,
   Hash,
   Landmark,
   Mail,
@@ -56,8 +57,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { t, tError } from "@/lib/i18n";
+import { FileUploadField, type StoredFile } from "@/components/file-upload";
+import { parseFiles, parsePhoto } from "@/lib/attachments";
 
-type CoopForm = Omit<Cooperative, "id" | "createdAt"> & { id?: number | null };
+// اللوغو/الوثائق تُرسَل كائنات مرفقات خام (لا JSON النصي المعروض) — انظر CoopInput في use-cmdp
+type CoopForm = Omit<Cooperative, "id" | "createdAt" | "logo" | "legalDocuments"> & {
+  id?: number | null;
+  logo?: StoredFile | null;
+  legalDocuments?: StoredFile[];
+};
 
 const emptyForm = (): CoopForm => ({
   id: null,
@@ -106,6 +114,10 @@ export function CooperativesView() {
   const [statusFilter, setStatusFilter] = React.useState("ALL");
   const [formOpen, setFormOpen] = React.useState(false);
   const [form, setForm] = React.useState<CoopForm>(emptyForm());
+  // ── مرفقات التعاونية: اللوغو (صورة مفردة) + الوثائق القانونية ──
+  const [logoFiles, setLogoFiles] = React.useState<StoredFile[]>([]);
+  const [docFiles, setDocFiles] = React.useState<StoredFile[]>([]);
+  const initialAttachments = React.useRef({ logo: "null", docs: "[]" });
   const [detail, setDetail] = React.useState<Cooperative | null>(null);
   const [toDelete, setToDelete] = React.useState<Cooperative | null>(null);
 
@@ -128,16 +140,39 @@ export function CooperativesView() {
 
   function openCreate() {
     setForm(emptyForm());
+    setLogoFiles([]);
+    setDocFiles([]);
+    initialAttachments.current = { logo: "null", docs: "[]" };
     setFormOpen(true);
   }
   function openEdit(c: Cooperative) {
-    setForm({ ...c });
+    // اللوغو/الوثائق (JSON نصي في نوع العرض) تُفكّ إلى مرفقات للتحرير
+    const existingLogo = parsePhoto(c.logo);
+    const existingDocs = parseFiles(c.legalDocuments);
+    const { logo: _l, legalDocuments: _d, ...rest } = c;
+    setForm({ ...rest });
+    setLogoFiles(existingLogo ? [existingLogo] : []);
+    setDocFiles(existingDocs);
+    initialAttachments.current = {
+      logo: JSON.stringify(existingLogo),
+      docs: JSON.stringify(existingDocs),
+    };
     setFormOpen(true);
   }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    saveCoop.mutate(form, {
+    // اللوغو/الوثائق: تُرسَل فقط عند الإضافة أو عند التغيير (تجنّب إعادة إرسال ميغابايتات base64)
+    const logoJson = JSON.stringify(logoFiles[0] ?? null);
+    const docsJson = JSON.stringify(docFiles);
+    const payload: CoopForm = { ...form };
+    if (!form.id || logoJson !== initialAttachments.current.logo) {
+      payload.logo = logoFiles[0] ?? null;
+    }
+    if (!form.id || docsJson !== initialAttachments.current.docs) {
+      payload.legalDocuments = docFiles;
+    }
+    saveCoop.mutate(payload, {
       onSuccess: () => {
         toast({ title: form.id ? t("تم تحديث التعاونية") : t("تمت إضافة التعاونية") });
         setFormOpen(false);
@@ -199,9 +234,16 @@ export function CooperativesView() {
                 <div className="pattern-zellige absolute inset-0 opacity-50" aria-hidden="true" />
                 <CardContent className="relative flex h-full flex-col p-5">
                   <div className="flex items-start justify-between gap-2">
-                    <span className={`arch-top grid h-14 w-10 shrink-0 place-items-center font-display text-lg font-black ${isActive ? "bg-terra text-cream" : "bg-terra/10 text-terra"}`}>
-                      {c.name.replace("تعاونية ", "")[0] ?? t("ت")}
-                    </span>
+                    {parsePhoto(c.logo) ? (<img
+                        src={parsePhoto(c.logo)?.dataUrl}
+                        alt={c.name}
+                        className="arch-top h-14 w-12 shrink-0 bg-cream object-cover"
+                      />
+                    ) : (
+                      <span className={`arch-top grid h-14 w-10 shrink-0 place-items-center font-display text-lg font-black ${isActive ? "bg-terra text-cream" : "bg-terra/10 text-terra"}`}>
+                        {c.name.replace("تعاونية ", "")[0] ?? t("ت")}
+                      </span>
+                    )}
                     <div className="flex flex-col items-end gap-1.5">
                       <LBadge map={COOP_STATUS} value={c.status} />
                       {isActive && (
@@ -254,13 +296,20 @@ export function CooperativesView() {
 
       {/* بطاقة التفاصيل */}
       <Dialog open={!!detail} onOpenChange={(v) => !v && setDetail(null)}>
-        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto scrollbar-thin">
+        <DialogContent className="max-w-lg scrollbar-thin">
           {detail && (
             <>
               <DialogHeader>
-                <div className="arch-top mx-auto -mt-2 grid h-24 w-20 place-items-center bg-ink font-display text-3xl font-black text-terra-soft">
-                  {detail.name.replace("تعاونية ", "")[0] ?? t("ت")}
-                </div>
+                {parsePhoto(detail.logo) ? (<img
+                    src={parsePhoto(detail.logo)?.dataUrl}
+                    alt={detail.name}
+                    className="arch-top mx-auto -mt-2 h-24 w-20 bg-cream object-cover"
+                  />
+                ) : (
+                  <div className="arch-top mx-auto -mt-2 grid h-24 w-20 place-items-center bg-ink font-display text-3xl font-black text-terra-soft">
+                    {detail.name.replace("تعاونية ", "")[0] ?? t("ت")}
+                  </div>
+                )}
                 <DialogTitle className="text-center font-display text-base font-extrabold">{detail.name}</DialogTitle>
                 <DialogDescription className="flex items-center justify-center gap-2 text-center">
                   <LBadge map={COOP_STATUS} value={detail.status} />
@@ -278,6 +327,11 @@ export function CooperativesView() {
                 <InfoRow icon={Mail} label={t("البريد الإلكتروني")} value={detail.email} />
                 <InfoRow icon={Landmark} label={t("العنوان")} value={detail.address} />
                 <InfoRow icon={Building2} label={t("عدد الأعضاء")} value={formatNumber(memberCounts.get(detail.id) ?? 0)} />
+                <InfoRow
+                  icon={FileText}
+                  label={t("الوثائق القانونية")}
+                  value={`${formatNumber(parseFiles(detail.legalDocuments).length)} ${t("ملفاً")}`}
+                />
               </div>
               {detail.notes && (
                 <p className="rounded-xl border border-saffron/30 bg-saffron/10 p-3 text-xs leading-6 text-saffron-ink">{detail.notes}</p>
@@ -297,7 +351,7 @@ export function CooperativesView() {
 
       {/* نموذج الإضافة/التحرير */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto scrollbar-thin">
+        <DialogContent className="max-w-2xl scrollbar-thin">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-display">
               <ZelligeStar className="size-4 text-saffron" />
@@ -376,6 +430,27 @@ export function CooperativesView() {
             <div className="space-y-1.5 sm:col-span-2">
               <Label className="text-xs">{t("ملاحظات")}</Label>
               <Textarea value={form.notes ?? ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="min-h-16 bg-background" />
+            </div>
+            {/* ─── هوية التعاونية (اختيارية): اللوغو + الوثائق القانونية ─── */}
+            <div className="space-y-4 sm:col-span-2">
+              <FileUploadField
+                id="coop-logo"
+                label={t("لوغو التعاونية")}
+                hint={t("شعار رسمي واضح (يفضّل مربعاً) — يُعرض في بطاقة التعاونية وتفاصيلها")}
+                accept="image/*"
+                multiple={false}
+                files={logoFiles}
+                onChange={setLogoFiles}
+                compact
+              />
+              <FileUploadField
+                id="coop-docs"
+                label={t("وثائق التعاونية القانونية")}
+                hint={t("القانون الأساسي، محضر الجمع العام التأسيسي، شهادة التسجيل بالسجل المحلي، بطاقة ODCO... — PDF أو صور")}
+                files={docFiles}
+                onChange={setDocFiles}
+                compact
+              />
             </div>
             <DialogFooter className="sm:col-span-2">
               <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>{t("إلغاء")}</Button>

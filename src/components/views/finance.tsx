@@ -361,7 +361,7 @@ export function FinanceView() {
 
       {/* تقرير قابل للطباعة */}
       <Dialog open={!!report} onOpenChange={(v) => !v && setReport(null)}>
-        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto bg-white text-black scrollbar-thin">
+        <DialogContent className="max-w-2xl bg-white text-black scrollbar-thin">
           <div className="print-area p-2" dir="rtl">
             <div className="mb-4 flex items-center justify-between border-b-2 border-[#9c4526] pb-3">
               <div>
@@ -469,7 +469,7 @@ export function FinanceView() {
 
       {/* نموذج الحركة */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto scrollbar-thin">
+        <DialogContent className="max-w-lg scrollbar-thin">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-display">
               <ZelligeStar className="size-4 text-saffron" />

@@ -7,6 +7,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { requirePermission } from "@/lib/auth";
+import { sanitizeFiles, sanitizePhoto } from "@/lib/attachments";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +49,9 @@ export async function POST(req: Request) {
         status: String(b.status ?? "ACTIVE"),
         approvalStatus: "APPROVED", // الإنشاء من الإدارة = مسجلة
         notes: b.notes ? String(b.notes) : null,
+        // لوغو التعاونية + الوثائق القانونية — نفس تعقيم التسجيل العمومي
+        logo: sanitizePhoto(b.logo),
+        legalDocuments: JSON.stringify(sanitizeFiles(b.legalDocuments, 12)) || null,
       },
     });
     return ok(row, 201);

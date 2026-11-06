@@ -158,7 +158,7 @@ function DetailsDialog({ o, open, onOpenChange }: { o: Opportunity | null; open:
   const dl = daysLeft(o.deadline);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <span className="arch-top grid h-14 w-11 shrink-0 place-items-center bg-gradient-to-b from-terra/15 to-terra/5 text-terra">
@@ -267,7 +267,7 @@ function ApplyDialog({ o, open, onOpenChange }: { o: Opportunity | null; open: b
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-start">{t("الترشح: {title}", { title: o?.title ?? "" })}</DialogTitle>
           <DialogDescription>
@@ -417,7 +417,7 @@ function OpportunityDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{editing ? t("تعديل الفرصة") : t("نشر فرصة جديدة")}</DialogTitle>
           <DialogDescription>

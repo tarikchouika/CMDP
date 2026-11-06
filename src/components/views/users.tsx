@@ -55,8 +55,32 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { t, tError } from "@/lib/i18n";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { FileUploadField, type StoredFile } from "@/components/file-upload";
+import { parseFiles, parsePhoto } from "@/lib/attachments";
 
 // ─── بطاقة طلب انخراط ──────────────────────────────────────────────────────
+/** صورة المستخدم إن وُجدت، وإلا فالأحرف الأولى من الاسم */
+function UserAvatar({ u, className = "size-9 text-sm" }: { u: AppUser; className?: string }) {
+  const photo = parsePhoto(u.photo);
+  if (photo) {
+     
+    return (<img
+        src={photo.dataUrl}
+        alt={u.fullName}
+        className={`${className} shrink-0 rounded-full border border-terra/30 object-cover`}
+      />
+    );
+  }
+  return (
+    <span
+      className={`${className} grid shrink-0 place-items-center rounded-full bg-terra/10 font-display font-black text-terra`}
+      aria-hidden="true"
+    >
+      {u.fullName.trim().charAt(0) || "؟"}
+    </span>
+  );
+}
+
 function JoinRequestCard({ req, onDecide }: { req: JoinRequest; onDecide: (action: "APPROVED" | "REJECTED") => void }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-4">
@@ -117,6 +141,11 @@ function UserDialog({
     accountType: "MEMBER",
     cooperativeId: "",
   });
+  // ── مرفقات الهوية: صورة المستخدم + وثائق الهوية (اختيارية للإدارة) ──
+  const [photo, setPhoto] = React.useState<StoredFile[]>([]);
+  const [idDocs, setIdDocs] = React.useState<StoredFile[]>([]);
+  // تتبّع الحالة الابتدائية لتحميل المرفقات في الحِمل فقط عند التغيير (تجنّب إعادة إرسال ميغابايتات)
+  const initialAttachments = React.useRef({ photo: "null", docs: "[]" });
 
   React.useEffect(() => {
     if (open) {
@@ -132,6 +161,14 @@ function UserDialog({
           accountType: editing.accountType ?? "",
           cooperativeId: editing.cooperativeId ? String(editing.cooperativeId) : "",
         });
+        const existingPhoto = parsePhoto(editing.photo);
+        const existingDocs = parseFiles(editing.idDocuments);
+        setPhoto(existingPhoto ? [existingPhoto] : []);
+        setIdDocs(existingDocs);
+        initialAttachments.current = {
+          photo: JSON.stringify(existingPhoto),
+          docs: JSON.stringify(existingDocs),
+        };
       } else {
         setForm({
           username: "",
@@ -144,6 +181,9 @@ function UserDialog({
           accountType: "MEMBER",
           cooperativeId: user?.cooperativeId ? String(user.cooperativeId) : "",
         });
+        setPhoto([]);
+        setIdDocs([]);
+        initialAttachments.current = { photo: "null", docs: "[]" };
       }
     }
   }, [open, editing, user?.cooperativeId]);
@@ -173,6 +213,15 @@ function UserDialog({
     } else if (form.password) {
       payload.password = form.password;
     }
+    // المرفقات: تُرسل فقط عند إنشاء حساب أو عند تغييرها في التحرير (وإلا تُترك كما هي)
+    const photoJson = JSON.stringify(photo[0] ?? null);
+    const docsJson = JSON.stringify(idDocs);
+    if (!editing || photoJson !== initialAttachments.current.photo) {
+      payload.photo = photo[0] ?? null;
+    }
+    if (!editing || docsJson !== initialAttachments.current.docs) {
+      payload.idDocuments = idDocs;
+    }
     try {
       await save.mutateAsync(payload);
       toast({
@@ -187,7 +236,7 @@ function UserDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{editing ? t("تعديل حساب: {name}", { name: editing.fullName }) : t("إنشاء حساب جديد")}</DialogTitle>
           <DialogDescription>
@@ -293,6 +342,27 @@ function UserDialog({
               />
             </div>
           </div>
+          {/* ─── مرفقات الهوية (اختيارية): صورة المستخدم + وثائق إثبات الهوية ─── */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FileUploadField
+              id="user-photo"
+              label={t("صورة المستخدم")}
+              hint={t("صورة حديثة واضحة للوجه — تُستعمل للتحقق من الهوية")}
+              accept="image/*"
+              multiple={false}
+              files={photo}
+              onChange={setPhoto}
+              compact
+            />
+            <FileUploadField
+              id="user-id-docs"
+              label={t("وثائق الهوية")}
+              hint={t("البطاقة الوطنية أو جواز السفر أو رخصة السياقة — نسخة واضحة (صورة أو PDF)")}
+              files={idDocs}
+              onChange={setIdDocs}
+              compact
+            />
+          </div>
           {editing && (
             <div className="space-y-1.5">
               <Label className="text-xs font-bold">{t("تصفير كلمة المرور (اختياري)")}</Label>
@@ -391,8 +461,10 @@ export function UsersView() {
   async function decideCoop(id: number, approvalStatus: "APPROVED" | "REJECTED") {
     const coop = (coops ?? []).find((c) => c.id === id);
     if (!coop) return;
+    // المصادقة فقط: يُسقط اللوغو/الوثائق (JSON حسب نوع العرض) كي لا تُعاد كتابة ملايين المحارف بلا حاجة
+    const { logo: _logo, legalDocuments: _docs, ...rest } = coop;
     try {
-      await saveCoop.mutateAsync({ ...coop, approvalStatus });
+      await saveCoop.mutateAsync({ ...rest, approvalStatus });
       toast({
         title: approvalStatus === "APPROVED" ? t("تمت المصادقة على تسجيل التعاونية") : "تم رفض التسجيل",
         description:
@@ -590,8 +662,13 @@ export function UsersView() {
                     {filtered.map((u) => (
                       <tr key={u.id} className="border-b border-border/60 last:border-0 hover:bg-muted/30">
                         <td className="px-4 py-3">
-                          <p className="font-bold text-foreground">{u.fullName}</p>
-                          <p className="text-[11px] text-muted-foreground" dir="ltr">@{u.username}</p>
+                          <div className="flex items-center gap-3">
+                            <UserAvatar u={u} />
+                            <div className="min-w-0">
+                              <p className="font-bold text-foreground">{u.fullName}</p>
+                              <p className="text-[11px] text-muted-foreground" dir="ltr">@{u.username}</p>
+                            </div>
+                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <div className="space-y-1">
@@ -663,16 +740,19 @@ export function UsersView() {
               <div className="divide-y divide-border lg:hidden">
                 {filtered.map((u) => (
                   <div key={u.id} className="flex items-start justify-between gap-3 p-4">
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-foreground">{u.fullName}</p>
-                      <p className="text-[11px] text-muted-foreground" dir="ltr">@{u.username}</p>
-                      <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                        <LBadge map={ROLE_LABELS} value={u.role} />
-                        <LBadge map={USER_STATUS} value={u.status} />
+                    <div className="flex min-w-0 items-start gap-3">
+                      <UserAvatar u={u} />
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-foreground">{u.fullName}</p>
+                        <p className="text-[11px] text-muted-foreground" dir="ltr">@{u.username}</p>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                          <LBadge map={ROLE_LABELS} value={u.role} />
+                          <LBadge map={USER_STATUS} value={u.status} />
+                        </div>
+                        {u.cooperativeName && (
+                          <p className="mt-1 text-[11px] text-muted-foreground">{u.cooperativeName}</p>
+                        )}
                       </div>
-                      {u.cooperativeName && (
-                        <p className="mt-1 text-[11px] text-muted-foreground">{u.cooperativeName}</p>
-                      )}
                     </div>
                     <div className="flex shrink-0 flex-col gap-1.5">
                       {canManageUser(user, u) ? (

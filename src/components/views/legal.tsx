@@ -223,7 +223,7 @@ export function LegalView() {
   const doc = LEGAL_DOCS.find((d) => d.id === active) ?? LEGAL_DOCS[0];
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-[calc(var(--cmdp-vh,1vh)*100)] flex-col bg-background">
       {/* ترويسة */}
       <header className="sticky top-0 z-40 border-b border-cream/10 bg-ink/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center gap-4 px-4 md:px-6">

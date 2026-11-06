@@ -8,6 +8,7 @@ import { fail, ok, preflight, readJson } from "@/lib/api-server";
 import { denied, requirePermission } from "@/lib/auth";
 import { hashPassword } from "@/lib/seed-run";
 import { assignableRoles } from "@/lib/permissions";
+import { sanitizeFiles, sanitizePhoto } from "@/lib/attachments";
 import type { AccountType, Role } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,8 @@ const PUBLIC_FIELDS = {
   phone: true,
   email: true,
   cin: true,
+  photo: true, // JSON مفرد: {name,type,size,dataUrl}
+  idDocuments: true, // JSON مصفوفة وثائق الهوية
   role: true,
   accountType: true,
   cooperativeId: true,
@@ -93,6 +96,9 @@ export async function POST(req: Request) {
       phone: b.phone ? String(b.phone) : null,
       email: b.email ? String(b.email) : null,
       cin: b.cin ? String(b.cin) : null,
+      // مرفقات الهوية (صورة المستخدم + وثيقة الهوية) — نفس تعقيم التسجيل العمومي
+      photo: sanitizePhoto(b.photo),
+      idDocuments: JSON.stringify(sanitizeFiles(b.idDocuments)),
       role,
       accountType: accountType ?? null,
       cooperativeId: role === "ADMIN" ? null : cooperativeId,

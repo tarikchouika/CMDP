@@ -24,6 +24,9 @@ export interface AppUser extends SessionUser {
   phone: string | null;
   email: string | null;
   cin: string | null;
+  // مرفقات الهوية (JSON base64): صورة مفردة + قائمة وثائق — للتحرير والعرض
+  photo: string | null;
+  idDocuments: string | null;
   createdAt: string;
 }
 
@@ -45,6 +48,8 @@ export interface Cooperative {
   approvalStatus: string; // PENDING | APPROVED | REJECTED — حالة التسجيل بالمنصة
   approvalNote: string | null;
   notes: string | null;
+  logo: string | null; // JSON: {name,type,size,dataUrl} — لوغو التعاونية
+  legalDocuments: string | null; // JSON: [{name,type,size,dataUrl}] — الوثائق القانونية
   createdAt: string;
 }
 

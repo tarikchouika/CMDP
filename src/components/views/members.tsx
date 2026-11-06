@@ -291,7 +291,7 @@ export function MembersView() {
 
       {/* نموذج العضو */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto scrollbar-thin">
+        <DialogContent className="max-w-lg scrollbar-thin">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-display">
               <ZelligeStar className="size-4 text-saffron" />

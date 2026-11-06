@@ -236,7 +236,7 @@ function SidebarFooter() {
 
 function AppSidebar() {
   return (
-    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-sidebar lg:flex">
+    <aside className="sticky top-0 hidden h-[calc(var(--cmdp-vh,1vh)*100)] w-64 shrink-0 flex-col bg-sidebar lg:flex">
       <div className="pattern-zellige-cream absolute inset-0 opacity-70" aria-hidden="true" />
       <div className="relative border-b border-sidebar-border p-4">
         <CmdpLogo light />
@@ -578,7 +578,7 @@ function AppShellInner() {
     // السوق متاح للعموم — بنفس الهيكل إن كان مسجلاً، وإلا فصفحة مستقلة
     if (authed) {
       return (
-        <div className="flex min-h-screen bg-background">
+        <div className="flex min-h-[calc(var(--cmdp-vh,1vh)*100)] bg-background">
           <CmdpWatermark />
           <AppSidebar />
           <div className="flex min-w-0 flex-1 flex-col">
@@ -609,7 +609,7 @@ function AppShellInner() {
       );
     }
     return (
-      <div className="flex min-h-screen flex-col bg-background">
+      <div className="flex min-h-[calc(var(--cmdp-vh,1vh)*100)] flex-col bg-background">
         <CmdpWatermark />
         <PublicTopBar />
         <main className="flex-1 px-4 pb-24 pt-5 md:px-6 lg:px-8">
@@ -638,7 +638,7 @@ function AppShellInner() {
     );
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-[calc(var(--cmdp-vh,1vh)*100)] bg-background">
       <CmdpWatermark />
       <AppSidebar />
       <div className="flex min-w-0 flex-1 flex-col">

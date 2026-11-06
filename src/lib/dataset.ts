@@ -28,7 +28,7 @@ const at = (y: number, m: number, d = 1) =>
   new Date(Date.UTC(y, m - 1, d, 12)).toISOString();
 
 // ─────────────────────────── التعاونيات (9) ───────────────────────────────
-const cooperativesBase: Omit<Cooperative, "approvalStatus" | "approvalNote">[] = [
+const cooperativesBase: Omit<Cooperative, "approvalStatus" | "approvalNote" | "logo" | "legalDocuments">[] = [
   {
     id: 1,
     name: "تعاونية تافوكت لإنتاج زيت أركان",
@@ -196,12 +196,16 @@ const cooperativesBase: Omit<Cooperative, "approvalStatus" | "approvalNote">[] =
 /** حالة المصادقة: كلها مسجلة باستثناء طلب واحد قيد الدراسة (للعرض التفاعلي) */
 export const cooperatives: Cooperative[] = cooperativesBase.map((c) => ({
   ...c,
+  logo: null,
+  legalDocuments: null,
   approvalStatus: "APPROVED",
   approvalNote: null,
 }));
 // طلب تسجيل تعاونية جديدة بانتظار مصادقة الأدمن
 cooperatives.push({
   id: 10,
+  logo: null,
+  legalDocuments: null,
   name: "تعاونية أمل الأطلس للصناعة التقليدية",
   registrationNumber: "طلب-register10",
   odcCardNumber: null,
@@ -902,7 +906,7 @@ export const documents: DocumentItem[] = documentsBase.map((d) => ({
 
 // ─────────────────────────── مستخدمو العرض حسب الأدوار ─────────────────────
 // كلمة المرور الموحدة للعرض والبذر: cmdp2026
-export const users: AppUser[] = [
+const usersBase: Omit<AppUser, "photo" | "idDocuments">[] = [
   { id: 1, username: "superadmin", fullName: "طاريق الشويكة", role: "SUPER_ADMIN", accountType: null, cooperativeId: null, cooperativeName: null, status: "ACTIVE", phone: "06 00 00 00 01", email: "owner@cmdp.ma", cin: null, createdAt: at(2026, 1, 5) },
   { id: 2, username: "admin", fullName: "مدير المنصة", role: "ADMIN", accountType: null, cooperativeId: null, cooperativeName: null, status: "ACTIVE", phone: "06 00 00 00 02", email: "admin@cmdp.ma", cin: null, createdAt: at(2026, 1, 6) },
   { id: 3, username: "president", fullName: "فاطمة أيت الحاج", role: "COADMIN", accountType: "PRESIDENT", cooperativeId: 1, cooperativeName: "تعاونية تافوكت لإنتاج زيت أركان", status: "ACTIVE", phone: "06 61 23 45 67", email: "contact@tafoukt.ma", cin: "AB123456", createdAt: at(2016, 3, 12) },
@@ -913,6 +917,9 @@ export const users: AppUser[] = [
   { id: 8, username: "partner1", fullName: "مؤسسة النخيل للتسويق", role: "USER", accountType: "CONTRACTOR", cooperativeId: 4, cooperativeName: "تعاونية واحة النخيل لتحويل التمور", status: "PENDING", phone: "05 35 66 77 88", email: "contact@nakhil.ma", cin: null, createdAt: rel(-5) },
   { id: 9, username: "amelatlas", fullName: "رشيد أمزيل", role: "COADMIN", accountType: "PRESIDENT", cooperativeId: 10, cooperativeName: "تعاونية أمل الأطلس للصناعة التقليدية", status: "PENDING", phone: "06 78 11 22 33", email: "amelatlas@contact.ma", cin: "HI567890", createdAt: rel(-12) },
 ];
+
+// بيانات العرض بلا مرفقات هوية — تُستكمل بصور/وثائق حقيقية عند إضافتها من الواجهة
+export const users: AppUser[] = usersBase.map((u) => ({ ...u, photo: null, idDocuments: null }));
 
 // ─────────────────────────── طلبات الانخراط ────────────────────────────────
 export const joinRequests: JoinRequest[] = [

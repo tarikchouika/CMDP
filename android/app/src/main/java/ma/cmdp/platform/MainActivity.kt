@@ -87,13 +87,27 @@ class MainActivity : AppCompatActivity() {
         swipe = SwipeRefreshLayout(this).apply {
             setColorSchemeColors(Color.parseColor("#d9a03f"), Color.parseColor("#9c4526"))
             setOnRefreshListener { webView.reload() }
+            // خلفية داكنة مطابقة للويب — تظهر عند تقليص المساحة بلوحة المفاتيح
+            setBackgroundColor(Color.parseColor("#1a0e08"))
         }
         webView = WebView(this).apply {
             overScrollMode = View.OVER_SCROLL_NEVER
             isVerticalScrollBarEnabled = false
+            // تثبيت المقياس = 1: يمنع حساب منفذ العرض على أساس العرض العريض
+            // وكان يجمّد وحدات vh/vw على قيم صغيرة بعد تغيّر حجم العرض (خلل النوافذ)
+            setInitialScale(1)
         }
         swipe.addView(webView)
         setContentView(FrameLayout(this).apply { addView(swipe) })
+
+        // ─── لوحة المفاتيح: تقليص مساحة الويب فوقها ───
+        // الوضع الغامر (decorFitsSystemWindows=false) يمنع التصغير الآلي على API 30+،
+        // لذا نطبّق إينتس لوحة المفاتيح يدوياً — دون المساس بإخفاء شريطي النظام.
+        ViewCompat.setOnApplyWindowInsetsListener(swipe) { v, insets ->
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            v.setPadding(0, 0, 0, ime.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
 
         setupWebView()
         setupBackNavigation()
@@ -127,8 +141,9 @@ class MainActivity : AppCompatActivity() {
             javaScriptEnabled = true
             domStorageEnabled = true
             databaseEnabled = true
-            loadWithOverviewMode = true
-            useWideViewPort = true
+            // ملاحظة: لا useWideViewPort ولا loadWithOverviewMode — عائما العرض العريض
+            // القديمان يكسران حساب منفذ العرض للصفحات المتجاوبة (وحدات vh/vw والنوافذ
+            // الثابتة) داخل WebView؛ الصفحة تحمل meta viewport صحيحاً فلا حاجة لهما.
             builtInZoomControls = false
             displayZoomControls = false
             mediaPlaybackRequiresUserGesture = true

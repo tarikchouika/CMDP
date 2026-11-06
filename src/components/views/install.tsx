@@ -71,7 +71,7 @@ export function InstallView() {
   const setView = useUIStore((s) => s.setView);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-[calc(var(--cmdp-vh,1vh)*100)] flex-col bg-background">
       {/* الترويسة */}
       <header className="sticky top-0 z-40 border-b border-cream/10 bg-ink/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center gap-4 px-4 md:px-6">
@@ -99,7 +99,6 @@ export function InstallView() {
           <CardContent className="relative grid gap-8 p-8 md:grid-cols-[1fr_auto] md:items-center md:p-12">
             <div>
               <div className="flex items-center gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/chatbot-icon.webp" alt="CMDP" className="size-16 rounded-3xl shadow-lg" />
                 <div>
                   <h1 className="font-display text-2xl font-black text-cream md:text-3xl">
@@ -156,7 +155,6 @@ export function InstallView() {
 
             {/* رمز الاستجابة */}
             <div className="mx-auto flex flex-col items-center gap-2 rounded-3xl border border-cream/15 bg-cream/95 p-5 shadow-2xl">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/qr-apk-download.png" alt="QR — CMDP APK" className="size-40 rounded-2xl" />
               <p className="flex items-center gap-1.5 text-[11px] font-bold text-ink">
                 <QrCode className="size-3.5" />

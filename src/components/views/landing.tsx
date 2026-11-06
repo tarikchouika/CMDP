@@ -565,7 +565,7 @@ export function LandingView() {
   const authed = useUIStore((s) => s.authed);
   const setView = useUIStore((s) => s.setView);
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-[calc(var(--cmdp-vh,1vh)*100)] bg-background">
       <Header />
       <Hero />
       <StatsStrip />

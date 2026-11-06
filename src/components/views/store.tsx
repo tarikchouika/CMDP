@@ -106,7 +106,7 @@ export function StoreView() {
   const isDemo = demoMode || (products ?? []).some((p) => p.id < 0);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-[calc(var(--cmdp-vh,1vh)*100)] flex-col bg-background">
       {/* الترويسة */}
       <header className="sticky top-0 z-40 border-b border-cream/10 bg-ink/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 md:px-6">
@@ -194,7 +194,6 @@ export function StoreView() {
               >
                 <div className="relative aspect-square overflow-hidden bg-muted">
                   {p.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={p.imageUrl}
                       alt={p.name}
@@ -273,12 +272,11 @@ export function StoreView() {
 
       {/* حوار التفاصيل */}
       <Dialog open={!!selected} onOpenChange={(v) => !v && setSelected(null)}>
-        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto bg-card p-0">
+        <DialogContent className="max-w-3xl bg-card p-0">
           {selected && (
             <div className="grid gap-0 md:grid-cols-2">
               <div className="relative aspect-square bg-muted md:aspect-auto md:min-h-80">
                 {selected.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={selected.imageUrl} alt={selected.name} className="size-full object-cover md:rounded-s-2xl" />
                 ) : (
                   <div className="grid size-full place-items-center bg-gradient-to-br from-terra/15 to-saffron/10">

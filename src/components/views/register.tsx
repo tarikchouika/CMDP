@@ -184,7 +184,7 @@ export function RegisterView() {
   // ─── شاشة النجاح ─────────────────────────────────────────────────────────
   if (done) {
     return (
-      <div className="relative grid min-h-screen place-items-center overflow-hidden bg-ink px-4 py-10">
+      <div className="relative grid min-h-[calc(var(--cmdp-vh,1vh)*100)] place-items-center overflow-hidden bg-ink px-4 py-10">
         <div className="pattern-zellige-cream absolute inset-0 opacity-80" aria-hidden="true" />
         <div className="relative w-full max-w-md text-center">
           <div className="arch-top overflow-hidden rounded-b-3xl border border-saffron/25 bg-card p-8 shadow-2xl">
@@ -215,7 +215,7 @@ export function RegisterView() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-ink px-4 py-10">
+    <div className="relative min-h-[calc(var(--cmdp-vh,1vh)*100)] overflow-hidden bg-ink px-4 py-10">
       <div className="pattern-zellige-cream absolute inset-0 opacity-80" aria-hidden="true" />
       <div className="absolute -top-32 start-1/2 size-[560px] -translate-x-1/2 rounded-full bg-terra/25 blur-3xl" aria-hidden="true" />
 

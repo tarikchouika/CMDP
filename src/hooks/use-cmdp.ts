@@ -51,7 +51,12 @@ export function useCmdpQuery<T>(key: unknown[], path: string, demo: () => T) {
 }
 
 // ─── أنواع المدخلات ────────────────────────────────────────────────────────
-type CoopInput = Omit<Cooperative, "id" | "createdAt"> & { id?: number | null };
+// اللوغو والوثائق القانونية تُرسَل كائنات مرفقات خام (يعقّمها الخادم ويخزّنها JSON)
+type CoopInput = Omit<Cooperative, "id" | "createdAt" | "logo" | "legalDocuments"> & {
+  id?: number | null;
+  logo?: import("@/lib/attachments").Attachment | null;
+  legalDocuments?: import("@/lib/attachments").Attachment[];
+};
 type MemberInput = Omit<Member, "id" | "createdAt"> & { id?: number | null };
 type AssemblyInput = Omit<Assembly, "id" | "createdAt"> & { id?: number | null };
 type MeetingInput = Omit<Meeting, "id" | "createdAt"> & { id?: number | null };
@@ -304,6 +309,9 @@ export type UserInput = {
   accountType: string | null;
   cooperativeId: number | null;
   status?: string;
+  // مرفقات الهوية — تُرسل عند الإنشاء أو عند التغيير في التحرير فقط
+  photo?: import("@/lib/attachments").Attachment | null;
+  idDocuments?: import("@/lib/attachments").Attachment[];
 };
 
 export const useSaveUser = () =>

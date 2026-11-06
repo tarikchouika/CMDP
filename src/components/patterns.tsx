@@ -20,7 +20,6 @@ export function ZelligeStar({ className }: { className?: string }) {
 /** شعار المنصة الرسمي الجديد (الشعار الذهبي المزخرف) */
 export function CmdpMark({ className }: { className?: string }) {
   return (
-    // eslint-disable-next-line @next/next/no-img-element
     <img
       src="/logo-96.png"
       alt="CMDP"
@@ -37,7 +36,7 @@ export function CmdpWatermark({ className }: { className?: string }) {
       aria-hidden="true"
       className={cn(
         "pointer-events-none fixed inset-0 z-[1] select-none bg-center bg-no-repeat",
-        "bg-[length:min(88vw,620px)]",
+        "bg-[length:min(calc(var(--cmdp-vw,1vw)*88),620px)]",
         className
       )}
       style={{ backgroundImage: "url(/watermark.webp)" }}
@@ -48,7 +47,6 @@ export function CmdpWatermark({ className }: { className?: string }) {
 /** أيقونة المساعد الألي الرسمية */
 export function CmdpAssistantIcon({ className }: { className?: string }) {
   return (
-    // eslint-disable-next-line @next/next/no-img-element
     <img
       src="/chatbot-icon.webp"
       alt=""

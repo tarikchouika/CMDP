@@ -46,6 +46,7 @@ model Cooperative {
   products      Product[]
   // الوثائق القانونية المثبتة للوجود والنشاط (base64 JSON)
   legalDocuments  String? // JSON: [{name,type,size,dataUrl}]
+  logo            String? // JSON: {name,type,size,dataUrl} — لوغو التعاونية
 
   id                 Int               @id @default(autoincrement())
   name               String

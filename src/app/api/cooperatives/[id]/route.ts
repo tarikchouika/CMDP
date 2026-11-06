@@ -7,6 +7,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { denied, requirePermission } from "@/lib/auth";
+import { sanitizeFiles, sanitizePhoto } from "@/lib/attachments";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -47,6 +48,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     if (k in b) data[k] = b[k] === null ? null : String(b[k]);
   }
   if (b.foundingDate !== undefined) data.foundingDate = toDate(b.foundingDate);
+
+  // ── لوغو + وثائق قانونية (JSON مفرد/مصفوفة) — تحديث اختياري عند الإرسال فقط ─
+  if (b.logo !== undefined) data.logo = sanitizePhoto(b.logo);
+  if (b.legalDocuments !== undefined)
+    data.legalDocuments = JSON.stringify(sanitizeFiles(b.legalDocuments, 12)) || null;
 
   // ─── المصادقة على التسجيل: أدمن فأعلى ────────────────────────────────────
   if (b.approvalStatus !== undefined) {

@@ -181,7 +181,6 @@ export function FileUploadField({
               {f.type === "application/pdf" ? (
                 <FileText className="size-4 shrink-0 text-terra" />
               ) : (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img src={f.dataUrl} alt="" className="size-8 shrink-0 rounded-lg object-cover" />
               )}
               <div className="min-w-0 flex-1">

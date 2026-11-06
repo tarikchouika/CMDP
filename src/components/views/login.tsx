@@ -80,7 +80,7 @@ export function LoginView() {
   }
 
   return (
-    <div className="relative grid min-h-screen place-items-center overflow-hidden bg-ink px-4 py-10">
+    <div className="relative grid min-h-[calc(var(--cmdp-vh,1vh)*100)] place-items-center overflow-hidden bg-ink px-4 py-10">
       {/* خلفية زليجية */}
       <div className="pattern-zellige-cream absolute inset-0 opacity-80" aria-hidden="true" />
       <div

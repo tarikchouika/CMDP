@@ -185,7 +185,7 @@ export function ChatbotWidget({ page }: { page?: string }) {
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? t("إغلاق") : t("فتح المساعد الألي")}
         className={cn(
-          "fixed bottom-20 z-50 grid size-14 shrink-0 place-items-center overflow-hidden rounded-full border border-saffron/40 bg-ink shadow-2xl transition-all hover:scale-105 active:scale-95 lg:bottom-8",
+          "fixed bottom-20 z-40 grid size-14 shrink-0 place-items-center overflow-hidden rounded-full border border-saffron/40 bg-ink shadow-2xl transition-all hover:scale-105 active:scale-95 lg:bottom-8",
           "end-4"
         )}
       >
@@ -204,8 +204,13 @@ export function ChatbotWidget({ page }: { page?: string }) {
         <div
           role="dialog"
           aria-label={t("مساعد CMDP")}
-          className="fixed bottom-36 z-50 flex h-[min(64vh,540px)] w-[min(calc(100vw-2rem),380px)] flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl lg:bottom-24"
-          style={{ insetInlineEnd: "1rem" }}
+          className="fixed bottom-36 z-40 flex flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl lg:bottom-24"
+          style={{
+            insetInlineEnd: "1rem",
+            /* وحدات العرض الحية بدل vh/vw المتجمدة في WebView أندرويد */
+            height: "min(calc(var(--cmdp-vh, 1vh) * 64), 540px)",
+            width: "min(calc(var(--cmdp-vw, 1vw) * 100 - 2rem), 380px)",
+          }}
         >
           {/* الترويسة */}
           <div className="relative flex items-center gap-3 bg-ink px-4 py-3">
