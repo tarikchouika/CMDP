@@ -309,6 +309,8 @@ export type UserInput = {
   accountType: string | null;
   cooperativeId: number | null;
   status?: string;
+  // سبب التوقيف الموثق (الإصدار 1.3.2) — إلزامي عند الإيقاف
+  suspensionReason?: string;
   // مرفقات الهوية — تُرسل عند الإنشاء أو عند التغيير في التحرير فقط
   photo?: import("@/lib/attachments").Attachment | null;
   idDocuments?: import("@/lib/attachments").Attachment[];
@@ -641,3 +643,220 @@ export const useCreateOrder = () => {
     },
   });
 };
+
+// ═══════════════════════════════════════════════════════════════════════════
+// وحدات المالك والسوبر أدمين (الإصدار 1.3.2) — سجل الأحداث والإشعارات
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type SuperAdminView = {
+  id: number;
+  username: string;
+  fullName: string;
+  phone: string | null;
+  email: string | null;
+  role: string;
+  status: string;
+  isOwner: boolean;
+  suspensionNotice: string | null;
+  suspensionReason: string | null;
+  suspendedAt: string | null;
+  createdAt: string;
+};
+
+/** إجراء مالك ضد سوبر أدمين — مع توحيد النطاق وإعادة التحقق */
+export function useOwnerAction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      step,
+      targetId,
+      body,
+    }: {
+      step: "create" | "promote" | "suspend-notice" | "suspend" | "reinstate" | "remove";
+      targetId?: number;
+      body?: Record<string, unknown>;
+    }) => {
+      const demoMode = useUIStore.getState().demoMode;
+      if (demoMode) throw new Error(DEMO_MSG);
+      let path = "/api/super-admins";
+      let method = "POST";
+      if (step === "create") {
+        // path/method كما هي
+      } else if (step === "promote") {
+        // كما هي (POST /api/super-admins بوضع promote)
+      } else if (step === "remove") {
+        path = `/api/super-admins/${targetId}`;
+        method = "DELETE";
+      } else {
+        path = `/api/super-admins/${targetId}/${step}`;
+      }
+      return rawFetch<unknown>(path, { method, body: body ? JSON.stringify(body) : undefined });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["super-admins"] });
+    },
+  });
+}
+
+/** نقل ملكية المنصة (المالك حصراً) */
+export function useTransferOwnership() {
+  return useMutation({
+    mutationFn: async (payload: { targetUserId: number; confirmUsername: string; reason: string }) => {
+      const demoMode = useUIStore.getState().demoMode;
+      if (demoMode) throw new Error(DEMO_MSG);
+      return rawFetch<unknown>("/api/ownership/transfer", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    },
+  });
+}
+
+/** قائمة السوبر أدمين (المالك حصراً) */
+export const useSuperAdmins = () => {
+  const setDemoMode = useUIStore((s) => s.setDemoMode);
+  return useQuery({
+    queryKey: ["super-admins"],
+    queryFn: async () => {
+      try {
+        const d = await rawFetch<{ items: SuperAdminView[] }>("/api/super-admins");
+        return d.items;
+      } catch (e) {
+        if (e instanceof ApiUnavailableError) {
+          setDemoMode(true);
+          return [] as SuperAdminView[];
+        }
+        throw e;
+      }
+    },
+    retry: false,
+    staleTime: 15_000,
+  });
+};
+
+/** إشعارات المعني الحالي */
+export const useNotifications = () => {
+  const setDemoMode = useUIStore((s) => s.setDemoMode);
+  return useQuery({
+    queryKey: ["notifications"],
+    queryFn: async () => {
+      try {
+        return await rawFetch<{ items: import("@/lib/types").UserNotification[]; unread: number }>(
+          "/api/notifications"
+        );
+      } catch (e) {
+        if (e instanceof ApiUnavailableError) {
+          setDemoMode(true);
+          return { items: [], unread: 0 };
+        }
+        throw e;
+      }
+    },
+    retry: false,
+    staleTime: 20_000,
+  });
+};
+
+/** وضع علامة مقروء على الإشعارات */
+export function useMarkNotificationsRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { all?: boolean; id?: number }) =>
+      rawFetch<unknown>("/api/notifications", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
+
+/** الرد على إشعار التوقيف (حق الدفاع — المعني حصراً) */
+export function useRespondToNotice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { userId: number; response: string }) =>
+      rawFetch<unknown>(`/api/super-admins/${payload.userId}/respond`, {
+        method: "POST",
+        body: JSON.stringify({ response: payload.response }),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
+
+/** سجل الأحداث التدقيقي (الملك والسوبر أدمين) — مع فلاتر وترقيم */
+export const useAuditLogs = (filters: {
+  action?: string;
+  severity?: string;
+  actor?: string;
+  q?: string;
+  limit?: number;
+  offset?: number;
+}) => {
+  const setDemoMode = useUIStore((s) => s.setDemoMode);
+  const qs = new URLSearchParams();
+  if (filters.action) qs.set("action", filters.action);
+  if (filters.severity) qs.set("severity", filters.severity);
+  if (filters.actor) qs.set("actor", filters.actor);
+  if (filters.q) qs.set("q", filters.q);
+  qs.set("limit", String(filters.limit ?? 50));
+  qs.set("offset", String(filters.offset ?? 0));
+  return useQuery({
+    queryKey: ["audit-logs", filters],
+    queryFn: async () => {
+      try {
+        return await rawFetch<import("@/lib/types").AuditLogPage>(
+          `/api/audit-logs?${qs.toString()}`
+        );
+      } catch (e) {
+        if (e instanceof ApiUnavailableError) {
+          setDemoMode(true);
+          return { items: [], total: 0, offset: 0, limit: 50 };
+        }
+        throw e;
+      }
+    },
+    retry: false,
+  });
+};
+
+/** إحصائيات سجل الأحداث */
+export const useAuditStats = () => {
+  const setDemoMode = useUIStore((s) => s.setDemoMode);
+  return useQuery({
+    queryKey: ["audit-stats"],
+    queryFn: async () => {
+      try {
+        return await rawFetch<import("@/lib/types").AuditLogStats>("/api/audit-logs/stats");
+      } catch (e) {
+        if (e instanceof ApiUnavailableError) {
+          setDemoMode(true);
+          return null;
+        }
+        throw e;
+      }
+    },
+    retry: false,
+    staleTime: 30_000,
+  });
+};
+
+/**
+ * التحقق من الجلسة عند الإقلاع (حصانة الشاشة البيضاء):
+ * يعيد بيانات المستخدم الحية عند الصلاحية — لت_sync الملكية/الدور من الخادم.
+ */
+export async function verifySession(): Promise<
+  { user: import("@/lib/types").SessionUser } | "invalid" | "unknown"
+> {
+  try {
+    const { token } = useUIStore.getState();
+    if (!token) return "unknown";
+    return await rawFetch<{ user: import("@/lib/types").SessionUser }>("/api/auth/me");
+  } catch (e) {
+    if (e instanceof ApiUnavailableError) return "unknown"; // الباك إند غير متاح: نمسك الجلسة كما هي
+    return "invalid"; // 401 ونحوه: جلسة ميتة → خروج نظيف
+  }
+}

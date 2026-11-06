@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { getAuthUser, requirePermission, coopAccessDenied, denied } from "@/lib/auth";
 
@@ -50,6 +51,15 @@ export async function POST(req: Request) {
       attendeesCount: b.attendeesCount ? Number(b.attendeesCount) : 0,
       status: String(b.status ?? "SCHEDULED"),
     },
+  });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "assembly.create",
+    entityType: "ASSEMBLY",
+    entityId: row.id,
+    summary: `برمجة جمع عام ${row.type} بتاريخ ${row.date}`,
+    details: { cooperativeId: row.cooperativeId, type: row.type },
   });
   return ok(row, 201);
 }

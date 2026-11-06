@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { coopAccessDenied, denied, requirePermission } from "@/lib/auth";
 
@@ -55,6 +56,15 @@ export async function POST(req: Request) {
       reference: b.reference ? String(b.reference) : null,
       proofFiles: sanitizeFiles(b.proofFiles),
     },
+  });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "transaction.create",
+    entityType: "TRANSACTION",
+    entityId: row.id,
+    summary: `تسجيل حركة مالية ${row.type === "INCOME" ? "مدخلة" : "مصروفة"} بمبلغ ${row.amount} د.م (${row.category})`,
+    details: { cooperativeId: row.cooperativeId, type: row.type, amount: row.amount },
   });
   return ok(row, 201);
 }

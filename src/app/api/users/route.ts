@@ -9,6 +9,8 @@ import { denied, requirePermission } from "@/lib/auth";
 import { hashPassword } from "@/lib/seed-run";
 import { assignableRoles } from "@/lib/permissions";
 import { sanitizeFiles, sanitizePhoto } from "@/lib/attachments";
+import { logAudit } from "@/lib/audit";
+import { notifyUser } from "@/lib/notify";
 import type { AccountType, Role } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +32,10 @@ const PUBLIC_FIELDS = {
   accountType: true,
   cooperativeId: true,
   status: true,
+  isOwner: true,
+  suspensionNotice: true,
+  suspensionReason: true,
+  suspendedAt: true,
   createdAt: true,
   cooperative: { select: { id: true, name: true } },
 } as const;
@@ -106,5 +112,23 @@ export async function POST(req: Request) {
     },
     select: PUBLIC_FIELDS,
   });
+
+  await logAudit({
+    req,
+    actor,
+    action: "user.create",
+    entityType: "USER",
+    entityId: row.id,
+    summary: `إنشاء حساب جديد: ${row.fullName} (${row.username}) بدور ${row.role}`,
+    details: { role, accountType, cooperativeId: row.cooperativeId },
+    severity: role === "ADMIN" ? "WARNING" : "INFO",
+  });
+  await notifyUser({
+    userId: row.id,
+    type: "ACCOUNT_APPROVED",
+    title: "أُنشئ حسابك وأُفعّل",
+    body: `أنشأت إدارة المنصة حسابك (${row.username}) وفعّلته. يمكنك الدخول الآن بكلمة المرور التي توصلت بها من الإدارة.`,
+  });
+
   return ok(row, 201);
 }

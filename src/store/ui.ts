@@ -5,7 +5,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { allowedViews, can, userPermissions, type Permission } from "@/lib/permissions";
-import type { SessionUser } from "@/lib/types";
+import type { Role, SessionUser } from "@/lib/types";
 
 export type View =
   | "landing"
@@ -26,7 +26,9 @@ export type View =
   | "settings"
   | "install"
   | "store"
-  | "storemanage";
+  | "storemanage"
+  | "owner"
+  | "auditlog";
 
 export const VIEWS: View[] = [
   "landing",
@@ -48,6 +50,8 @@ export const VIEWS: View[] = [
   "install",
   "store",
   "storemanage",
+  "owner",
+  "auditlog",
 ];
 
 /** الوحدات العمومية المتاحة دائماً */
@@ -66,6 +70,8 @@ interface UIState {
   setActiveCoop: (id: number) => void;
   setDemoMode: (b: boolean) => void;
   setAuthed: (user: SessionUser | null, token?: string | null) => void;
+  /** تحديث بيانات المستخدم الحالي دون المساس بالرمز (تغيير ملكية/دور من الخادم) */
+  updateUser: (patch: Partial<SessionUser>) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -98,9 +104,53 @@ export const useUIStore = create<UIState>()(
             view: user ? (allowed.includes(fallback) ? fallback : "landing") : "login",
           };
         }),
+      updateUser: (patch) =>
+        set((s) => (s.user ? { user: { ...s.user, ...patch } } : s)),
     }),
     {
       name: "cmdp-ui",
+      version: 2,
+      // ── إعادة ترطيب آمنة (حصانة ضد الشاشة البيضاء) ─────────────────────
+      // الجلسات القديمة/المشوّهة (ترقية قاعدة، حقول ناقصة، رمز ميت) لا تُفكك
+      // الواجهة بعد الآن: تُشذَّب لقيمة آمنة أو تُهمَل نهائياً.
+      migrate: (persisted: unknown) => {
+        const p = (persisted ?? {}) as Partial<UIState>;
+        const ROLES: Role[] = ["SUPER_ADMIN", "ADMIN", "COADMIN", "USER"];
+        let user: SessionUser | null = null;
+        const u = p.user as Partial<SessionUser> | null | undefined;
+        if (
+          u &&
+          typeof u.id === "number" &&
+          typeof u.username === "string" &&
+          typeof u.fullName === "string" &&
+          ROLES.includes(u.role as Role)
+        ) {
+          user = {
+            id: u.id,
+            username: u.username,
+            fullName: u.fullName,
+            role: u.role as Role,
+            accountType: (u.accountType ?? null) as SessionUser["accountType"],
+            cooperativeId: typeof u.cooperativeId === "number" ? u.cooperativeId : null,
+            cooperativeName: u.cooperativeName ?? null,
+            status: u.status === "ACTIVE" ? "ACTIVE" : (u.status as SessionUser["status"]),
+            isOwner: u.isOwner === true && u.role === "SUPER_ADMIN",
+          };
+        }
+        const token = typeof p.token === "string" && p.token ? p.token : null;
+        const view = typeof p.view === "string" && VIEWS.includes(p.view as View) && !(p.view === "login" || p.view === "register")
+          ? (p.view as View)
+          : "landing";
+        return {
+          view,
+          params: {},
+          activeCoopId: typeof p.activeCoopId === "number" ? p.activeCoopId : 1,
+          demoMode: p.demoMode === true,
+          authed: !!(user && token && p.authed === true),
+          user: user && token ? user : null,
+          token,
+        } as UIState;
+      },
       partialize: (s) => ({
         view: s.view,
         activeCoopId: s.activeCoopId,

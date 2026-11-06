@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { fail, ok, preflight, readJson } from "@/lib/api-server";
 import { denied, requirePermission } from "@/lib/auth";
 
@@ -31,6 +32,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (b.featured !== undefined) data.featured = Boolean(b.featured);
   if (b.status !== undefined) data.status = String(b.status);
   const row = await db.product.update({ where: { id: Number(id) }, data: data as never });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "product.update",
+    entityType: "PRODUCT",
+    entityId: row.id,
+    summary: `تحديث منتج: ${row.name}`,
+    details: { cooperativeId: row.cooperativeId, status: row.status, inStock: row.inStock },
+  });
   return ok(row);
 }
 
@@ -44,5 +54,15 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     return denied("هذا المنتج خارج نطاق تعاونيتكم");
   }
   await db.product.delete({ where: { id: Number(id) } });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "product.delete",
+    entityType: "PRODUCT",
+    entityId: existing.id,
+    summary: `حذف منتج: ${existing.name}`,
+    details: { cooperativeId: existing.cooperativeId },
+    severity: "WARNING",
+  });
   return ok({ deleted: true });
 }

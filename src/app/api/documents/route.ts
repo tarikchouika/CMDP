@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { coopAccessDenied, denied, requirePermission } from "@/lib/auth";
 
@@ -36,6 +37,15 @@ export async function POST(req: Request) {
       isShared: b.isShared === true, // مشاركة مع المتعاقدين والمصرح لهم
       notes: b.notes ? String(b.notes) : null,
     },
+  });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "document.create",
+    entityType: "DOCUMENT",
+    entityId: row.id,
+    summary: `إضافة وثيقة إلى السجل: ${row.title}`,
+    details: { cooperativeId: row.cooperativeId, type: row.type, isShared: row.isShared },
   });
   return ok(row, 201);
 }

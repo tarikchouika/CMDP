@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { fail, ok, preflight, readJson } from "@/lib/api-server";
 import { denied, requirePermission } from "@/lib/auth";
 
@@ -37,6 +38,15 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     where: { id: Number(id) },
     data: { status },
     include: { opportunity: { select: { id: true, title: true, type: true } } },
+  });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "application.review",
+    entityType: "APPLICATION",
+    entityId: row.id,
+    summary: `دراسة ترشيح #${row.id} — القرار: ${row.status}`,
+    details: { status: row.status },
   });
   return ok(row);
 }

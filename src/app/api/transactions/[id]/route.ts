@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { coopAccessDenied, denied, requirePermission } from "@/lib/auth";
 import type { Prisma } from "@prisma/client";
@@ -40,6 +41,15 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       where: { id: Number(id) },
       data: data as unknown as Prisma.TransactionUpdateInput,
     });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "transaction.update",
+    entityType: "TRANSACTION",
+    entityId: row.id,
+    summary: `تحديث حركة مالية #${row.id} (${row.category})`,
+    details: { cooperativeId: row.cooperativeId, amount: row.amount },
+  });
     return ok(row);
   } catch {
     return fail("حركة مالية غير موجودة", 404);
@@ -58,6 +68,16 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   }
   try {
     await db.transaction.delete({ where: { id: Number(id) } });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "transaction.delete",
+    entityType: "TRANSACTION",
+    entityId: existing.id,
+    summary: `حذف حركة مالية #${existing.id} (${existing.category})`,
+    details: { cooperativeId: existing.cooperativeId },
+    severity: "WARNING",
+  });
     return ok({ deleted: true });
   } catch {
     return fail("حركة مالية غير موجودة", 404);

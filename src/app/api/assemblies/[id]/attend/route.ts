@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { fail, ok, preflight } from "@/lib/api-server";
 import { getAuthUser } from "@/lib/auth";
 
@@ -31,6 +32,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     where: { assemblyId_userId: { assemblyId: assembly.id, userId: user.id } },
     create: { assemblyId: assembly.id, userId: user.id, confirmed: true },
     update: { confirmed: true },
+  });
+  await logAudit({
+    req,
+    actor: user,
+    action: "assembly.attend",
+    entityType: "ASSEMBLY",
+    entityId: assembly.id,
+    summary: `تأكيد حضور ${user.fullName} لجمع عام #${assembly.id}`,
+    details: { cooperativeId: assembly.cooperativeId },
   });
   return ok({ confirmed: true, message: "تم تأكيد حضوركم — شكراً لمشاركتكم" }, 201);
 }

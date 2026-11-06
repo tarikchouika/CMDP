@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { coopAccessDenied, denied, requirePermission } from "@/lib/auth";
 import type { Prisma } from "@prisma/client";
@@ -33,6 +34,15 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       where: { id: Number(id) },
       data: data as unknown as Prisma.DocumentUpdateInput,
     });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "document.update",
+    entityType: "DOCUMENT",
+    entityId: row.id,
+    summary: `تحديث وثيقة: ${row.title}`,
+    details: { cooperativeId: row.cooperativeId, status: row.status },
+  });
     return ok(row);
   } catch {
     return fail("وثيقة غير موجودة", 404);
@@ -51,6 +61,16 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   }
   try {
     await db.document.delete({ where: { id: Number(id) } });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "document.delete",
+    entityType: "DOCUMENT",
+    entityId: existing.id,
+    summary: `حذف وثيقة: ${existing.title}`,
+    details: { cooperativeId: existing.cooperativeId },
+    severity: "WARNING",
+  });
     return ok({ deleted: true });
   } catch {
     return fail("وثيقة غير موجودة", 404);

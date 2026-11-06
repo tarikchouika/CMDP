@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { coopAccessDenied, denied, requirePermission } from "@/lib/auth";
 
@@ -33,6 +34,15 @@ export async function POST(req: Request) {
       dueDate: toDate(b.dueDate),
       status: String(b.status ?? "PENDING"),
     },
+  });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "compliance_task.create",
+    entityType: "TASK",
+    entityId: row.id,
+    summary: `إضافة التزام نظامي: ${row.title}`,
+    details: { cooperativeId: row.cooperativeId, type: row.type, dueDate: row.dueDate },
   });
   return ok(row, 201);
 }

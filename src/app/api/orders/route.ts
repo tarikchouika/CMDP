@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { fail, ok, preflight, readJson } from "@/lib/api-server";
 import { requirePermission } from "@/lib/auth";
 
@@ -54,6 +55,15 @@ export async function POST(req: Request) {
       city: b.city ? String(b.city).slice(0, 80) : null,
       note: b.note ? String(b.note).slice(0, 800) : null,
     },
+  });
+  await logAudit({
+    req,
+    actor: null,
+    action: "order.place_public",
+    entityType: "ORDER",
+    entityId: row.id,
+    summary: `طلب شراء جديد من المتجر: ${row.customerName} (${row.phone}) — كمية ${row.quantity}`,
+    details: { productId: row.productId, quantity: row.quantity, customer: row.customerName },
   });
   return ok(row, 201);
 }

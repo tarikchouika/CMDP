@@ -17,6 +17,8 @@ export interface SessionUser {
   cooperativeId: number | null;
   cooperativeName?: string | null;
   status: UserStatus;
+  /** مالك المنصة — واحد لا يتعدد؛ يحتكر إدارة السوبر أدمين ونقل الملكية */
+  isOwner?: boolean;
 }
 
 /** حساب مستخدم كامل (إدارة) */
@@ -228,7 +230,56 @@ export interface OpportunityApplication {
   opportunity?: Pick<Opportunity, "id" | "title" | "type">;
 }
 
-// ─── لوحة القيادة: بنية الإحصائيات المجمَّعة ────────────────────────────────
+// ─── الإشعارات داخل المنصة (الإصدار 1.3.2) ───────────────────────────
+export interface UserNotification {
+  id: number;
+  userId: number;
+  type: string; // SUSPENSION_NOTICE | SUSPENDED | REINSTATED | OWNERSHIP_TRANSFER | ACCOUNT_APPROVED | SYSTEM
+  title: string;
+  body: string;
+  meta: string | null; // JSON
+  isRead: boolean;
+  createdAt: string;
+}
+
+// ─── سجل الأحداث التدقيقي (الإصدار 1.3.2) ───────────────────────────
+export type AuditSeverity = "INFO" | "WARNING" | "CRITICAL";
+
+export interface AuditLogEntry {
+  id: number;
+  actorId: number | null;
+  actorUsername: string;
+  actorRole: string;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  summary: string;
+  details: string | null; // JSON
+  severity: string;
+  ip: string | null;
+  userAgent: string | null;
+  createdAt: string;
+}
+
+export interface AuditLogPage {
+  items: AuditLogEntry[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
+export interface AuditLogStats {
+  total: number;
+  last7: number;
+  critical: number;
+  warning: number;
+  byDay: { day: string; count: number }[];
+  bySeverity: { severity: string; count: number }[];
+  topActors: { actorUsername: string; count: number }[];
+  topActions: { action: string; count: number }[];
+}
+
+// ─── لوحة القيادة: بنية الإحصائيات المجمَّعة ────────────────────────────
 export interface DashboardData {
   coopCount: number;
   activeCoopCount: number;

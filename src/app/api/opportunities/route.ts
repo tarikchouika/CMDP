@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { denied, getAuthUser, requirePermission } from "@/lib/auth";
 
@@ -106,6 +107,15 @@ export async function POST(req: Request) {
       status: "OPEN",
     },
     include: { cooperative: COOP_SELECT },
+  });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "opportunity.create",
+    entityType: "OPPORTUNITY",
+    entityId: row.id,
+    summary: `نشر فرصة: ${row.title} (${row.type})`,
+    details: { cooperativeId: row.cooperativeId, type: row.type, region: row.region },
   });
   return ok(row, 201);
 }

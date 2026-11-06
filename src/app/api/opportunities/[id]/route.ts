@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { denied, getAuthUser, requirePermission } from "@/lib/auth";
 import { can } from "@/lib/permissions";
@@ -69,6 +70,15 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     include: { cooperative: COOP_SELECT, _count: { select: { applications: true } } },
   });
   const { _count, ...rest } = updated;
+  await logAudit({
+    req,
+    actor: user,
+    action: "opportunity.update",
+    entityType: "OPPORTUNITY",
+    entityId: rest.id,
+    summary: `تحديث فرصة: ${rest.title}`,
+    details: { status: rest.status, fields: Object.keys(data) },
+  });
   return ok({ ...rest, applicationsCount: _count.applications });
 }
 
@@ -85,5 +95,15 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   }
 
   await db.opportunity.delete({ where: { id: Number(id) } });
+  await logAudit({
+    req,
+    actor: user,
+    action: "opportunity.delete",
+    entityType: "OPPORTUNITY",
+    entityId: row.id,
+    summary: `حذف فرصة: ${row.title}`,
+    details: { cooperativeId: row.cooperativeId },
+    severity: "WARNING",
+  });
   return ok({ deleted: true });
 }

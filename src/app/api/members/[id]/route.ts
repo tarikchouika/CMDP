@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { coopAccessDenied, denied, requirePermission } from "@/lib/auth";
 import type { Prisma } from "@prisma/client";
@@ -32,6 +33,15 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       where: { id: Number(id) },
       data: data as unknown as Prisma.MemberUpdateInput,
     });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "member.update",
+    entityType: "MEMBER",
+    entityId: row.id,
+    summary: `تحديث بيانات عضو: ${row.fullName}`,
+    details: { cooperativeId: row.cooperativeId, status: row.status },
+  });
     return ok(row);
   } catch {
     return fail("عضو غير موجود", 404);
@@ -50,6 +60,16 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   }
   try {
     await db.member.delete({ where: { id: Number(id) } });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "member.delete",
+    entityType: "MEMBER",
+    entityId: existing.id,
+    summary: `حذف عضو: ${existing.fullName}`,
+    details: { cooperativeId: existing.cooperativeId },
+    severity: "WARNING",
+  });
     return ok({ deleted: true });
   } catch {
     return fail("عضو غير موجود", 404);

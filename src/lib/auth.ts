@@ -61,6 +61,7 @@ export async function getAuthUser(req: Request): Promise<SessionUser | null> {
     cooperativeId: u.cooperativeId ?? null,
     cooperativeName: u.cooperative?.name ?? null,
     status: u.status as UserStatus,
+    isOwner: u.role === "SUPER_ADMIN" ? u.isOwner : false,
   };
 }
 

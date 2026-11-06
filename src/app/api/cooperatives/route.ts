@@ -7,6 +7,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { requirePermission } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 import { sanitizeFiles, sanitizePhoto } from "@/lib/attachments";
 
 export const dynamic = "force-dynamic";
@@ -53,6 +54,15 @@ export async function POST(req: Request) {
         logo: sanitizePhoto(b.logo),
         legalDocuments: JSON.stringify(sanitizeFiles(b.legalDocuments, 12)) || null,
       },
+    });
+    await logAudit({
+      req,
+      actor: auth.user,
+      action: "cooperative.create",
+      entityType: "COOPERATIVE",
+      entityId: row.id,
+      summary: `إنشاء تعاونية جديدة: ${row.name} (${row.registrationNumber})`,
+      details: { registrationNumber: row.registrationNumber, sector: row.sector, region: row.region },
     });
     return ok(row, 201);
   } catch {

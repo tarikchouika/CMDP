@@ -5,6 +5,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { fail, ok, preflight, readJson } from "@/lib/api-server";
 import { denied, requirePermission } from "@/lib/auth";
 
@@ -81,6 +82,15 @@ export async function POST(req: Request) {
       inStock: b.inStock === undefined ? true : Boolean(b.inStock),
       status: b.status === "HIDDEN" ? "HIDDEN" : "ACTIVE",
     },
+  });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "product.create",
+    entityType: "PRODUCT",
+    entityId: row.id,
+    summary: `إضافة منتج للمتجر: ${row.name} (${row.price} د.م)`,
+    details: { cooperativeId: row.cooperativeId, category: row.category },
   });
   return ok(row, 201);
 }

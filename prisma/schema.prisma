@@ -13,14 +13,24 @@ datasource db {
 }
 
 // ─── مستخدمو المنصة ───────────────────────────────────────────────────────
-// الأدوار (role): SUPER_ADMIN مالك المنصة | ADMIN مدير | COADMIN كوأدمن
-//                 (رئيس تعاونية أو عضو مسير) | USER مستخدم عادي
+// الأدوار (role): SUPER_ADMIN مالك المنصة أو سوبر أدمين | ADMIN مدير
+//                 | COADMIN كوأدمن (رئيس تعاونية أو عضو مسير) | USER مستخدم عادي
 // نوع الحساب (accountType): PRESIDENT رئيس | MANAGER عضو مسير
 //                 MEMBER عضو غير مسير | CONTRACTOR متعاقد مع التعاونية
 model User {
   // مرفقات الهوية (base64 JSON) — صورة شخصية + وثيقة هوية
   photo           String?
   idDocuments     String? // JSON: [{name,type,size,dataUrl}]
+
+  // ── الملكية والتراتبية (الإصدار 1.3.2) ────────────────────────────────
+  // المالك (isOwner=true): واحد لا يتعدد — يحتكر إدارة السوبر أدمين ونقل
+  // الملكية؛ حسابه محمي من أي إجراء إداري. سوبر أدمين غير المالك: يديره
+  // المالك حصراً وفق مسار عادل (إشعار ← توقيف ← إزالة).
+  isOwner            Boolean   @default(false)
+  // إجراء الإيقاف العادل (سوبر أدمين): إشعار موثق قبل التنفيذ
+  suspensionNotice   String? // JSON: {reason,effectiveAt,issuedAt,issuedBy,response,respondedAt}
+  suspensionReason   String? // سبب التوقيف النهائي الموثق
+  suspendedAt        DateTime?
 
   id             Int           @id @default(autoincrement())
   username       String        @unique
@@ -39,6 +49,50 @@ model User {
   applications   OpportunityApplication[]
   votes          AssemblyVote[]
   attendances    AssemblyAttendee[]
+  notifications  Notification[]
+}
+
+// ─── الإشعارات داخل المنصة (الإصدار 1.3.2) ──────────────────────────────
+// قناة الإبلاغ الرسمية: إشعارات ما قبل/بعد التوقيف، نقل الملكية،
+// والأحداث المهمة — تُعرض بجرس الإشعارات في الواجهة.
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String // SUSPENSION_NOTICE | SUSPENDED | REINSTATED | OWNERSHIP_TRANSFER | ACCOUNT_APPROVED | SYSTEM
+  title     String
+  body      String
+  meta      String? // JSON إضافي (مواعيد، أسباب، روابط…)
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead, createdAt])
+}
+
+// ─── سجل الأحداث التدقيقي (الإصدار 1.3.2) ──────────────────────────────
+// يوثق كل حدث مهم في المنصة بلا حذف: من فعل ماذا ومتى ولماذا.
+// يبقى السجل بعد حذف الحسابات (المعرّف الاسمي لا علاقة قسرية) —
+// مبدأ سجلات الحوكمة: التاريخ لا يُمحى.
+model AuditLog {
+  id            Int      @id @default(autoincrement())
+  actorId       Int? // معرف الفاعل إن كان مسجلاً (بلا علاقة — يصمد بعد الحذف)
+  actorUsername String // الاسم الاسمي وقت الحدث
+  actorRole     String // SUPER_ADMIN | ADMIN | COADMIN | USER | anonymous
+  action        String // auth.login | auth.login_failed | user.suspend | super_admin.add | ownership.transfer | …
+  entityType    String // USER | COOPERATIVE | PLATFORM | TRANSACTION | …
+  entityId      String?
+  summary       String // وصف عربي مقروء
+  details       String? // JSON: أسباب، قيم قبل/بعد، سياق
+  severity      String   @default("INFO") // INFO | WARNING | CRITICAL
+  ip            String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([action])
+  @@index([severity])
+  @@index([entityType, entityId])
 }
 
 // ─── التعاونية ────────────────────────────────────────────────────────────

@@ -8,6 +8,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { hashPassword } from "@/lib/seed-run";
+import { logAudit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -115,7 +116,7 @@ export async function POST(req: Request) {
         status: "PENDING",
       },
     });
-    await db.joinRequest.create({
+    const joinReq = await db.joinRequest.create({
       data: {
         cooperativeId: coopId,
         userId: user.id,
@@ -128,6 +129,14 @@ export async function POST(req: Request) {
         shares: requestType === "MEMBERSHIP" ? Math.max(1, Number(body.shares ?? 1)) : 0,
         status: "PENDING",
       },
+    });
+    await logAudit({
+      req,
+      action: "auth.register_join",
+      entityType: "JOIN_REQUEST",
+      entityId: joinReq.id,
+      summary: `تسجيل عمومي: طلب ${requestType === "MEMBERSHIP" ? "انخراط" : "تعاقد"} باسم ${fullName}`,
+      details: { username, requestType, cooperativeId: coopId },
     });
     return ok({
       message: "تم استلام طلب انخراطكم بنجاح. سيتمكن رئيس التعاونية أو أحد أعضائها المسييرين من المصادقة عليه.",
@@ -180,6 +189,14 @@ export async function POST(req: Request) {
         status: "PENDING",
       },
     });
+    await logAudit({
+      req,
+      action: "auth.register_new_coop",
+      entityType: "COOPERATIVE",
+      entityId: coop.id,
+      summary: `تسجيل عمومي: تعاونية جديدة «${name}» مع حساب رئيسها ${fullName}`,
+      details: { username, cooperative: name },
+    });
     return ok({
       message:
         "تم استلام طلب تسجيل التعاونية. ستقوم إدارة المنصة بمراجعة الملف والمصادقة عليه، ثم يُفعَّل حسابكم كرئيس(ة) للتعاونية.",
@@ -187,7 +204,7 @@ export async function POST(req: Request) {
   }
 
   // ─── طلب 3: حساب مجرد (بانتظار المصادقة) ────────────────────────────────
-  await db.user.create({
+  const account = await db.user.create({
     data: {
       username,
       passwordHash: hashPassword(password),
@@ -202,6 +219,14 @@ export async function POST(req: Request) {
       cooperativeId: null,
       status: "PENDING",
     },
+  });
+  await logAudit({
+    req,
+    action: "auth.register_account",
+    entityType: "USER",
+    entityId: account.id,
+    summary: `تسجيل عمومي: حساب جديد ${fullName} (${username}) بانتظار المصادقة`,
+    details: { username, intent: "ACCOUNT" },
   });
   return ok({
     message:

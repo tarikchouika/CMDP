@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { fail, ok, preflight, readJson } from "@/lib/api-server";
 import { getAuthUser } from "@/lib/auth";
 
@@ -41,6 +42,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   await db.assemblyVote.create({
     data: { assemblyId: assembly.id, userId: user.id, decision },
+  });
+  await logAudit({
+    req,
+    actor: user,
+    action: "assembly.vote",
+    entityType: "ASSEMBLY",
+    entityId: assembly.id,
+    summary: `تصويت ${user.fullName} في جمع عام #${assembly.id} (${decision === "FOR" ? "موافقة" : decision === "AGAINST" ? "معارضة" : "امتناع"})`,
+    details: { decision, cooperativeId: assembly.cooperativeId },
   });
   return ok({ decision, message: "تم تسجيل صوتكم بنجاح" }, 201);
 }

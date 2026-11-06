@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { fail, ok, preflight, readJson } from "@/lib/api-server";
 import { denied, requirePermission } from "@/lib/auth";
 
@@ -43,6 +44,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       product: { select: { id: true, name: true, cooperativeId: true, price: true, unit: true } },
     },
   });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "order.status_change",
+    entityType: "ORDER",
+    entityId: row.id,
+    summary: `تحديث طلب متجر #${row.id} إلى ${row.status}`,
+    details: { status: row.status, productId: row.productId },
+  });
   return ok(row);
 }
 
@@ -63,5 +73,14 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   }
 
   await db.order.delete({ where: { id: Number(id) } });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "order.delete",
+    entityType: "ORDER",
+    entityId: existing.id,
+    summary: `حذف طلب متجر #${existing.id}`,
+    severity: "WARNING",
+  });
   return ok({ deleted: true });
 }

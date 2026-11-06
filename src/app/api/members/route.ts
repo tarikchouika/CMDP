@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { coopAccessDenied, denied, requirePermission } from "@/lib/auth";
 
@@ -37,6 +38,15 @@ export async function POST(req: Request) {
       boardRole: b.boardRole ? String(b.boardRole) : null,
       status: String(b.status ?? "ACTIVE"),
     },
+  });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "member.create",
+    entityType: "MEMBER",
+    entityId: row.id,
+    summary: `تسجيل عضو جديد: ${row.fullName} (حصص: ${row.shares})`,
+    details: { cooperativeId: row.cooperativeId, boardRole: row.boardRole },
   });
   return ok(row, 201);
 }

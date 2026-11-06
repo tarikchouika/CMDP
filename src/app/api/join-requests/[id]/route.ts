@@ -6,6 +6,8 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson } from "@/lib/api-server";
 import { denied, requirePermission } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
+import { notifyUser } from "@/lib/notify";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +43,23 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     });
     if (request.userId) {
       await db.user.update({ where: { id: request.userId }, data: { status: "REJECTED" } });
+      await notifyUser({
+        userId: request.userId,
+        type: "SYSTEM",
+        title: "رُفض طلب الانخراط/التعاقد",
+        body: `لم تُصادق إدارة التعاونية على طلبكم${b.note ? ` — الملاحظة: «${String(b.note)}»` : ""}. للاستفسار تواصلوا معهم.`,
+      });
     }
+    await logAudit({
+      req,
+      actor,
+      action: "join_request.reject",
+      entityType: "JOIN_REQUEST",
+      entityId: request.id,
+      summary: `رفض طلب انخراط/تعاقد: ${request.fullName}`,
+      details: { note: b.note ? String(b.note) : null, type: request.requestType },
+      severity: "INFO",
+    });
     return ok({ status: "REJECTED" });
   }
 
@@ -56,6 +74,12 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   });
   if (request.userId) {
     await db.user.update({ where: { id: request.userId }, data: { status: "ACTIVE" } });
+    await notifyUser({
+      userId: request.userId,
+      type: "ACCOUNT_APPROVED",
+      title: "قُبل طلبكم وفُعّل حسابكم",
+      body: `صادقت إدارة التعاونية على طلب الانخراط/التعاقد. فُعّل حسابكم ويمكنكم الدخول الآن.`,
+    });
   }
   if (request.requestType === "MEMBERSHIP") {
     const already = await db.member.findFirst({
@@ -75,5 +99,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       });
     }
   }
+  await logAudit({
+    req,
+    actor,
+    action: "join_request.approve",
+    entityType: "JOIN_REQUEST",
+    entityId: request.id,
+    summary: `مصادقة طلب انخراط/تعاقد: ${request.fullName}`,
+    details: { type: request.requestType, cooperativeId: request.cooperativeId, note: b.note ? String(b.note) : null },
+  });
   return ok({ status: "APPROVED" });
 }
