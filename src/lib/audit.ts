@@ -5,6 +5,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { db } from "@/lib/db";
+import type { SessionUser } from "@/lib/types";
 
 /** مدخلات حدث التدقيق */
 export interface AuditEntry {
@@ -55,4 +56,60 @@ export async function audit(req: Request | null, entry: AuditEntry): Promise<voi
     // لا نرمي أبداً — التدقيق لا يجب أن يكسر المسار الأصلي
     console.error("[audit] تعذر تسجيل الحدث:", entry.action, e);
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// توافق توحيد 1.3.4 (CMDP-059/MERGE): محوّل من واجهة logAudit التي تستعملها
+// مسارات الخط البعيد المستخلصة (assemblies/[id], meetings, tasks, interactions,
+// opportunities/apply) إلى مدوّنة التدقيق المحلية أعلاه — نفس الجدول والقاعدة،
+// بلا أي ازدواجية. الرموز المنقّطة (assembly.update) تُطبَّع إلى عرفنا
+// الأعلى (ASSEMBLY_UPDATED) لتظهر بمسمياتها في لوحة المنصة.
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface AuditInputCompat {
+  req?: Request;
+  actor?: SessionUser | null;
+  action: string;
+  entityType: string;
+  entityId?: string | number | null;
+  summary: string;
+  details?: Record<string, unknown> | null;
+  severity?: "INFO" | "WARNING" | "CRITICAL";
+}
+
+/** تطبيع رمز الفعل المنقّط إلى عرف UPPER_SNAKE المحلي */
+function compatAction(action: string): string {
+  if (!action.includes(".")) return action;
+  let base = action;
+  let suffix = "";
+  if (base.endsWith(".denied")) {
+    suffix = "_DENIED";
+    base = base.slice(0, -".denied".length);
+  }
+  const [entity, verb = ""] = base.split(".");
+  const VERBS: Record<string, string> = {
+    CREATE: "CREATED",
+    UPDATE: "UPDATED",
+    DELETE: "DELETED",
+    APPLY: "APPLICATION",
+  };
+  const v = verb.toUpperCase();
+  return `${entity.toUpperCase()}_${VERBS[v] ?? v}${suffix}`;
+}
+
+/** توثيق حدث بواجهة الخط البعيد — يكتب في AuditLog المحلي نفسه */
+export async function logAudit(input: AuditInputCompat): Promise<void> {
+  const entityId =
+    input.entityId == null || Number.isNaN(Number(input.entityId)) ? null : Number(input.entityId);
+  await audit(input.req ?? null, {
+    actorId: input.actor?.id ?? null,
+    actorName: input.actor?.fullName ?? "anonymous",
+    actorRole: input.actor?.role ?? "anonymous",
+    action: compatAction(input.action),
+    targetType: input.entityType,
+    targetId: entityId,
+    targetLabel: input.summary,
+    severity: input.severity,
+    details: input.details ?? undefined,
+  });
 }

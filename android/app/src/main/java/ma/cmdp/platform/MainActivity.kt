@@ -7,17 +7,32 @@
 // • انسجام مع الهواتف واللوحيات (WebView يتبع حجم الشاشة والاتجاه)
 // • رفع الملفات (نماذج التسجيل والمستندات) وتنزيلها
 // • زر الرجوع يتنقل داخل الويب، وروابط الخارج تفتح بالمتصفح
+//
+// حصانة الشاشة البيضاء (الإصدار 1.3.2):
+// • فشل تحميل الإطار الرئيسي (DNS/شبكة/خادم) → صفحة عدم الاتصال بالهوية دائماً
+//   — سابقاً كان الشرط isOnline() يفوّت أعطال DNS والشهادات واعتراض مزود الخدمة
+// • أخطاء HTTP (5xx/404) للإطار الرئيسي → نفس الصفحة بسلام
+// • انهيار عارض WebView (onRenderProcessGone) → إعادة بناء النشاط بدل تجمد أبيض
+// • عودة الاتصال بعد انقطاع → تحميل تلقائي للمنصة (NetworkCallback)
+// • دعم حوارات JS (alert/confirm/prompt) — كانت صامتة بلا تنفيذ في WebView
+//
+// جذر الشاشة البيضاء (الإصدار 1.3.3 — الإصلاح الجذري):
+// • حُذف setInitialScale(1) — كان يُظهر المنصة كلها كشريط مصغّر (~%1 مقياساً)
+//   والباقي فراغ؛ عاد الزوج القياسي useWideViewPort + loadWithOverviewMode
+//   (إعداد v1.2.0 الذي كان يعمل) مع بقاء مستمع إينتس لوحة المفاتيح.
 // ═══════════════════════════════════════════════════════════════════════════
 
 package ma.cmdp.platform
 
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.app.DownloadManager
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.net.ConnectivityManager
+import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
@@ -27,17 +42,21 @@ import android.view.View
 import android.view.WindowManager
 import android.webkit.CookieManager
 import android.webkit.DownloadListener
+import android.webkit.JsPromptResult
+import android.webkit.JsResult
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -49,12 +68,29 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         const val PLATFORM_URL = "https://cmdp.pages.dev"
+        const val OFFLINE_URL = "file:///android_asset/offline.html"
         private val INTERNAL_HOSTS = setOf("cmdp.pages.dev")
     }
 
     private lateinit var swipe: SwipeRefreshLayout
     private lateinit var webView: WebView
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
+
+    // ── حالة فشل الصفحة: لتحميل المنصة تلقائياً فور عودة الاتصال ─────────────
+    @Volatile private var pageFailed = false
+
+    /** مراقب عودة الاتصال: يعيد فتح المنصة إن كانت صفحة عدم الاتصال معروضة */
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            runOnUiThread {
+                if (pageFailed && webView.url?.startsWith("file:") == true) {
+                    pageFailed = false
+                    loadPlatform()
+                }
+            }
+        }
+    }
+    private var callbackRegistered = false
 
     // منتقي الملفات لرفع الوثائق والصور من نماذج المنصة
     private val fileChooserLauncher =
@@ -87,16 +123,18 @@ class MainActivity : AppCompatActivity() {
         // ─── الهيكل: سحب للتحديث يلفّ عرض الويب ───
         swipe = SwipeRefreshLayout(this).apply {
             setColorSchemeColors(Color.parseColor("#d9a03f"), Color.parseColor("#9c4526"))
-            setOnRefreshListener { webView.reload() }
+            setOnRefreshListener { loadPlatform() }
             // خلفية داكنة مطابقة للويب — تظهر عند تقليص المساحة بلوحة المفاتيح
             setBackgroundColor(Color.parseColor("#1a0e08"))
         }
         webView = WebView(this).apply {
             overScrollMode = View.OVER_SCROLL_NEVER
             isVerticalScrollBarEnabled = false
-            // تثبيت المقياس = 1: يمنع حساب منفذ العرض على أساس العرض العريض
-            // وكان يجمّد وحدات vh/vw على قيم صغيرة بعد تغيّر حجم العرض (خلل النوافذ)
-            setInitialScale(1)
+            // لا تستدعِ setInitialScale إطلاقاً: معاملها نسبة مئوية (1 = ‏%1!) —
+            // أي قيمة صريحة تُلغي حساب الكثافة فتُعرض الصفحة ببكسلات فيزيائية
+            // (تخطيط 1080px بدل 412px) ويتقلص كل المحتوى إلى شريط مصغّر أعلى
+            // الشاشة والباقي فراغ — هذا هو جذر «الشاشة البيضاء». الافتراضي (0)
+            // يحترم وسم meta viewport مع مقياس الكثافة الصحيح كما في كروم.
         }
         swipe.addView(webView)
         setContentView(FrameLayout(this).apply { addView(swipe) })
@@ -119,7 +157,22 @@ class MainActivity : AppCompatActivity() {
         if (restored) {
             webView.restoreState(savedInstanceState)
         } else {
-            webView.loadUrl(deepLink ?: PLATFORM_URL)
+            loadPlatform(deepLink)
+        }
+    }
+
+    /** فتح المنصة (أو رابط عمق داخلي) مع تصفير حالة الفشل */
+    private fun loadPlatform(url: String? = null) {
+        pageFailed = false
+        webView.loadUrl(url ?: PLATFORM_URL)
+    }
+
+    /** عرض صفحة عدم الاتصال بالهوية — بلا تكرار تحميلها إن كانت معروضة */
+    private fun showOfflinePage() {
+        pageFailed = true
+        swipe.isRefreshing = false
+        if (webView.url?.startsWith("file:") != true) {
+            webView.loadUrl(OFFLINE_URL)
         }
     }
 
@@ -136,15 +189,50 @@ class MainActivity : AppCompatActivity() {
         if (hasFocus) applyImmersiveMode()
     }
 
+    // ─── مراقبة الشبكة: تسجيل عند الظهور وإلغاء عند الاختفاء (دورة حياة نظيفة) ───
+    override fun onStart() {
+        super.onStart()
+        if (!callbackRegistered) {
+            try {
+                val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                cm.registerNetworkCallback(
+                    android.net.NetworkRequest.Builder()
+                        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                        .build(),
+                    networkCallback
+                )
+                callbackRegistered = true
+            } catch (_: Exception) {
+                // بعض الأجهزة القديمة: نتجاهل بهدوء — زر إعادة المحاولة يبقى متاحاً
+            }
+        }
+    }
+
+    override fun onStop() {
+        if (callbackRegistered) {
+            try {
+                val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                cm.unregisterNetworkCallback(networkCallback)
+            } catch (_: Exception) { }
+            callbackRegistered = false
+        }
+        super.onStop()
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
         with(webView.settings) {
             javaScriptEnabled = true
             domStorageEnabled = true
             databaseEnabled = true
-            // ملاحظة: لا useWideViewPort ولا loadWithOverviewMode — عائما العرض العريض
-            // القديمان يكسران حساب منفذ العرض للصفحات المتجاوبة (وحدات vh/vw والنوافذ
-            // الثابتة) داخل WebView؛ الصفحة تحمل meta viewport صحيحاً فلا حاجة لهما.
+            // الزوج القياسي للصفحات المتجاوبة الحاملة لوسم meta viewport صحيح
+            // (width=device-width): useWideViewPort يفعّل احترام وسم العرض
+            // وloadWithOverviewMode يضبط العرض الأولي على ملاءمة عرض المحتوى —
+            // النتيجة مطابقة تماماً لسلوك كروم: 412px منطقية على شاشة 1080px
+            // ووحدات vh/vw محسوبة سليمة (التصحيح الحقيقي لخلل النوافذ كان
+            // مستمع إينتس لوحة المفاتيح أعلاه لا تثبيت المقياس).
+            useWideViewPort = true
+            loadWithOverviewMode = true
             builtInZoomControls = false
             displayZoomControls = false
             mediaPlaybackRequiresUserGesture = true
@@ -174,16 +262,53 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
+            override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
+                super.onPageStarted(view, url, favicon)
+                // صفحة جديدة تبدأ بحالة نظيفة — الفشل يعلن عن نفسه في معاودات الخطأ
+                if (url.startsWith("http")) pageFailed = false
+            }
+
             override fun onPageFinished(view: WebView, url: String) {
                 swipe.isRefreshing = false
                 CookieManager.getInstance().flush()
             }
 
+            // ── فشل تحميل الإطار الرئيسي (النسخة الحديثة API 23+) ─────────────
+            // أي عطل في الصفحة ذاتها (DNS، انقطاع، شهادة، اعتراض مزود الخدمة…)
+            // يعرض صفحة عدم الاتصال دائماً — بلا الاعتماد الحصري على isOnline()
+            // الذي كان يفوّت أعطال الشبكة القائمة-المعطلة (خلل الشاشة البيضاء).
+            override fun onReceivedError(
+                view: WebView,
+                request: WebResourceRequest,
+                error: WebResourceError
+            ) {
+                if (request.isForMainFrame) showOfflinePage()
+                // أخطاء الموارد الفرعية (صور/خطوط) لا تُسقط الصفحة
+            }
+
+            /** النسخة القديمة (أندرويد 6 فما دون) — نفس منطق الإطار الرئيسي */
             @Deprecated("Deprecated in Java")
             override fun onReceivedError(view: WebView, errorCode: Int, description: String?, failingUrl: String) {
-                if (failingUrl == view.url && !isOnline()) {
-                    view.loadUrl("file:///android_asset/offline.html")
-                }
+                if (failingUrl == view.url) showOfflinePage()
+            }
+
+            /** أخطاء HTTP للإطار الرئيسي (5xx/404 من الاستضافة) — بلا شاشة بيضاء */
+            override fun onReceivedHttpError(
+                view: WebView,
+                request: WebResourceRequest,
+                errorResponse: WebResourceResponse
+            ) {
+                if (request.isForMainFrame) showOfflinePage()
+            }
+
+            /** انهيار عارض WebView: إعادة بناء النشاط بدل تجمّد شاشة فارغة */
+            override fun onRenderProcessGone(view: WebView, detail: android.webkit.RenderProcessGoneDetail): Boolean {
+                // نغلق العارض المتعطل بأمان ونعيد بناء الواجهة من الصفر
+                try {
+                    webView.destroy()
+                } catch (_: Exception) { }
+                recreate()
+                return true // عالجنا الحدث — لا نسخة نظام قديمة تظهر للمستخدم
             }
         }
 
@@ -207,6 +332,47 @@ class MainActivity : AppCompatActivity() {
                     filePathCallback = null
                     false
                 }
+            }
+
+            // ── حوارات JS: كانت صامتة بلا هذه المعالجات في WebView ──────────────
+            override fun onJsAlert(view: WebView, url: String, message: String, result: JsResult): Boolean {
+                AlertDialog.Builder(this@MainActivity)
+                    .setMessage(message)
+                    .setPositiveButton(android.R.string.ok) { _, _ -> result.confirm() }
+                    .setOnCancelListener { result.cancel() }
+                    .show()
+                return true
+            }
+
+            override fun onJsConfirm(view: WebView, url: String, message: String, result: JsResult): Boolean {
+                AlertDialog.Builder(this@MainActivity)
+                    .setMessage(message)
+                    .setPositiveButton(android.R.string.ok) { _, _ -> result.confirm() }
+                    .setNegativeButton(android.R.string.cancel) { _, _ -> result.cancel() }
+                    .setOnCancelListener { result.cancel() }
+                    .show()
+                return true
+            }
+
+            override fun onJsPrompt(
+                view: WebView,
+                url: String,
+                message: String,
+                defaultValue: String,
+                result: JsPromptResult
+            ): Boolean {
+                val input = EditText(this@MainActivity).apply {
+                    hint = defaultValue
+                    setText(defaultValue)
+                }
+                AlertDialog.Builder(this@MainActivity)
+                    .setMessage(message)
+                    .setView(input)
+                    .setPositiveButton(android.R.string.ok) { _, _ -> result.confirm(input.text.toString()) }
+                    .setNegativeButton(android.R.string.cancel) { _, _ -> result.cancel() }
+                    .setOnCancelListener { result.cancel() }
+                    .show()
+                return true
             }
         }
 
@@ -232,6 +398,8 @@ class MainActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 when {
+                    // صفحة عدم الاتصال: الرجوع يحاول فتح المنصة مباشرة
+                    webView.url?.startsWith("file:") == true -> loadPlatform()
                     webView.canGoBack() -> webView.goBack()
                     else -> confirmExit()
                 }

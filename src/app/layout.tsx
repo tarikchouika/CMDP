@@ -3,6 +3,7 @@ import { Cairo, Tajawal, Amiri } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Providers } from "@/components/providers";
+import { CmdpErrorBoundary, GlobalErrorHandler } from "@/components/error-boundary";
 
 const cairo = Cairo({
   subsets: ["arabic", "latin"],
@@ -68,8 +69,11 @@ export default function RootLayout({
         className={`${cairo.variable} ${tajawal.variable} ${amiri.variable} font-sans antialiased bg-background text-foreground`}
       >
         <Providers>
-          {children}
-          <Toaster />
+          <GlobalErrorHandler />
+          <CmdpErrorBoundary>
+            {children}
+            <Toaster />
+          </CmdpErrorBoundary>
         </Providers>
       </body>
     </html>

@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { coopAccessDenied, denied, requirePermission } from "@/lib/auth";
 
@@ -32,6 +33,15 @@ export async function POST(req: Request) {
       decisions: b.decisions ? String(b.decisions) : null,
       attendeesCount: b.attendeesCount ? Number(b.attendeesCount) : 0,
     },
+  });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "meeting.create",
+    entityType: "MEETING",
+    entityId: row.id,
+    summary: `برمجة اجتماع مجلس الإدارة بتاريخ ${row.date}`,
+    details: { cooperativeId: row.cooperativeId },
   });
   return ok(row, 201);
 }

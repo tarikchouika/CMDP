@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { coopAccessDenied, denied, requirePermission } from "@/lib/auth";
 
@@ -32,6 +33,15 @@ export async function POST(req: Request) {
       status: String(b.status ?? "PENDING"),
       notes: b.notes ? String(b.notes) : null,
     },
+  });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "interaction.create",
+    entityType: "INTERACTION",
+    entityId: row.id,
+    summary: `تسجيل تفاعل مع جهة وصية: ${row.subject} (${row.type})`,
+    details: { entityId: row.entityId, type: row.type },
   });
   return ok(row, 201);
 }

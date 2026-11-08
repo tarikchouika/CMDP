@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { coopAccessDenied, denied, requirePermission } from "@/lib/auth";
 import type { Prisma } from "@prisma/client";
@@ -31,6 +32,15 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       where: { id: Number(id) },
       data: data as unknown as Prisma.ComplianceTaskUpdateInput,
     });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "compliance_task.update",
+    entityType: "TASK",
+    entityId: row.id,
+    summary: `تحديث التزام: ${row.title} — الحالة: ${row.status}`,
+    details: { cooperativeId: row.cooperativeId, status: row.status },
+  });
     return ok(row);
   } catch {
     return fail("التزام غير موجود", 404);
@@ -49,6 +59,15 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   }
   try {
     await db.complianceTask.delete({ where: { id: Number(id) } });
+  await logAudit({
+    req,
+    actor: auth.user,
+    action: "compliance_task.delete",
+    entityType: "TASK",
+    entityId: existing.id,
+    summary: `حذف التزام: ${existing.title}`,
+    severity: "WARNING",
+  });
     return ok({ deleted: true });
   } catch {
     return fail("التزام غير موجود", 404);

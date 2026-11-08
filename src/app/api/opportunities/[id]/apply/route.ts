@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { fail, ok, preflight, readJson } from "@/lib/api-server";
 import { getAuthUser } from "@/lib/auth";
 
@@ -57,6 +58,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       experience: b.experience ? String(b.experience).slice(0, 1500) : null,
       status: "PENDING",
     },
+  });
+  await logAudit({
+    req,
+    actor: user,
+    action: "opportunity.apply",
+    entityType: "APPLICATION",
+    entityId: row.id,
+    summary: `ترشح جديد على «${opportunity.title}»: ${fullName}`,
+    details: { opportunityId: opportunity.id, userId: user?.id ?? null },
   });
   return ok(
     {

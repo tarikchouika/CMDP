@@ -309,6 +309,8 @@ export type UserInput = {
   accountType: string | null;
   cooperativeId: number | null;
   status?: string;
+  // سبب التوقيف الموثق (الإصدار 1.3.2) — إلزامي عند الإيقاف
+  suspensionReason?: string;
   // مرفقات الهوية — تُرسل عند الإنشاء أو عند التغيير في التحرير فقط
   photo?: import("@/lib/attachments").Attachment | null;
   idDocuments?: import("@/lib/attachments").Attachment[];
@@ -641,3 +643,24 @@ export const useCreateOrder = () => {
     },
   });
 };
+
+// ═══════════════════════════════════════════════════════════════════════════
+// حصانة الجلسة (من توحيد 1.3.4): التحقق من الجلسة المخزنة عبر /api/auth/me
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * التحقق من الجلسة عند الإقلاع (حصانة الشاشة البيضاء):
+ * يعيد بيانات المستخدم الحية عند الصلاحية — لت_sync الملكية/الدور من الخادم.
+ */
+export async function verifySession(): Promise<
+  { user: import("@/lib/types").SessionUser } | "invalid" | "unknown"
+> {
+  try {
+    const { token } = useUIStore.getState();
+    if (!token) return "unknown";
+    return await rawFetch<{ user: import("@/lib/types").SessionUser }>("/api/auth/me");
+  } catch (e) {
+    if (e instanceof ApiUnavailableError) return "unknown"; // الباك إند غير متاح: نمسك الجلسة كما هي
+    return "invalid"; // 401 ونحوه: جلسة ميتة → خروج نظيف
+  }
+}

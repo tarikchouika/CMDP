@@ -68,7 +68,17 @@ async function main() {
 
   const existingOwner = await prisma.user.findUnique({ where: { username: "tarik" } });
   if (existingOwner) {
-    console.log("✓ حساب المالك tarik موجود مسبقاً — تُخطي");
+    // ضمان علم الملكية على حساب المالك الحالي (توحيد 1.3.4) — واحد لا يتعدد
+    const ownerCount = await prisma.user.count({ where: { isPlatformOwner: true } });
+    if (!existingOwner.isPlatformOwner && ownerCount === 0) {
+      await prisma.user.update({
+        where: { username: "tarik" },
+        data: { isPlatformOwner: true, role: "SUPER_ADMIN" },
+      });
+      console.log("✓ رُفع حساب المالك tarik إلى رتبة المالك (isPlatformOwner=true)");
+    } else {
+      console.log("✓ حساب المالك tarik موجود مسبقاً — تُخطي");
+    }
   } else {
     const pwd = ownerPassword ?? strongPassword();
     await prisma.user.create({
@@ -77,6 +87,7 @@ async function main() {
         passwordHash: hashPassword(pwd),
         fullName: "Tarik Chouika",
         role: "SUPER_ADMIN",
+        isPlatformOwner: true, // المالك الوحيد للمنصة (حوكمة 1.3.0/توحيد 1.3.4)
         accountType: null,
         cooperativeId: null,
         status: "ACTIVE",
@@ -87,7 +98,7 @@ async function main() {
       password: pwd,
       fullName: "Tarik Chouika",
       role: "SUPER_ADMIN — مالك المنصة",
-      note: "الدخول الكامل: إدارة المنصة والتعاونيات والحسابات",
+      note: "الدخول الكامل: إدارة المنصة والسوبر أدمين ونقل الملكية وسجل الأحداث",
     });
   }
 

@@ -12,6 +12,7 @@ import {
   BadgeCheck,
   Briefcase,
   Building2,
+  Crown,
   FileText,
   Gavel,
   Landmark,
@@ -34,7 +35,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ACCOUNT_TYPE_LABELS, ROLE_LABELS } from "@/lib/constants";
-import { allowedViews } from "@/lib/permissions";
+import { allowedViews, isPlatformOwner } from "@/lib/permissions";
 import { useUIStore, VIEWS, type View } from "@/store/ui";
 import { useCooperatives } from "@/hooks/use-cmdp";
 import { CmdpLogo, CmdpMark, CmdpWatermark, DividerZellige, ZelligeStar } from "@/components/patterns";
@@ -73,6 +74,7 @@ import { SettingsView } from "@/components/views/settings";
 import { InstallView } from "@/components/views/install";
 import { StoreView } from "@/components/views/store";
 import { StoreManageView } from "@/components/views/storemanage";
+import { verifySession } from "@/hooks/use-cmdp";
 import { t, useI18n } from "@/lib/i18n";
 
 // ─── عناصر التنقل الكاملة (تُفلتر حسب دور المستخدم) ────────────────────────
@@ -377,9 +379,9 @@ function AppTopBar() {
       <NotificationsBell />
       <ThemeToggle />
       <LanguageSwitcher />
-      {user?.role === "SUPER_ADMIN" && (
+      {isPlatformOwner(user) && (
         <span className="hidden items-center gap-1 rounded-full border border-terra/30 bg-terra/10 px-2.5 py-1 text-[10px] font-black text-terra lg:inline-flex">
-          <BadgeCheck className="size-3" />
+          <Crown className="size-3" />
           {t("المالك")}
         </span>
       )}
@@ -533,6 +535,28 @@ function AppShellInner() {
   const view = useUIStore((s) => s.view);
   const authed = useUIStore((s) => s.authed);
   const [moreOpen, setMoreOpen] = React.useState(false);
+
+  // ── حصانة الإقلاع (الإصدار 1.3.2): التحقق من الجلسة المخزنة مرة واحدة ──
+  // جلسة ميتة (بعد ترقية قاعدة أو تغيّر الرموز) → خروج نظيف لصفحة الدخول
+  // بدل بقاء واجهة معلقة على بيانات قديمة؛ الباك إند المعطّل لا يفسد الجلسة
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const state = useUIStore.getState();
+      if (!state.authed || !state.token) return;
+      const res = await verifySession();
+      if (cancelled) return;
+      if (res === "invalid") {
+        useUIStore.getState().setAuthed(null);
+      } else if (res !== "unknown") {
+        // مزامنة هوية الجلسة من الخادم (تغيير ملكية/دور/حالة خارج هذا الجهاز)
+        useUIStore.getState().updateUser(res.user);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // مزامنة عنوان URL (hash) مع الوحدة الحالية
   React.useEffect(() => {

@@ -211,6 +211,9 @@ export function isOwner(user: RankedUser | null | undefined): boolean {
   return rankOf(user) === RANK.OWNER;
 }
 
+/** الاسم الأوضح لنفس الفحص — مستعمل من الواجهة (توحيد 1.3.4) */
+export const isPlatformOwner = isOwner;
+
 /**
  * هل يمكن للفاعل إدارة حساب الهدف وفق رتبة الحوكمة الصارمة؟
  * • المالك (OWNER): لا يديره إلا المالك نفسه — محمي من الجميع

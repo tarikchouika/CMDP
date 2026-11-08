@@ -54,7 +54,9 @@ jobs:
       - name: حساب رقم الإصدار
         id: ver
         run: |
-          CODE="$(date -u +%y%m%d)01"
+          # رقم إصدار فريد رتيب: التاريخ + الساعة (بناءات اليوم نفسه كانت تتصادم
+          # فيرفض أندرويد تحديث التطبيق — خلل طريق التحديث للأجهزة القائمة)
+          CODE="$(date -u +%y%m%d%H)"
           NAME="$(date -u +%Y.%m.%d)-${GITHUB_SHA::7}"
           echo "code=$CODE" >> "$GITHUB_OUTPUT"
           echo "name=$NAME" >> "$GITHUB_OUTPUT"

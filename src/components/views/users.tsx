@@ -36,6 +36,7 @@ import { ConfirmDialog, EmptyState, LBadge, PageHeader, TableSkeleton } from "@/
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -403,6 +404,10 @@ export function UsersView() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<AppUser | null>(null);
   const [query, setQuery] = React.useState("");
+  // توقيف مسبب (الإصدار 1.3.2): سبب موثق إلزامي قبل الإيقاف + إشعار المعني
+  const [suspendTarget, setSuspendTarget] = React.useState<AppUser | null>(null);
+  const [suspendReason, setSuspendReason] = React.useState("");
+  const [suspendBusy, setSuspendBusy] = React.useState(false);
 
   const canApproveCoops = user?.role === "SUPER_ADMIN" || user?.role === "ADMIN";
   const pendingUsers = (users ?? []).filter((u) => u.status === "PENDING");
@@ -436,6 +441,12 @@ export function UsersView() {
   }
 
   async function setUserStatus(u: AppUser, status: string) {
+    // العدالة الإجرائية: لا إيقاف مباشر — سبب مكتوب إلزامي يُخطر به المعني
+    if (status === "SUSPENDED" && u.status !== "SUSPENDED") {
+      setSuspendTarget(u);
+      setSuspendReason("");
+      return;
+    }
     try {
       await saveUser.mutateAsync({
         id: u.id,
@@ -455,6 +466,29 @@ export function UsersView() {
       });
     } catch (err) {
       toast({ variant: "destructive", title: t("تعذر التنفيذ"), description: tError(err) });
+    }
+  }
+
+  /** تنفيذ التوقيف الموثق من الحوار المخصص */
+  async function confirmSuspend() {
+    if (!suspendTarget) return;
+    setSuspendBusy(true);
+    try {
+      await saveUser.mutateAsync({
+        id: suspendTarget.id,
+        fullName: suspendTarget.fullName,
+        role: suspendTarget.role,
+        accountType: suspendTarget.accountType,
+        cooperativeId: suspendTarget.cooperativeId,
+        status: "SUSPENDED",
+        suspensionReason: suspendReason.trim(),
+      });
+      toast({ title: t("وُقف الحساب وأُبلغ صاحبه بالسبب الموثق") });
+      setSuspendTarget(null);
+    } catch (err) {
+      toast({ variant: "destructive", title: t("تعذر التنفيذ"), description: tError(err) });
+    } finally {
+      setSuspendBusy(false);
     }
   }
 
@@ -791,6 +825,45 @@ export function UsersView() {
       </Tabs>
 
       <UserDialog open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} />
+
+      {/* حوار التوقيف الموثق (الإصدار 1.3.2) — سبب إلزامي يُخطر به المعني */}
+      <Dialog open={!!suspendTarget} onOpenChange={(v) => { if (!v) setSuspendTarget(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {t("إيقاف حساب")}: {suspendTarget?.fullName} ({suspendTarget?.username})
+            </DialogTitle>
+            <DialogDescription>
+              {t("السبب الموثق إلزامي — يُخطر به المعني عبر الإشعارات ويظهر له عند محاولة الدخول، ويوثق في سجل الأحداث")}
+            </DialogDescription>
+          </DialogHeader>
+          <div>
+            <Label>{t("سبب التوقيف")}</Label>
+            <Textarea
+              value={suspendReason}
+              onChange={(e) => setSuspendReason(e.target.value)}
+              className="mt-1.5 min-h-20"
+              placeholder={t("مثال: خرق موثق لقواعد الاستخدام بتاريخ… بعد تنبيهين سابقين…")}
+            />
+            {suspendReason.trim().length > 0 && suspendReason.trim().length < 10 && (
+              <p className="mt-1 text-[11px] font-bold text-destructive">{t("10 أحرف على الأقل")}</p>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setSuspendTarget(null)} disabled={suspendBusy}>
+              {t("إلغاء")}
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={suspendBusy || suspendReason.trim().length < 10}
+              onClick={() => confirmSuspend()}
+            >
+              {suspendBusy && <Loader2 className="me-1 size-4 animate-spin" />}
+              {t("تنفيذ التوقيف الموثق")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

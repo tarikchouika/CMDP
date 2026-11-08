@@ -108,6 +108,10 @@ export async function runSeed(db: PrismaClient, adminPassword = "cmdp2026") {
     await db.user.create({
       data: {
         ...userData,
+        // حصانة 1.3.2: حساب «superadmin» التجريبي بكلمة المرور المعروفة (cmdp2026)
+        // لا يُبذر بعد الآن برتبة سوبر أدمين — الرتب المالكية تُمنح حصراً عبر
+        // لوحة المالك أو create-accounts؛ نَزرع الحساب أدمناً لعرض الأدوار فقط.
+        role: u.username === "superadmin" && u.role === "SUPER_ADMIN" ? "ADMIN" : u.role,
         passwordHash: hashPassword(adminPassword),
         createdAt: D(u.createdAt),
       },

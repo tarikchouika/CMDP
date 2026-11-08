@@ -93,6 +93,16 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
     data.status = status;
     if (status === "REJECTED" || status === "SUSPENDED") data.cooperativeId = target.cooperativeId;
+    // ── العدالة المعممة (من توحيد 1.3.4): التوقيف بسبب موثق يُخطر به المعني ──
+    if (status === "SUSPENDED" && target.status !== "SUSPENDED") {
+      const reason = String(b.suspensionReason ?? "").trim();
+      if (reason.length > 0 && reason.length < 10) {
+        return fail("سبب التوقيف الموثق: 10 أحرف على الأقل — يُخطر به المعني");
+      }
+      if (reason) {
+        data.suspensionReasons = JSON.stringify({ reasons: [reason], details: null, generalized: true });
+      }
+    }
   }
 
   // ─── تغيير الدور / نوع الحساب / التعاونية ────────────────────────────────
@@ -166,8 +176,31 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       targetId: target.id,
       targetLabel: target.username,
       severity: "WARNING",
-      details: { from: target.status, to: data.status, fields: Object.keys(data) },
+      details: {
+        from: target.status,
+        to: data.status,
+        fields: Object.keys(data),
+        suspensionReason:
+          data.status === "SUSPENDED" && b.suspensionReason ? String(b.suspensionReason) : undefined,
+      },
     });
+    // ── إشعار المعني داخل المنصة عند توقيفه بسبب موثق (عدالة معممة — 1.3.4) ──
+    if (data.status === "SUSPENDED" && b.suspensionReason) {
+      const reason = String(b.suspensionReason).trim();
+      try {
+        await db.notification.create({
+          data: {
+            userId: target.id,
+            type: "ACCOUNT_SUSPENDED",
+            title: "تم توقيف حسابك",
+            body: `تم توقيف حسابكم في منصة CMDP للسبب الموثق التالي:\n${reason}\nيمكنكم التواصل مع إدارة المنصة للتوضيح أو طلب إعادة التنشيط.`,
+            meta: JSON.stringify({ reason, by: actor.username }),
+          },
+        });
+      } catch {
+        /* الإشعار أفضل جهد — لا يعطل المسار */
+      }
+    }
   } else {
     await audit(req, {
       actorId: actor.id,
