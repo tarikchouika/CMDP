@@ -8,6 +8,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { hashPassword } from "@/lib/seed-run";
+import { audit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -129,6 +130,17 @@ export async function POST(req: Request) {
         status: "PENDING",
       },
     });
+    // ─── سجل التدقيق: طلب انخراط من الزوار ──────────────────────────
+    await audit(req, {
+      actorId: user.id,
+      actorName: "زائر",
+      actorRole: "PUBLIC",
+      action: "USER_REGISTER",
+      targetType: "USER",
+      targetId: user.id,
+      targetLabel: username,
+      details: { intent, requestType, cooperativeId: coopId },
+    });
     return ok({
       message: "تم استلام طلب انخراطكم بنجاح. سيتمكن رئيس التعاونية أو أحد أعضائها المسييرين من المصادقة عليه.",
     }, 201);
@@ -180,6 +192,16 @@ export async function POST(req: Request) {
         status: "PENDING",
       },
     });
+    // ─── سجل التدقيق: تسجيل تعاونية جديدة من الواجهة العمومية ──────
+    await audit(req, {
+      actorName: "زائر",
+      actorRole: "PUBLIC",
+      action: "USER_REGISTER",
+      targetType: "COOPERATIVE",
+      targetId: coop.id,
+      targetLabel: coop.name,
+      details: { intent, presidentUsername: username, cooperativeId: coop.id },
+    });
     return ok({
       message:
         "تم استلام طلب تسجيل التعاونية. ستقوم إدارة المنصة بمراجعة الملف والمصادقة عليه، ثم يُفعَّل حسابكم كرئيس(ة) للتعاونية.",
@@ -187,7 +209,7 @@ export async function POST(req: Request) {
   }
 
   // ─── طلب 3: حساب مجرد (بانتظار المصادقة) ────────────────────────────────
-  await db.user.create({
+  const simple = await db.user.create({
     data: {
       username,
       passwordHash: hashPassword(password),
@@ -202,6 +224,17 @@ export async function POST(req: Request) {
       cooperativeId: null,
       status: "PENDING",
     },
+  });
+  // ─── سجل التدقيق: تسجيل حساب مجرد من الزوار ──────────────────
+  await audit(req, {
+    actorId: simple.id,
+    actorName: "زائر",
+    actorRole: "PUBLIC",
+    action: "USER_REGISTER",
+    targetType: "USER",
+    targetId: simple.id,
+    targetLabel: username,
+    details: { intent },
   });
   return ok({
     message:

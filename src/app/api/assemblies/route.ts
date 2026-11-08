@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { getAuthUser, requirePermission, coopAccessDenied, denied } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +51,17 @@ export async function POST(req: Request) {
       attendeesCount: b.attendeesCount ? Number(b.attendeesCount) : 0,
       status: String(b.status ?? "SCHEDULED"),
     },
+  });
+  // ─── سجل التدقيق: برمجة جمع عام ──────────────────────────────────
+  await audit(req, {
+    actorId: auth.user.id,
+    actorName: auth.user.fullName,
+    actorRole: auth.user.role,
+    action: "ASSEMBLY_CREATED",
+    targetType: "ASSEMBLY",
+    targetId: row.id,
+    targetLabel: row.agenda.slice(0, 120),
+    details: { cooperativeId: row.cooperativeId, type: row.type, date: row.date, status: row.status },
   });
   return ok(row, 201);
 }

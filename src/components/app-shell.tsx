@@ -21,6 +21,7 @@ import {
   Moon,
   ScrollText,
   Settings,
+  Shield,
   Sun,
   UserRound,
   Users,
@@ -38,7 +39,9 @@ import { useUIStore, VIEWS, type View } from "@/store/ui";
 import { useCooperatives } from "@/hooks/use-cmdp";
 import { CmdpLogo, CmdpMark, CmdpWatermark, DividerZellige, ZelligeStar } from "@/components/patterns";
 import { ChatbotWidget } from "@/components/chatbot";
+import { ConnectivityGuard } from "@/components/connectivity-guard";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { NotificationsBell } from "@/components/notifications-bell";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -63,6 +66,7 @@ import { DocumentsView } from "@/components/views/documents";
 import { EntitiesView } from "@/components/views/entities";
 import { RegulationsView } from "@/components/views/regulations";
 import { UsersView } from "@/components/views/users";
+import { PlatformView } from "@/components/views/platform";
 import { OpportunitiesView } from "@/components/views/opportunities";
 import { MySpaceView } from "@/components/views/myspace";
 import { SettingsView } from "@/components/views/settings";
@@ -108,7 +112,10 @@ const NAV_GROUPS: {
   },
   {
     group: "الإدارة",
-    items: [{ view: "users", label: "المستخدمون والمصادقات", icon: UserRound }],
+    items: [
+      { view: "platform", label: "لوحة المنصة", icon: Shield },
+      { view: "users", label: "المستخدمون والمصادقات", icon: UserRound },
+    ],
   },
   {
     group: "النظام",
@@ -131,6 +138,7 @@ const VIEW_TITLES: Record<View, string> = {
   entities: "الجهات الوصية",
   regulations: "القوانين واللوائح",
   users: "المستخدمون والمصادقات",
+  platform: "لوحة المنصة",
   myspace: "فضائي",
   settings: "الإعدادات",
   install: "تثبيت التطبيق",
@@ -366,6 +374,7 @@ function AppTopBar() {
 
       <DemoBadge />
       <CoopSelector compact />
+      <NotificationsBell />
       <ThemeToggle />
       <LanguageSwitcher />
       {user?.role === "SUPER_ADMIN" && (
@@ -505,6 +514,8 @@ function ViewRouter() {
       return <RegulationsView />;
     case "users":
       return <UsersView />;
+    case "platform":
+      return <PlatformView />;
     case "storemanage":
       return <StoreManageView />;
     case "opportunities":
@@ -757,8 +768,11 @@ export function ViewLink({
 export function AppShell() {
   const { lang } = useI18n();
   return (
-    <React.Fragment key={lang}>
-      <AppShellInner />
-    </React.Fragment>
+    // الحارس خارج مفتاح اللغة: لا يُعاد فحص الاتصال عند تبديل اللغة
+    <ConnectivityGuard>
+      <React.Fragment key={lang}>
+        <AppShellInner />
+      </React.Fragment>
+    </ConnectivityGuard>
   );
 }

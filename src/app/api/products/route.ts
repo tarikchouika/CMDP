@@ -7,6 +7,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson } from "@/lib/api-server";
 import { denied, requirePermission } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -81,6 +82,17 @@ export async function POST(req: Request) {
       inStock: b.inStock === undefined ? true : Boolean(b.inStock),
       status: b.status === "HIDDEN" ? "HIDDEN" : "ACTIVE",
     },
+  });
+  // ─── سجل التدقيق: إضافة منتج للمتجر ──────────────────────────────
+  await audit(req, {
+    actorId: auth.user.id,
+    actorName: auth.user.fullName,
+    actorRole: auth.user.role,
+    action: "PRODUCT_CREATED",
+    targetType: "PRODUCT",
+    targetId: row.id,
+    targetLabel: row.name,
+    details: { cooperativeId: row.cooperativeId, category: row.category, price: row.price },
   });
   return ok(row, 201);
 }

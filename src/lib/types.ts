@@ -17,6 +17,7 @@ export interface SessionUser {
   cooperativeId: number | null;
   cooperativeName?: string | null;
   status: UserStatus;
+  isPlatformOwner?: boolean; // مالك المنصة الحالي (حوكمة 1.3.0)
 }
 
 /** حساب مستخدم كامل (إدارة) */

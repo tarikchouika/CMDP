@@ -6,7 +6,8 @@ import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson } from "@/lib/api-server";
 import { denied, requirePermission } from "@/lib/auth";
 import { hashPassword } from "@/lib/seed-run";
-import { assignableRoles, canManageUser, manageDenialReason } from "@/lib/permissions";
+import { assignableRoles, canManage, canManageUser, manageDenialReason, rankOf } from "@/lib/permissions";
+import { audit } from "@/lib/audit";
 import { sanitizeFiles, sanitizePhoto } from "@/lib/attachments";
 import type { AccountType, Role } from "@/lib/types";
 
@@ -26,6 +27,27 @@ async function targetGuard(
 
   const target = await db.user.findUnique({ where: { id } });
   if (!target) return { response: fail("الحساب غير موجود", 404) };
+
+  // ─── رتب الحوكمة (1.3.0): لا إجراء على حساب أعلى أو مساوٍ رتبةً ────────
+  // المالك محمي من الجميع؛ سوبر أدمين يديره المالك حصراً — وكل محاولة
+  // تجاوز تُسجّل في سجل التدقيق كإنذار قبل الرفض الموحّد
+  if (actor.id !== target.id && !canManage(actor, target)) {
+    await audit(req, {
+      actorId: actor.id,
+      actorName: actor.fullName,
+      actorRole: actor.role,
+      action: "HIERARCHY_VIOLATION_BLOCKED",
+      targetType: "USER",
+      targetId: target.id,
+      targetLabel: target.username,
+      severity: "WARNING",
+      details: {
+        actor: { id: actor.id, username: actor.username, role: actor.role, rank: rankOf(actor) },
+        target: { id: target.id, username: target.username, role: target.role, rank: rankOf(target) },
+      },
+    });
+    return { response: denied("لا يمكنك تنفيذ هذا الإجراء على حساب أعلى رتبة") };
+  }
 
   // سوبر أدمين حسابات الإدارة لا يديرها إلا المالك
   if (target.role === "SUPER_ADMIN" && actor.role !== "SUPER_ADMIN") {
@@ -132,6 +154,32 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       cooperative: { select: { id: true, name: true } },
     },
   });
+
+  // ─── سجل التدقيق: تغيير الحالة إنذارٌ، وما دونه معلومة ──────────────
+  if (data.status !== undefined && data.status !== target.status) {
+    await audit(req, {
+      actorId: actor.id,
+      actorName: actor.fullName,
+      actorRole: actor.role,
+      action: "USER_STATUS_CHANGED",
+      targetType: "USER",
+      targetId: target.id,
+      targetLabel: target.username,
+      severity: "WARNING",
+      details: { from: target.status, to: data.status, fields: Object.keys(data) },
+    });
+  } else {
+    await audit(req, {
+      actorId: actor.id,
+      actorName: actor.fullName,
+      actorRole: actor.role,
+      action: "USER_UPDATED",
+      targetType: "USER",
+      targetId: target.id,
+      targetLabel: target.username,
+      details: { fields: Object.keys(data) },
+    });
+  }
   return ok(row);
 }
 
@@ -150,5 +198,24 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   if (target.role === "SUPER_ADMIN") return denied("لا يمكن حذف حساب المالك");
 
   await db.user.delete({ where: { id: Number(id) } });
+
+  // ─── سجل التدقيق: حذف نهائي لحساب ──────────────────────────────────
+  await audit(req, {
+    actorId: actor.id,
+    actorName: actor.fullName,
+    actorRole: actor.role,
+    action: "USER_DELETED",
+    targetType: "USER",
+    targetId: target.id,
+    targetLabel: target.username,
+    severity: "WARNING",
+    details: {
+      username: target.username,
+      fullName: target.fullName,
+      role: target.role,
+      accountType: target.accountType,
+      status: target.status,
+    },
+  });
   return ok({ deleted: true });
 }

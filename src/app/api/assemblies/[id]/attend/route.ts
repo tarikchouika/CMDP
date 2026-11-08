@@ -5,6 +5,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight } from "@/lib/api-server";
 import { getAuthUser } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     where: { assemblyId_userId: { assemblyId: assembly.id, userId: user.id } },
     create: { assemblyId: assembly.id, userId: user.id, confirmed: true },
     update: { confirmed: true },
+  });
+  // ─── سجل التدقيق: تأكيد حضور عضو ──────────────────────────────────
+  await audit(req, {
+    actorId: user.id,
+    actorName: user.fullName,
+    actorRole: user.role,
+    action: "ASSEMBLY_ATTEND",
+    targetType: "ASSEMBLY",
+    targetId: assembly.id,
+    targetLabel: assembly.agenda.slice(0, 120),
+    details: { cooperativeId: assembly.cooperativeId, date: assembly.date },
   });
   return ok({ confirmed: true, message: "تم تأكيد حضوركم — شكراً لمشاركتكم" }, 201);
 }

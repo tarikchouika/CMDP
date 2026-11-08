@@ -195,6 +195,36 @@ export function formatDateLocalized(date: Date | string, lang: Lang = getLang())
   }
 }
 
+/** تنسيق التاريخ والوقت معاً حسب لغة العرض (سجلات التدقيق والإشعارات) */
+export function formatDateTimeLocalized(date: Date | string, lang: Lang = getLang()): string {
+  const meta = LANGS.find((l) => l.code === lang)!;
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (Number.isNaN(d.getTime())) return "—";
+  try {
+    return new Intl.DateTimeFormat(meta.locale, { dateStyle: "medium", timeStyle: "short" }).format(d);
+  } catch {
+    return d.toISOString().slice(0, 16).replace("T", " ");
+  }
+}
+
+/** الزمن النسبي («قبل 5 دقائق») حسب لغة العرض */
+export function timeAgoLocalized(date: Date | string, lang: Lang = getLang()): string {
+  const meta = LANGS.find((l) => l.code === lang)!;
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (Number.isNaN(d.getTime())) return "—";
+  const mins = Math.round((Date.now() - d.getTime()) / 60_000);
+  try {
+    const rtf = new Intl.RelativeTimeFormat(meta.locale, { numeric: "auto" });
+    if (mins < 1) return rtf.format(0, "minute");
+    if (mins < 60) return rtf.format(-mins, "minute");
+    const hours = Math.round(mins / 60);
+    if (hours < 24) return rtf.format(-hours, "hour");
+    return rtf.format(-Math.round(hours / 24), "day");
+  } catch {
+    return d.toISOString().slice(0, 10);
+  }
+}
+
 /** تنسيق العملة (الدرهم المغربي) حسب اللغة */
 export function formatMADLocalized(amount: number, lang: Lang = getLang()): string {
   const meta = LANGS.find((l) => l.code === lang)!;

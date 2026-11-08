@@ -186,12 +186,72 @@ export function manageDenialReason(
   return "هذا الحساب خارج نطاق صلاحياتك";
 }
 
+// ─── رتب حوكمة المنصة ونقل الملكية (حوكمة 1.3.0) ──────────────────────
+/** حساب قابل للترتيب حسب رتبة الحوكمة */
+export interface RankedUser {
+  id: number;
+  role: string;
+  isPlatformOwner?: boolean | null;
+}
+
+/** سلّم الرتب: المالك 5 ← سوبر أدمين 4 ← أدمن 3 ← كوأدمن 2 ← مستخدم 1 */
+export const RANK = { OWNER: 5, SUPER_ADMIN: 4, ADMIN: 3, COADMIN: 2, USER: 1 } as const;
+
+/** رتبة الحساب — المالك (OWNER) هو سوبر أدمين يحمل علم isPlatformOwner */
+export function rankOf(user: RankedUser | null | undefined): number {
+  if (!user) return 0;
+  if (user.role === "SUPER_ADMIN") return user.isPlatformOwner ? RANK.OWNER : RANK.SUPER_ADMIN;
+  if (user.role === "ADMIN") return RANK.ADMIN;
+  if (user.role === "COADMIN") return RANK.COADMIN;
+  return RANK.USER;
+}
+
+/** هل الهدف مالك المنصة الحالي؟ */
+export function isOwner(user: RankedUser | null | undefined): boolean {
+  return rankOf(user) === RANK.OWNER;
+}
+
+/**
+ * هل يمكن للفاعل إدارة حساب الهدف وفق رتبة الحوكمة الصارمة؟
+ * • المالك (OWNER): لا يديره إلا المالك نفسه — محمي من الجميع
+ * • سوبر أدمين: يديره المالك حصراً (تسلسل الإجراء المنضبط: إشعار ← توقيف ← إزالة)
+ * • ما دونهما: يديره كل من يعلوه رتبةً بشرط عدم كونه الحساب الشخصي
+ */
+export function canManage(actor: RankedUser | null, target: RankedUser | null): boolean {
+  if (!actor || !target) return false;
+  if (actor.id === target.id) return false; // لا إجراء على الحساب الشخصي
+  const ar = rankOf(actor);
+  const tr = rankOf(target);
+  if (tr === RANK.OWNER) return ar === RANK.OWNER; // حماية مالك المنصة
+  if (tr === RANK.SUPER_ADMIN) return ar === RANK.OWNER; // سوبر أدمين: المالك حصراً
+  return ar > tr; // ما دونه: الأعلى رتبةً يدير الأدنى
+}
+
+/**
+ * تحقق حماية الرتبة — يعيد رسالة الرفض العربية أو null عند السماح.
+ * تستعمله مسارات المستخدمين لتوحيد رسالة التراتبية وتسجيل محاولة التجاوز.
+ */
+export function assertNotProtected(
+  actor: RankedUser | null,
+  target: RankedUser | null
+): string | null {
+  if (!actor || !target) return "بيانات غير مكتملة للتحقق من تراتبية الصلاحيات";
+  if (actor.id === target.id) return "لا يمكن تنفيذ إجراء على حسابك الشخصي";
+  if (rankOf(target) === RANK.OWNER && rankOf(actor) !== RANK.OWNER) {
+    return "لا يمكنك تنفيذ هذا الإجراء على حساب أعلى رتبة"; // مالك المنصة محمي
+  }
+  if (!canManage(actor, target)) {
+    return "لا يمكنك تنفيذ هذا الإجراء على حساب أعلى رتبة";
+  }
+  return null;
+}
+
 /** الوحدات المتاحة حسب الدور (للتصفح والقوائم) */
 export function allowedViews(user: SessionUser | null): string[] {
   if (!user) return ["landing", "login", "register", "opportunities", "legal"];
   const common = ["landing", "opportunities", "legal", "settings"];
   if (user.role === "SUPER_ADMIN" || user.role === "ADMIN") {
-    return [
+    const views = [
       ...common,
       "dashboard",
       "cooperatives",
@@ -204,6 +264,8 @@ export function allowedViews(user: SessionUser | null): string[] {
       "users",
       "storemanage",
     ];
+    // لوحة المنصة: للسوبر أدمين حصراً (المالك + المشرفون المعرَّفون)
+    return user.role === "SUPER_ADMIN" ? ["platform", ...views] : views;
   }
   if (user.role === "COADMIN") {
     return [

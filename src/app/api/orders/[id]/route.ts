@@ -6,6 +6,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson } from "@/lib/api-server";
 import { denied, requirePermission } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     include: {
       product: { select: { id: true, name: true, cooperativeId: true, price: true, unit: true } },
     },
+  });
+  // ─── سجل التدقيق: تغيير حالة معالجة الطلب ────────────────────────
+  await audit(req, {
+    actorId: user.id,
+    actorName: user.fullName,
+    actorRole: user.role,
+    action: "ORDER_STATUS_CHANGED",
+    targetType: "ORDER",
+    targetId: row.id,
+    targetLabel: row.product?.name ?? String(row.id),
+    details: { from: existing.status, to: status, customerName: row.customerName },
   });
   return ok(row);
 }

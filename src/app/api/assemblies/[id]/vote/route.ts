@@ -6,6 +6,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson } from "@/lib/api-server";
 import { getAuthUser } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   await db.assemblyVote.create({
     data: { assemblyId: assembly.id, userId: user.id, decision },
+  });
+  // ─── سجل التدقيق: صوت عضو في جمع عام ──────────────────────────────
+  await audit(req, {
+    actorId: user.id,
+    actorName: user.fullName,
+    actorRole: user.role,
+    action: "ASSEMBLY_VOTE",
+    targetType: "ASSEMBLY",
+    targetId: assembly.id,
+    targetLabel: assembly.agenda.slice(0, 120),
+    details: { decision, cooperativeId: assembly.cooperativeId, type: assembly.type },
   });
   return ok({ decision, message: "تم تسجيل صوتكم بنجاح" }, 201);
 }

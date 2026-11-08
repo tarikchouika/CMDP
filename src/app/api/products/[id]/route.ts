@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson } from "@/lib/api-server";
 import { denied, requirePermission } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (b.featured !== undefined) data.featured = Boolean(b.featured);
   if (b.status !== undefined) data.status = String(b.status);
   const row = await db.product.update({ where: { id: Number(id) }, data: data as never });
+  // ─── سجل التدقيق: تعديل منتج ──────────────────────────────────────
+  await audit(req, {
+    actorId: auth.user.id,
+    actorName: auth.user.fullName,
+    actorRole: auth.user.role,
+    action: "PRODUCT_UPDATED",
+    targetType: "PRODUCT",
+    targetId: row.id,
+    targetLabel: row.name,
+    details: { cooperativeId: row.cooperativeId, fields: Object.keys(data) },
+  });
   return ok(row);
 }
 
@@ -44,5 +56,22 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     return denied("هذا المنتج خارج نطاق تعاونيتكم");
   }
   await db.product.delete({ where: { id: Number(id) } });
+  // ─── سجل التدقيق: حذف منتج من المتجر ──────────────────────────
+  await audit(req, {
+    actorId: auth.user.id,
+    actorName: auth.user.fullName,
+    actorRole: auth.user.role,
+    action: "PRODUCT_DELETED",
+    targetType: "PRODUCT",
+    targetId: existing.id,
+    targetLabel: existing.name,
+    severity: "WARNING",
+    details: {
+      cooperativeId: existing.cooperativeId,
+      category: existing.category,
+      price: existing.price,
+      status: existing.status,
+    },
+  });
   return ok({ deleted: true });
 }

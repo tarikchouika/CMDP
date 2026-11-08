@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { coopAccessDenied, denied, requirePermission } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,17 @@ export async function POST(req: Request) {
       isShared: b.isShared === true, // مشاركة مع المتعاقدين والمصرح لهم
       notes: b.notes ? String(b.notes) : null,
     },
+  });
+  // ─── سجل التدقيق: إضافة وثيقة للسجل ────────────────────────────────
+  await audit(req, {
+    actorId: auth.user.id,
+    actorName: auth.user.fullName,
+    actorRole: auth.user.role,
+    action: "DOCUMENT_CREATED",
+    targetType: "DOCUMENT",
+    targetId: row.id,
+    targetLabel: row.title,
+    details: { cooperativeId: row.cooperativeId, type: row.type, status: row.status, isShared: row.isShared },
   });
   return ok(row, 201);
 }

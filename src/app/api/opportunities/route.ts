@@ -6,6 +6,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { denied, getAuthUser, requirePermission } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -106,6 +107,17 @@ export async function POST(req: Request) {
       status: "OPEN",
     },
     include: { cooperative: COOP_SELECT },
+  });
+  // ─── سجل التدقيق: نشر فرصة جديدة ──────────────────────────────────
+  await audit(req, {
+    actorId: user.id,
+    actorName: user.fullName,
+    actorRole: user.role,
+    action: "OPPORTUNITY_CREATED",
+    targetType: "OPPORTUNITY",
+    targetId: row.id,
+    targetLabel: row.title,
+    details: { cooperativeId: row.cooperativeId, type: row.type, sector: row.sector, region: row.region, deadline: row.deadline },
   });
   return ok(row, 201);
 }

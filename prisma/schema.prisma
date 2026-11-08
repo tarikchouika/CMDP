@@ -34,11 +34,18 @@ model User {
   cooperativeId  Int? // التعاونية التابع لها (COADMIN / USER)
   cooperative    Cooperative?  @relation(fields: [cooperativeId], references: [id], onDelete: SetNull)
   status         String        @default("PENDING") // PENDING | ACTIVE | SUSPENDED | REJECTED
+  // ─── حوكمة المنصة (1.3.0): الملكية والإيقاف المنضبط ─────────────────────
+  isPlatformOwner Boolean     @default(false) // مالك المنصة الحالي (نقل الملكية يبدّل هذا العلم)
+  noticedAt       DateTime?   // تاريخ توجيه آخر إشعار توقيف مسبق
+  noticeDeadline  DateTime?   // الأجل النظامي قبل نفاد التوقيف (24..720 ساعة)
+  suspendedAt     DateTime?   // تاريخ التوقيف الفعلي للحساب
+  suspensionReasons String?   // JSON: {reasons:[], details}
   createdAt      DateTime      @default(now())
   joinRequests   JoinRequest[]
   applications   OpportunityApplication[]
   votes          AssemblyVote[]
   attendances    AssemblyAttendee[]
+  notifications  Notification[]
 }
 
 // ─── التعاونية ────────────────────────────────────────────────────────────
@@ -328,4 +335,33 @@ model Order {
   note         String?
   status       String    @default("NEW") // NEW | CONTACTED | DONE | CANCELLED
   createdAt    DateTime  @default(now())
+}
+
+// ─── سجل التدقيق: من قام بماذا ومتى ولأي هدف (حوكمة 1.3.0) ────────────────
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  actorId     Int? // معرّف الفاعل (null للعموم/الزوار)
+  actorName   String // اسم الفاعل المعروض
+  actorRole   String // دور الفاعل (SUPER_ADMIN | ADMIN | COADMIN | USER | PUBLIC)
+  action      String // USER_LOGIN | SUPER_ADMIN_CREATED | COOPERATIVE_UPDATED ...
+  targetType  String? // USER | COOPERATIVE | MEMBER | ORDER | PRODUCT ...
+  targetId    Int?
+  targetLabel String? // تسمية توضيحية للهدف
+  severity    String   @default("INFO") // INFO | WARNING | CRITICAL
+  ip          String? // عنوان IP من ترويسة x-forwarded-for
+  details     String? // JSON: سياق إضافي للحدث
+}
+
+// ─── إشعارات المستخدمين داخل المنصة (حوكمة 1.3.0) ─────────────────────────
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String // SUSPENSION_NOTICE | ACCOUNT_SUSPENDED | ACCOUNT_REINSTATED | OWNER_TRANSFERRED_TO_YOU ...
+  title     String
+  body      String
+  meta      String? // JSON: بيانات إضافية (الأسباب، الآجال...)
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
 }

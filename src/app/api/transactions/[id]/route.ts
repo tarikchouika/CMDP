@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { coopAccessDenied, denied, requirePermission } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -40,6 +41,22 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       where: { id: Number(id) },
       data: data as unknown as Prisma.TransactionUpdateInput,
     });
+    // ─── سجل التدقيق: تعديل حركة مالية ──────────────────────────────
+    await audit(req, {
+      actorId: auth.user.id,
+      actorName: auth.user.fullName,
+      actorRole: auth.user.role,
+      action: "TRANSACTION_UPDATED",
+      targetType: "TRANSACTION",
+      targetId: row.id,
+      targetLabel: `${row.type === "INCOME" ? "مدخل" : "مصروف"} — ${row.category}`,
+      details: {
+        cooperativeId: row.cooperativeId,
+        fields: Object.keys(data),
+        amountBefore: existing.amount,
+        amountAfter: row.amount,
+      },
+    });
     return ok(row);
   } catch {
     return fail("حركة مالية غير موجودة", 404);
@@ -58,6 +75,24 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   }
   try {
     await db.transaction.delete({ where: { id: Number(id) } });
+    // ─── سجل التدقيق: حذف حركة مالية ──────────────────────────────
+    await audit(req, {
+      actorId: auth.user.id,
+      actorName: auth.user.fullName,
+      actorRole: auth.user.role,
+      action: "TRANSACTION_DELETED",
+      targetType: "TRANSACTION",
+      targetId: existing.id,
+      targetLabel: `${existing.type === "INCOME" ? "مدخل" : "مصروف"} — ${existing.category}`,
+      severity: "WARNING",
+      details: {
+        cooperativeId: existing.cooperativeId,
+        type: existing.type,
+        category: existing.category,
+        amount: existing.amount,
+        date: existing.date,
+      },
+    });
     return ok({ deleted: true });
   } catch {
     return fail("حركة مالية غير موجودة", 404);

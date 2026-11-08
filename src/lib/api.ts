@@ -1,5 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // CMDP — عميل البيانات (نفس الأصل افتراضياً، مع عنوان قابل للضبط + وضع تجريبي)
+// v1.3.0: حلّ عنوان الباك إند وقت التشغيل (resolveApiBase) — النسخة الساكنة
+// تُنشر بلا معرفة مسبقة بعنوان بوابة الـ API، فيُقرأ من /api-config.json.
 // ═══════════════════════════════════════════════════════════════════════════
 
 export class ApiUnavailableError extends Error {
@@ -24,7 +26,45 @@ export function setApiBase(v: string) {
   if (typeof window !== "undefined") {
     if (v.trim()) window.localStorage.setItem(API_BASE_KEY, v.trim());
     else window.localStorage.removeItem(API_BASE_KEY);
+    // إبطال المذكرة: العنوان اليدوي يتقدم على كل مصادر الحل الأخرى
+    resolvedBasePromise = null;
   }
+}
+
+// ─── حلّ عنوان الـ API وقت التشغيل (v1.3.0) ────────────────────────────────
+// مذكرة على مستوى الوحدة — يُحلّ مرة واحدة لكل تحميل ثم يُعاد استعماله:
+//   1) تجاوز يدوي من الإعدادات (localStorage) — يحافظ على ميزة الإعدادات القائمة
+//   2) التطوير المحلي (localhost / 127.0.0.1) → نفس الأصل (خادم Next الكامل)
+//   3) ملف /api-config.json الساكن (نفس الأصل) → بوابة الـ API الإنتاجية
+//   4) متغير البناء NEXT_PUBLIC_API_BASE (سقوط أخير)
+let resolvedBasePromise: Promise<string> | null = null;
+
+export function resolveApiBase(): Promise<string> {
+  // SSR / التصدير الساكن: لا نافذة → متغير البيئة فوراً
+  if (typeof window === "undefined") {
+    return Promise.resolve(process.env.NEXT_PUBLIC_API_BASE || "");
+  }
+  if (!resolvedBasePromise) {
+    resolvedBasePromise = (async () => {
+      try {
+        const stored = window.localStorage.getItem(API_BASE_KEY);
+        if (stored) return stored;
+        const host = window.location.hostname;
+        if (host === "localhost" || host === "127.0.0.1") return "";
+        const res = await fetch("/api-config.json", { cache: "no-store" });
+        if (res.ok) {
+          const cfg = (await res.json()) as { apiBase?: unknown };
+          if (typeof cfg.apiBase === "string" && cfg.apiBase.trim()) {
+            return cfg.apiBase.trim();
+          }
+        }
+      } catch {
+        /* تجاهل — السقوط إلى متغير البناء */
+      }
+      return process.env.NEXT_PUBLIC_API_BASE || "";
+    })();
+  }
+  return resolvedBasePromise;
 }
 
 /** حفظ/قراءة رمز المصادقة (يُلحق تلقائياً بكل طلب) */
@@ -41,7 +81,7 @@ export function getAuthToken(): string | null {
 }
 
 export async function rawFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const base = getApiBase();
+  const base = await resolveApiBase();
   const token = getAuthToken();
   let res: Response;
   try {
@@ -74,10 +114,10 @@ export async function rawFetch<T>(path: string, init?: RequestInit): Promise<T> 
   return (await res.json()) as T;
 }
 
-/** اختبار قابلية الوصول إلى الباك إند */
+/** اختبار قابلية الوصول إلى الباك إند (عبر العنوان المحلول وقت التشغيل) */
 export async function pingApi(): Promise<{ ok: boolean; message: string }> {
   try {
-    const res = await fetch(`${getApiBase()}/api/cooperatives`, {
+    const res = await fetch(`${await resolveApiBase()}/api/cooperatives`, {
       headers: { "Content-Type": "application/json" },
     });
     if (res.ok) return { ok: true, message: "الاتصال بالباك إند المحلي ناجح" };

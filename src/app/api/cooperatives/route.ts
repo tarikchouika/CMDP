@@ -7,6 +7,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { requirePermission } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 import { sanitizeFiles, sanitizePhoto } from "@/lib/attachments";
 
 export const dynamic = "force-dynamic";
@@ -53,6 +54,17 @@ export async function POST(req: Request) {
         logo: sanitizePhoto(b.logo),
         legalDocuments: JSON.stringify(sanitizeFiles(b.legalDocuments, 12)) || null,
       },
+    });
+    // ─── سجل التدقيق: إنشاء تعاونية مباشرة من الإدارة ──────────────
+    await audit(req, {
+      actorId: auth.user.id,
+      actorName: auth.user.fullName,
+      actorRole: auth.user.role,
+      action: "COOPERATIVE_CREATED",
+      targetType: "COOPERATIVE",
+      targetId: row.id,
+      targetLabel: row.name,
+      details: { registrationNumber: row.registrationNumber, region: row.region, sector: row.sector },
     });
     return ok(row, 201);
   } catch {

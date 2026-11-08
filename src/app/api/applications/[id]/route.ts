@@ -5,6 +5,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson } from "@/lib/api-server";
 import { denied, requirePermission } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,23 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     where: { id: Number(id) },
     data: { status },
     include: { opportunity: { select: { id: true, title: true, type: true } } },
+  });
+  // ─── سجل التدقيق: قرار دراسة ترشيح ──────────────────────────────────
+  await audit(req, {
+    actorId: user.id,
+    actorName: user.fullName,
+    actorRole: user.role,
+    action: "APPLICATION_DECIDED",
+    targetType: "APPLICATION",
+    targetId: row.id,
+    targetLabel: row.fullName,
+    severity: "WARNING",
+    details: {
+      decision: status,
+      opportunityId: row.opportunity.id,
+      opportunityTitle: row.opportunity.title,
+      linkedUserId: row.userId,
+    },
   });
   return ok(row);
 }

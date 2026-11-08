@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { coopAccessDenied, denied, requirePermission } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,17 @@ export async function POST(req: Request) {
       boardRole: b.boardRole ? String(b.boardRole) : null,
       status: String(b.status ?? "ACTIVE"),
     },
+  });
+  // ─── سجل التدقيق: إضافة عضو لسجل التعاونية ────────────────────────
+  await audit(req, {
+    actorId: auth.user.id,
+    actorName: auth.user.fullName,
+    actorRole: auth.user.role,
+    action: "MEMBER_CREATED",
+    targetType: "MEMBER",
+    targetId: row.id,
+    targetLabel: row.fullName,
+    details: { cooperativeId: row.cooperativeId, boardRole: row.boardRole, shares: row.shares },
   });
   return ok(row, 201);
 }

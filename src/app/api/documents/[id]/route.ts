@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { coopAccessDenied, denied, requirePermission } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +34,17 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       where: { id: Number(id) },
       data: data as unknown as Prisma.DocumentUpdateInput,
     });
+    // ─── سجل التدقيق: تعديل وثيقة ──────────────────────────────────
+    await audit(req, {
+      actorId: auth.user.id,
+      actorName: auth.user.fullName,
+      actorRole: auth.user.role,
+      action: "DOCUMENT_UPDATED",
+      targetType: "DOCUMENT",
+      targetId: row.id,
+      targetLabel: row.title,
+      details: { cooperativeId: row.cooperativeId, fields: Object.keys(data) },
+    });
     return ok(row);
   } catch {
     return fail("وثيقة غير موجودة", 404);
@@ -51,6 +63,24 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   }
   try {
     await db.document.delete({ where: { id: Number(id) } });
+    // ─── سجل التدقيق: حذف وثيقة من السجل ────────────────────────────
+    await audit(req, {
+      actorId: auth.user.id,
+      actorName: auth.user.fullName,
+      actorRole: auth.user.role,
+      action: "DOCUMENT_DELETED",
+      targetType: "DOCUMENT",
+      targetId: existing.id,
+      targetLabel: existing.title,
+      severity: "WARNING",
+      details: {
+        cooperativeId: existing.cooperativeId,
+        type: existing.type,
+        reference: existing.reference,
+        status: existing.status,
+        isShared: existing.isShared,
+      },
+    });
     return ok({ deleted: true });
   } catch {
     return fail("وثيقة غير موجودة", 404);

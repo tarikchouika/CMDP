@@ -61,6 +61,7 @@ export async function getAuthUser(req: Request): Promise<SessionUser | null> {
     cooperativeId: u.cooperativeId ?? null,
     cooperativeName: u.cooperative?.name ?? null,
     status: u.status as UserStatus,
+    isPlatformOwner: u.isPlatformOwner === true, // مالك المنصة (حوكمة 1.3.0)
   };
 }
 

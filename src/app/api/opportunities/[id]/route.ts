@@ -6,6 +6,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { denied, getAuthUser, requirePermission } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 import { can } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
@@ -69,6 +70,17 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     include: { cooperative: COOP_SELECT, _count: { select: { applications: true } } },
   });
   const { _count, ...rest } = updated;
+  // ─── سجل التدقيق: تعديل فرصة ──────────────────────────────────────
+  await audit(req, {
+    actorId: user.id,
+    actorName: user.fullName,
+    actorRole: user.role,
+    action: "OPPORTUNITY_UPDATED",
+    targetType: "OPPORTUNITY",
+    targetId: updated.id,
+    targetLabel: updated.title,
+    details: { cooperativeId: updated.cooperativeId, fields: Object.keys(data) },
+  });
   return ok({ ...rest, applicationsCount: _count.applications });
 }
 

@@ -7,6 +7,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { denied, requirePermission } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 import { sanitizeFiles, sanitizePhoto } from "@/lib/attachments";
 import type { Prisma } from "@prisma/client";
 
@@ -83,6 +84,36 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       where: { id: Number(id) },
       data: data as unknown as Prisma.CooperativeUpdateInput,
     });
+    // ─── سجل التدقيق: تغيير حالة المصادقة إنذار، وما دونه معلومة ──────
+    if (data.approvalStatus !== undefined && data.approvalStatus !== existing.approvalStatus) {
+      await audit(req, {
+        actorId: user.id,
+        actorName: user.fullName,
+        actorRole: user.role,
+        action: "COOPERATIVE_STATUS_CHANGED",
+        targetType: "COOPERATIVE",
+        targetId: row.id,
+        targetLabel: row.name,
+        severity: "WARNING",
+        details: {
+          from: existing.approvalStatus,
+          to: data.approvalStatus,
+          approvalNote: data.approvalNote ?? null,
+          fields: Object.keys(data),
+        },
+      });
+    } else {
+      await audit(req, {
+        actorId: user.id,
+        actorName: user.fullName,
+        actorRole: user.role,
+        action: "COOPERATIVE_UPDATED",
+        targetType: "COOPERATIVE",
+        targetId: row.id,
+        targetLabel: row.name,
+        details: { fields: Object.keys(data) },
+      });
+    }
     return ok(row);
   } catch {
     return fail("تعذر التحديث — تحقق من القيم", 409);
@@ -94,8 +125,29 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   const auth = await requirePermission(req, "approve:cooperatives");
   if ("response" in auth) return auth.response;
 
+  const existing = await db.cooperative.findUnique({ where: { id: Number(id) } });
+  if (!existing) return fail("تعاونية غير موجودة", 404);
+
   try {
     await db.cooperative.delete({ where: { id: Number(id) } });
+    // ─── سجل التدقيق: حذف نهائي لملف تعاونية ──────────────────────
+    await audit(req, {
+      actorId: auth.user.id,
+      actorName: auth.user.fullName,
+      actorRole: auth.user.role,
+      action: "COOPERATIVE_DELETED",
+      targetType: "COOPERATIVE",
+      targetId: existing.id,
+      targetLabel: existing.name,
+      severity: "WARNING",
+      details: {
+        name: existing.name,
+        registrationNumber: existing.registrationNumber,
+        sector: existing.sector,
+        region: existing.region,
+        approvalStatus: existing.approvalStatus,
+      },
+    });
     return ok({ deleted: true });
   } catch {
     return fail("تعاونية غير موجودة", 404);

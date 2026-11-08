@@ -41,6 +41,7 @@ server.log
 # database — ملف SQLite محلي لا يُرفع
 db/*.db
 db/*.db-journal
+db/*.db.bak*
 
 # static build temp
 .static-build-tmp/
@@ -69,3 +70,8 @@ android/cmdp-release.keystore
 android/cmdp-release.keystore.properties
 # مرفوعات المستخدم (لقطات وتوثيق التقارير) — لا تُرفع للمستودع العمومي
 upload/
+
+# secrets / binaries / tunnel logs — محلية فقط
+secrets/
+bin/
+logs/

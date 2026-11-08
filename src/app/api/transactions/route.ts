@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { coopAccessDenied, denied, requirePermission } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +56,17 @@ export async function POST(req: Request) {
       reference: b.reference ? String(b.reference) : null,
       proofFiles: sanitizeFiles(b.proofFiles),
     },
+  });
+  // ─── سجل التدقيق: تسجيل حركة مالية ────────────────────────────────
+  await audit(req, {
+    actorId: auth.user.id,
+    actorName: auth.user.fullName,
+    actorRole: auth.user.role,
+    action: "TRANSACTION_CREATED",
+    targetType: "TRANSACTION",
+    targetId: row.id,
+    targetLabel: `${row.type === "INCOME" ? "مدخل" : "مصروف"} — ${row.category}`,
+    details: { cooperativeId: row.cooperativeId, type: row.type, category: row.category, amount: row.amount, method: row.method },
   });
   return ok(row, 201);
 }

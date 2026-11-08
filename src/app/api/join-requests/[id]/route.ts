@@ -6,6 +6,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson } from "@/lib/api-server";
 import { denied, requirePermission } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,24 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     if (request.userId) {
       await db.user.update({ where: { id: request.userId }, data: { status: "REJECTED" } });
     }
+    // ─── سجل التدقيق: قرار رفض طلب انخراط ──────────────────────────
+    await audit(req, {
+      actorId: actor.id,
+      actorName: actor.fullName,
+      actorRole: actor.role,
+      action: "JOIN_REQUEST_DECIDED",
+      targetType: "JOIN_REQUEST",
+      targetId: request.id,
+      targetLabel: request.fullName,
+      severity: "WARNING",
+      details: {
+        decision: "REJECTED",
+        cooperativeId: request.cooperativeId,
+        requestType: request.requestType,
+        note: b.note ? String(b.note) : null,
+        linkedUserId: request.userId,
+      },
+    });
     return ok({ status: "REJECTED" });
   }
 
@@ -75,5 +94,24 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       });
     }
   }
+  // ─── سجل التدقيق: قرار قبول طلب انخراط ──────────────────────────
+  await audit(req, {
+    actorId: actor.id,
+    actorName: actor.fullName,
+    actorRole: actor.role,
+    action: "JOIN_REQUEST_DECIDED",
+    targetType: "JOIN_REQUEST",
+    targetId: request.id,
+    targetLabel: request.fullName,
+    severity: "WARNING",
+    details: {
+      decision: "APPROVED",
+      cooperativeId: request.cooperativeId,
+      requestType: request.requestType,
+      note: b.note ? String(b.note) : null,
+      linkedUserId: request.userId,
+      memberCreated: request.requestType === "MEMBERSHIP",
+    },
+  });
   return ok({ status: "APPROVED" });
 }

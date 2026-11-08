@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson, toDate } from "@/lib/api-server";
 import { coopAccessDenied, denied, requirePermission } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +33,17 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       where: { id: Number(id) },
       data: data as unknown as Prisma.MemberUpdateInput,
     });
+    // ─── سجل التدقيق: تعديل بيانات عضو ──────────────────────────────
+    await audit(req, {
+      actorId: auth.user.id,
+      actorName: auth.user.fullName,
+      actorRole: auth.user.role,
+      action: "MEMBER_UPDATED",
+      targetType: "MEMBER",
+      targetId: row.id,
+      targetLabel: row.fullName,
+      details: { cooperativeId: row.cooperativeId, fields: Object.keys(data) },
+    });
     return ok(row);
   } catch {
     return fail("عضو غير موجود", 404);
@@ -50,6 +62,24 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   }
   try {
     await db.member.delete({ where: { id: Number(id) } });
+    // ─── سجل التدقيق: حذف عضو من السجل ───────────────────────────
+    await audit(req, {
+      actorId: auth.user.id,
+      actorName: auth.user.fullName,
+      actorRole: auth.user.role,
+      action: "MEMBER_DELETED",
+      targetType: "MEMBER",
+      targetId: existing.id,
+      targetLabel: existing.fullName,
+      severity: "WARNING",
+      details: {
+        cooperativeId: existing.cooperativeId,
+        cin: existing.cin,
+        boardRole: existing.boardRole,
+        shares: existing.shares,
+        status: existing.status,
+      },
+    });
     return ok({ deleted: true });
   } catch {
     return fail("عضو غير موجود", 404);

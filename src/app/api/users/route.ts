@@ -8,6 +8,7 @@ import { fail, ok, preflight, readJson } from "@/lib/api-server";
 import { denied, requirePermission } from "@/lib/auth";
 import { hashPassword } from "@/lib/seed-run";
 import { assignableRoles } from "@/lib/permissions";
+import { audit } from "@/lib/audit";
 import { sanitizeFiles, sanitizePhoto } from "@/lib/attachments";
 import type { AccountType, Role } from "@/lib/types";
 
@@ -105,6 +106,18 @@ export async function POST(req: Request) {
       status: "ACTIVE", // الإنشاء المباشر من الإدارة = مفعَّل
     },
     select: PUBLIC_FIELDS,
+  });
+
+  // ─── سجل التدقيق: إنشاء حساب من الإدارة ──────────────────────────
+  await audit(req, {
+    actorId: actor.id,
+    actorName: actor.fullName,
+    actorRole: actor.role,
+    action: "USER_CREATED",
+    targetType: "USER",
+    targetId: row.id,
+    targetLabel: row.username,
+    details: { role, accountType, cooperativeId: row.cooperativeId },
   });
   return ok(row, 201);
 }

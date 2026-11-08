@@ -22,6 +22,7 @@ export type View =
   | "entities"
   | "regulations"
   | "users"
+  | "platform"
   | "myspace"
   | "settings"
   | "install"
@@ -43,6 +44,7 @@ export const VIEWS: View[] = [
   "entities",
   "regulations",
   "users",
+  "platform",
   "myspace",
   "settings",
   "install",

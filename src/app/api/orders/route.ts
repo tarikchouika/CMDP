@@ -6,6 +6,7 @@
 import { db } from "@/lib/db";
 import { fail, ok, preflight, readJson } from "@/lib/api-server";
 import { requirePermission } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,22 @@ export async function POST(req: Request) {
       phone: String(b.phone).slice(0, 30),
       city: b.city ? String(b.city).slice(0, 80) : null,
       note: b.note ? String(b.note).slice(0, 800) : null,
+    },
+  });
+  // ─── سجل التدقيق: طلب شراء من الزوار (متجر عمومي) ───────────────
+  await audit(req, {
+    actorName: "زائر",
+    actorRole: "PUBLIC",
+    action: "ORDER_CREATED",
+    targetType: "ORDER",
+    targetId: row.id,
+    targetLabel: `${product.name} × ${row.quantity}`,
+    details: {
+      productId,
+      productName: product.name,
+      quantity: row.quantity,
+      customerName: row.customerName,
+      city: row.city,
     },
   });
   return ok(row, 201);
