@@ -15,6 +15,11 @@
 // • انهيار عارض WebView (onRenderProcessGone) → إعادة بناء النشاط بدل تجمد أبيض
 // • عودة الاتصال بعد انقطاع → تحميل تلقائي للمنصة (NetworkCallback)
 // • دعم حوارات JS (alert/confirm/prompt) — كانت صامتة بلا تنفيذ في WebView
+//
+// جذر الشاشة البيضاء (الإصدار 1.3.3 — الإصلاح الجذري):
+// • حُذف setInitialScale(1) — كان يُظهر المنصة كلها كشريط مصغّر (~%1 مقياساً)
+//   والباقي فراغ؛ عاد الزوج القياسي useWideViewPort + loadWithOverviewMode
+//   (إعداد v1.2.0 الذي كان يعمل) مع بقاء مستمع إينتس لوحة المفاتيح.
 // ═══════════════════════════════════════════════════════════════════════════
 
 package ma.cmdp.platform
@@ -125,9 +130,11 @@ class MainActivity : AppCompatActivity() {
         webView = WebView(this).apply {
             overScrollMode = View.OVER_SCROLL_NEVER
             isVerticalScrollBarEnabled = false
-            // تثبيت المقياس = 1: يمنع حساب منفذ العرض على أساس العرض العريض
-            // وكان يجمّد وحدات vh/vw على قيم صغيرة بعد تغيّر حجم العرض (خلل النوافذ)
-            setInitialScale(1)
+            // لا تستدعِ setInitialScale إطلاقاً: معاملها نسبة مئوية (1 = ‏%1!) —
+            // أي قيمة صريحة تُلغي حساب الكثافة فتُعرض الصفحة ببكسلات فيزيائية
+            // (تخطيط 1080px بدل 412px) ويتقلص كل المحتوى إلى شريط مصغّر أعلى
+            // الشاشة والباقي فراغ — هذا هو جذر «الشاشة البيضاء». الافتراضي (0)
+            // يحترم وسم meta viewport مع مقياس الكثافة الصحيح كما في كروم.
         }
         swipe.addView(webView)
         setContentView(FrameLayout(this).apply { addView(swipe) })
@@ -218,9 +225,14 @@ class MainActivity : AppCompatActivity() {
             javaScriptEnabled = true
             domStorageEnabled = true
             databaseEnabled = true
-            // ملاحظة: لا useWideViewPort ولا loadWithOverviewMode — عائما العرض العريض
-            // القديمان يكسران حساب منفذ العرض للصفحات المتجاوبة (وحدات vh/vw والنوافذ
-            // الثابتة) داخل WebView؛ الصفحة تحمل meta viewport صحيحاً فلا حاجة لهما.
+            // الزوج القياسي للصفحات المتجاوبة الحاملة لوسم meta viewport صحيح
+            // (width=device-width): useWideViewPort يفعّل احترام وسم العرض
+            // وloadWithOverviewMode يضبط العرض الأولي على ملاءمة عرض المحتوى —
+            // النتيجة مطابقة تماماً لسلوك كروم: 412px منطقية على شاشة 1080px
+            // ووحدات vh/vw محسوبة سليمة (التصحيح الحقيقي لخلل النوافذ كان
+            // مستمع إينتس لوحة المفاتيح أعلاه لا تثبيت المقياس).
+            useWideViewPort = true
+            loadWithOverviewMode = true
             builtInZoomControls = false
             displayZoomControls = false
             mediaPlaybackRequiresUserGesture = true
