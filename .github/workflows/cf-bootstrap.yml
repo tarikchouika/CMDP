@@ -1,0 +1,23 @@
+name: 🔁 نقل أسرار Cloudflare (مؤقت)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: نسخ
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TARGET: tarikchouika/opencode-tunnel
+        run: |
+          set -euo pipefail
+          printf '%s' "$CF_TOKEN"   | gh secret set CLOUDFLARE_API_TOKEN   --repo "$TARGET"
+          printf '%s' "$CF_ACCOUNT" | gh secret set CLOUDFLARE_ACCOUNT_ID --repo "$TARGET"
+          echo "copied"
